@@ -11,11 +11,14 @@ Writes:
   src/figures/data/figS2b_venn_counts.csv
   src/figures/data/figS2c_tss_qc.csv   (one row per TSS window)
 
-The exporter validates every filter-category count against the numbers in the
-submitted panel (total 19,376; blacklist 1,311; overlapping 3,398; chrX 842;
-high variability 72; removed 5,152 / retained 14,224) and derives the
-categories from the same artifacts the pipeline used
-(accessory_files/*.npy, beds/biomart_10kb.bed, the two blacklist BEDs).
+Prerequisite: the filter .npy files in accessory_files/ are produced by
+src/comp/derive_tss_filter.py (tracked in git, so this exporter runs without
+rederiving them). The exporter derives the plotting categories from those
+same artifacts (accessory_files/*.npy, beds/biomart_10kb.bed, the two
+blacklist BEDs) and prints each count next to the submitted panel's numbers
+(total 19,376; blacklist 1,311; overlapping 3,398; chrX 842; high
+variability 72; removed 5,152 / retained 14,224). With the regenerated
+filter the full removal set is 5,806 — see derive_tss_filter.py's docstring.
 
 NOTE: the notebook that drew the submitted S2c panel was not found in the
 repository (only the component analyses in notebooks/blacklist_analysis.ipynb
@@ -142,8 +145,17 @@ def main() -> None:
     print(f"S2c removed by multiple filters: {in_multiple} (panel: 452); "
           f"removed {len(final_removed)} / retained {19376 - len(final_removed)}")
 
-    # per-TSS mean/std of mean_coverage across the panel-of-normals
-    pon_ids = pd.read_csv(rp(PON_CSV))["ID"].tolist()
+    # per-TSS mean/std of mean_coverage across the panel-of-normals.
+    # Panel from the canonical manifest (50 unique participants, Sep 2026
+    # policy); falls back to the legacy cris_pon.csv if no manifest exists.
+    manifest_path = rp("accessory_files/cris_manifest.csv")
+    if os.path.exists(manifest_path):
+        mf = pd.read_csv(manifest_path)
+        pon_ids = mf.loc[mf["role"] == "panel_of_normals", "ID"].tolist()
+        pon_src = "cris_manifest.csv (role == panel_of_normals)"
+    else:
+        pon_ids = pd.read_csv(rp(PON_CSV))["ID"].tolist()
+        pon_src = PON_CSV
     mats, used = [], []
     for sid in pon_ids:
         p = rp(f"{FEATURES_DIR}/{sid}.hg38.frag.tsv_BIN.csv")
@@ -152,7 +164,7 @@ def main() -> None:
         mats.append(pd.read_csv(p, usecols=["mean_coverage"])["mean_coverage"].to_numpy())
         used.append(sid)
     mat = np.vstack(mats)
-    print(f"S2c PoN samples with BIN.csv: {len(used)} (from {PON_CSV})")
+    print(f"S2c PoN samples with BIN.csv: {len(used)} (from {pon_src})")
     assert mat.shape[1] == len(biomart)
 
     mean_cov = np.nanmean(mat, axis=0)
