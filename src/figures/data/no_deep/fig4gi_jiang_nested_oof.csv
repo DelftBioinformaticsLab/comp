@@ -1,0 +1,348 @@
+task,sample_id,y_true,subgroup,control_group,outer_fold,score
+hcc_vs_nonhcc,EE85760,0,Cirrhosis,HBV-associated cirrhosis,1,0.0128876505074177
+hcc_vs_nonhcc,EE85762,0,Hepatitis B,Chronic hepatitis B,1,0.5787056583334478
+hcc_vs_nonhcc,EE85765,1,Liver cancer,,1,0.284374601659227
+hcc_vs_nonhcc,EE85770,0,Healthy,Healthy,1,0.0015487240478423
+hcc_vs_nonhcc,EE85776,0,Hepatitis B,Chronic hepatitis B,1,0.1458240491009997
+hcc_vs_nonhcc,EE85808,0,Hepatitis B,Chronic hepatitis B,1,0.0007857606209062
+hcc_vs_nonhcc,EE85821,1,Liver cancer,,1,0.0331316821630284
+hcc_vs_nonhcc,EE85830,0,Healthy,Healthy,1,0.0865892063020905
+hcc_vs_nonhcc,EE85847,1,Liver cancer,,1,0.2584382760374766
+hcc_vs_nonhcc,EE85865,0,Hepatitis B,Chronic hepatitis B,1,0.105565175631884
+hcc_vs_nonhcc,EE85867,1,Liver cancer,,1,0.9863302025612736
+hcc_vs_nonhcc,EE85870,1,Liver cancer,,1,0.2943806088218197
+hcc_vs_nonhcc,EE85876,0,Hepatitis B,Chronic hepatitis B,1,0.0004105227391036
+hcc_vs_nonhcc,EE85877,0,Cirrhosis,HBV-associated cirrhosis,1,6.309248532717452e-05
+hcc_vs_nonhcc,EE85881,1,Liver cancer,,1,0.3910408193755645
+hcc_vs_nonhcc,EE85887,0,Cirrhosis,HBV-associated cirrhosis,1,0.0104708605189215
+hcc_vs_nonhcc,EE85890,0,Cirrhosis,HBV-associated cirrhosis,1,0.4706764590421847
+hcc_vs_nonhcc,EE85892,1,Liver cancer,,1,0.7981571244954113
+hcc_vs_nonhcc,EE85939,1,Liver cancer,,1,0.903087195345511
+hcc_vs_nonhcc,EE85944,0,Hepatitis B,Chronic hepatitis B,1,0.0029238114622179
+hcc_vs_nonhcc,EE85948,0,Hepatitis B,Chronic hepatitis B,1,0.1843056812051987
+hcc_vs_nonhcc,EE85971,0,Healthy,Healthy,1,0.0418357682585934
+hcc_vs_nonhcc,EE85983,1,Liver cancer,,1,0.8000790194781888
+hcc_vs_nonhcc,EE85757,0,Healthy,Healthy,2,1.0055355693888385e-05
+hcc_vs_nonhcc,EE85759,1,Liver cancer,,2,0.9992605229399726
+hcc_vs_nonhcc,EE85763,0,Hepatitis B,Chronic hepatitis B,2,5.373628498337856e-23
+hcc_vs_nonhcc,EE85772,1,Liver cancer,,2,0.9118414757310724
+hcc_vs_nonhcc,EE85783,0,Hepatitis B,Chronic hepatitis B,2,2.302496476045273e-09
+hcc_vs_nonhcc,EE85785,1,Liver cancer,,2,0.9999999999999304
+hcc_vs_nonhcc,EE85788,1,Liver cancer,,2,1.3454760739298401e-17
+hcc_vs_nonhcc,EE85818,0,Hepatitis B,Chronic hepatitis B,2,3.808367946783675e-05
+hcc_vs_nonhcc,EE85845,1,Liver cancer,,2,0.0006260935842618
+hcc_vs_nonhcc,EE85848,0,Cirrhosis,HBV-associated cirrhosis,2,4.405973396285458e-10
+hcc_vs_nonhcc,EE85849,1,Liver cancer,,2,1.3955096675035657e-08
+hcc_vs_nonhcc,EE85855,0,Hepatitis B,Chronic hepatitis B,2,1.5442999722723673e-08
+hcc_vs_nonhcc,EE85873,0,Hepatitis B,Chronic hepatitis B,2,5.2407935583446066e-21
+hcc_vs_nonhcc,EE85898,0,Healthy,Healthy,2,5.749501480110669e-12
+hcc_vs_nonhcc,EE85911,1,Liver cancer,,2,1.0
+hcc_vs_nonhcc,EE85915,0,Hepatitis B,Chronic hepatitis B,2,6.684792740738484e-17
+hcc_vs_nonhcc,EE85932,0,Cirrhosis,HBV-associated cirrhosis,2,0.0186453095520808
+hcc_vs_nonhcc,EE85956,0,Cirrhosis,HBV-associated cirrhosis,2,0.3757755918033855
+hcc_vs_nonhcc,EE85963,0,Healthy,Healthy,2,0.0001852099856014
+hcc_vs_nonhcc,EE85967,0,Hepatitis B,Chronic hepatitis B,2,0.9459744535911648
+hcc_vs_nonhcc,EE85968,1,Liver cancer,,2,0.9999989034520544
+hcc_vs_nonhcc,EE85978,1,Liver cancer,,2,0.3139758824154299
+hcc_vs_nonhcc,EE85996,0,Cirrhosis,HBV-associated cirrhosis,2,0.0002261162111037
+hcc_vs_nonhcc,EE85755,0,Hepatitis B,Chronic hepatitis B,3,0.0232429122943605
+hcc_vs_nonhcc,EE85781,1,Liver cancer,,3,0.9663619785652264
+hcc_vs_nonhcc,EE85790,1,Liver cancer,,3,0.9999999861045727
+hcc_vs_nonhcc,EE85795,0,Healthy,Healthy,3,0.0867064430248509
+hcc_vs_nonhcc,EE85810,1,Liver cancer,,3,0.9423394676524388
+hcc_vs_nonhcc,EE85827,1,Liver cancer,,3,0.7914765129761683
+hcc_vs_nonhcc,EE85836,0,Hepatitis B,Chronic hepatitis B,3,0.1847221360319198
+hcc_vs_nonhcc,EE85841,0,Cirrhosis,HBV-associated cirrhosis,3,0.0620063960862161
+hcc_vs_nonhcc,EE85860,0,Healthy,Healthy,3,0.4781483595052329
+hcc_vs_nonhcc,EE85862,1,Liver cancer,,3,0.996221788159154
+hcc_vs_nonhcc,EE85866,0,Hepatitis B,Chronic hepatitis B,3,0.3766418203986695
+hcc_vs_nonhcc,EE85891,1,Liver cancer,,3,0.4448269061938938
+hcc_vs_nonhcc,EE85895,0,Hepatitis B,Chronic hepatitis B,3,0.0021192040821612
+hcc_vs_nonhcc,EE85897,0,Cirrhosis,HBV-associated cirrhosis,3,0.2588069776186434
+hcc_vs_nonhcc,EE85900,1,Liver cancer,,3,0.99999355634876
+hcc_vs_nonhcc,EE85924,0,Cirrhosis,HBV-associated cirrhosis,3,0.0488293184951842
+hcc_vs_nonhcc,EE85925,1,Liver cancer,,3,0.999999999968705
+hcc_vs_nonhcc,EE85936,0,Healthy,Healthy,3,0.1752173261549974
+hcc_vs_nonhcc,EE85951,0,Cirrhosis,HBV-associated cirrhosis,3,0.0714019250819221
+hcc_vs_nonhcc,EE85975,0,Hepatitis B,Chronic hepatitis B,3,0.5686825722960598
+hcc_vs_nonhcc,EE85982,1,Liver cancer,,3,0.8815285681903395
+hcc_vs_nonhcc,EE85989,0,Hepatitis B,Chronic hepatitis B,3,0.1121304322929587
+hcc_vs_nonhcc,EE85999,0,Hepatitis B,Chronic hepatitis B,3,0.4197882069336903
+hcc_vs_nonhcc,EE85773,1,Liver cancer,,4,0.9999410953895664
+hcc_vs_nonhcc,EE85793,1,Liver cancer,,4,4.193415589521226e-12
+hcc_vs_nonhcc,EE85796,0,Hepatitis B,Chronic hepatitis B,4,8.476636427540354e-08
+hcc_vs_nonhcc,EE85812,0,Cirrhosis,HBV-associated cirrhosis,4,0.0101410585453499
+hcc_vs_nonhcc,EE85815,0,Cirrhosis,HBV-associated cirrhosis,4,0.0045049319997254
+hcc_vs_nonhcc,EE85816,0,Healthy,Healthy,4,0.9961787616795584
+hcc_vs_nonhcc,EE85833,0,Cirrhosis,HBV-associated cirrhosis,4,0.0575005699983708
+hcc_vs_nonhcc,EE85835,1,Liver cancer,,4,0.9999999999998956
+hcc_vs_nonhcc,EE85886,0,Cirrhosis,HBV-associated cirrhosis,4,2.1276723527172838e-10
+hcc_vs_nonhcc,EE85893,1,Liver cancer,,4,0.9999999999999668
+hcc_vs_nonhcc,EE85896,0,Hepatitis B,Chronic hepatitis B,4,0.0008180157894614
+hcc_vs_nonhcc,EE85906,0,Hepatitis B,Chronic hepatitis B,4,6.821752948416993e-08
+hcc_vs_nonhcc,EE85912,0,Hepatitis B,Chronic hepatitis B,4,1.5311455388636112e-11
+hcc_vs_nonhcc,EE85921,1,Liver cancer,,4,0.9371451688450858
+hcc_vs_nonhcc,EE85945,0,Hepatitis B,Chronic hepatitis B,4,6.637190803780033e-08
+hcc_vs_nonhcc,EE85960,0,Hepatitis B,Chronic hepatitis B,4,0.2550531618286759
+hcc_vs_nonhcc,EE85961,1,Liver cancer,,4,0.9999996719254725
+hcc_vs_nonhcc,EE85965,1,Liver cancer,,4,0.9998446057030872
+hcc_vs_nonhcc,EE85969,1,Liver cancer,,4,1.0
+hcc_vs_nonhcc,EE85970,0,Healthy,Healthy,4,0.9996983863817244
+hcc_vs_nonhcc,EE85972,0,Hepatitis B,Chronic hepatitis B,4,5.279943835774144e-08
+hcc_vs_nonhcc,EE85973,1,Liver cancer,,4,0.9999092414297954
+hcc_vs_nonhcc,EE85980,0,Healthy,Healthy,4,0.014488828077858
+hcc_vs_nonhcc,EE85769,1,Liver cancer,,5,0.9966938862382996
+hcc_vs_nonhcc,EE85789,1,Liver cancer,,5,0.9876543052829604
+hcc_vs_nonhcc,EE85800,0,Hepatitis B,Chronic hepatitis B,5,0.3935007180137753
+hcc_vs_nonhcc,EE85811,0,Hepatitis B,Chronic hepatitis B,5,0.4771594646268139
+hcc_vs_nonhcc,EE85825,0,Hepatitis B,Chronic hepatitis B,5,0.4853858623274854
+hcc_vs_nonhcc,EE85828,0,Cirrhosis,HBV-associated cirrhosis,5,0.8627193491794156
+hcc_vs_nonhcc,EE85829,0,Cirrhosis,HBV-associated cirrhosis,5,0.2154871989092057
+hcc_vs_nonhcc,EE85837,0,Cirrhosis,HBV-associated cirrhosis,5,0.2976066248165785
+hcc_vs_nonhcc,EE85844,0,Hepatitis B,Chronic hepatitis B,5,0.7016176337631033
+hcc_vs_nonhcc,EE85864,1,Liver cancer,,5,0.3072561823591667
+hcc_vs_nonhcc,EE85871,0,Hepatitis B,Chronic hepatitis B,5,0.2779448060959287
+hcc_vs_nonhcc,EE85883,1,Liver cancer,,5,0.7395454762570699
+hcc_vs_nonhcc,EE85899,1,Liver cancer,,5,0.9767562137059598
+hcc_vs_nonhcc,EE85905,0,Healthy,Healthy,5,0.2313473878818215
+hcc_vs_nonhcc,EE85920,0,Hepatitis B,Chronic hepatitis B,5,0.2514215348976054
+hcc_vs_nonhcc,EE85927,1,Liver cancer,,5,0.97465393988917
+hcc_vs_nonhcc,EE85933,0,Hepatitis B,Chronic hepatitis B,5,0.3527184873937455
+hcc_vs_nonhcc,EE85937,0,Healthy,Healthy,5,0.723410009668781
+hcc_vs_nonhcc,EE85947,1,Liver cancer,,5,0.9229281743381914
+hcc_vs_nonhcc,EE85959,0,Healthy,Healthy,5,0.1486031846610623
+hcc_vs_nonhcc,EE85974,1,Liver cancer,,5,0.4908727880098923
+hcc_vs_nonhcc,EE85998,0,Cirrhosis,HBV-associated cirrhosis,5,0.2298899392340654
+hcc_vs_nonhcc,EE86000,1,Liver cancer,,5,0.5511441894519642
+hcc_vs_nonhcc,EE85754,0,Hepatitis B,Chronic hepatitis B,6,0.2145507981305355
+hcc_vs_nonhcc,EE85766,0,Hepatitis B,Chronic hepatitis B,6,0.0455720598039571
+hcc_vs_nonhcc,EE85787,0,Healthy,Healthy,6,0.111067637466173
+hcc_vs_nonhcc,EE85792,0,Cirrhosis,HBV-associated cirrhosis,6,0.1484014092465374
+hcc_vs_nonhcc,EE85794,1,Liver cancer,,6,0.9942777521677568
+hcc_vs_nonhcc,EE85802,1,Liver cancer,,6,0.9948073275443894
+hcc_vs_nonhcc,EE85806,0,Cirrhosis,HBV-associated cirrhosis,6,0.1596650582338954
+hcc_vs_nonhcc,EE85814,1,Liver cancer,,6,0.9999999967756062
+hcc_vs_nonhcc,EE85822,0,Hepatitis B,Chronic hepatitis B,6,0.9443210903864367
+hcc_vs_nonhcc,EE85834,0,Cirrhosis,HBV-associated cirrhosis,6,0.2062751704723802
+hcc_vs_nonhcc,EE85846,1,Liver cancer,,6,0.7133108543541448
+hcc_vs_nonhcc,EE85851,1,Liver cancer,,6,0.9999999960873808
+hcc_vs_nonhcc,EE85856,1,Liver cancer,,6,0.9877751153720054
+hcc_vs_nonhcc,EE85869,1,Liver cancer,,6,0.9999999627141972
+hcc_vs_nonhcc,EE85930,0,Hepatitis B,Chronic hepatitis B,6,0.2226983440829099
+hcc_vs_nonhcc,EE85941,0,Healthy,Healthy,6,0.4337988827043403
+hcc_vs_nonhcc,EE85952,0,Hepatitis B,Chronic hepatitis B,6,0.1846184586607611
+hcc_vs_nonhcc,EE85955,0,Hepatitis B,Chronic hepatitis B,6,0.095030186013595
+hcc_vs_nonhcc,EE85984,0,Hepatitis B,Chronic hepatitis B,6,0.5641415488022835
+hcc_vs_nonhcc,EE85987,0,Healthy,Healthy,6,0.3230260690579769
+hcc_vs_nonhcc,EE85990,1,Liver cancer,,6,0.9999986862040344
+hcc_vs_nonhcc,EE85992,1,Liver cancer,,6,0.9806129890827244
+hcc_vs_nonhcc,EE85764,0,Hepatitis B,Chronic hepatitis B,7,0.0047983842310749
+hcc_vs_nonhcc,EE85775,0,Healthy,Healthy,7,0.162313084471835
+hcc_vs_nonhcc,EE85791,0,Healthy,Healthy,7,0.0628921315823152
+hcc_vs_nonhcc,EE85798,1,Liver cancer,,7,0.999999977912775
+hcc_vs_nonhcc,EE85817,0,Hepatitis B,Chronic hepatitis B,7,0.0011497382455626
+hcc_vs_nonhcc,EE85831,1,Liver cancer,,7,0.5150378138123141
+hcc_vs_nonhcc,EE85838,0,Hepatitis B,Chronic hepatitis B,7,0.1231312306558309
+hcc_vs_nonhcc,EE85840,0,Hepatitis B,Chronic hepatitis B,7,0.7983774754812542
+hcc_vs_nonhcc,EE85853,0,Hepatitis B,Chronic hepatitis B,7,0.0062277061288251
+hcc_vs_nonhcc,EE85868,0,Cirrhosis,HBV-associated cirrhosis,7,0.0001858473675254
+hcc_vs_nonhcc,EE85874,0,Hepatitis B,Chronic hepatitis B,7,0.3288016404319197
+hcc_vs_nonhcc,EE85875,0,Cirrhosis,HBV-associated cirrhosis,7,0.00142492054328
+hcc_vs_nonhcc,EE85878,0,Healthy,Healthy,7,0.0031302503759815
+hcc_vs_nonhcc,EE85880,1,Liver cancer,,7,0.9999999995762786
+hcc_vs_nonhcc,EE85903,1,Liver cancer,,7,0.6347088952763079
+hcc_vs_nonhcc,EE85907,1,Liver cancer,,7,0.0663015198662081
+hcc_vs_nonhcc,EE85931,0,Cirrhosis,HBV-associated cirrhosis,7,0.5394211316574474
+hcc_vs_nonhcc,EE85940,0,Hepatitis B,Chronic hepatitis B,7,0.9726797744385134
+hcc_vs_nonhcc,EE85943,1,Liver cancer,,7,0.931400154667728
+hcc_vs_nonhcc,EE85946,1,Liver cancer,,7,0.2655276277071558
+hcc_vs_nonhcc,EE85962,1,Liver cancer,,7,0.4773732329230236
+hcc_vs_nonhcc,EE85991,1,Liver cancer,,7,0.0576503075048411
+hcc_vs_nonhcc,EE85758,0,Cirrhosis,HBV-associated cirrhosis,8,1.5617086358417316e-28
+hcc_vs_nonhcc,EE85761,1,Liver cancer,,8,1.0
+hcc_vs_nonhcc,EE85774,1,Liver cancer,,8,0.9917373364522952
+hcc_vs_nonhcc,EE85786,1,Liver cancer,,8,1.0
+hcc_vs_nonhcc,EE85826,0,Hepatitis B,Chronic hepatitis B,8,3.6083760887575453e-31
+hcc_vs_nonhcc,EE85839,1,Liver cancer,,8,3.520489551465831e-29
+hcc_vs_nonhcc,EE85859,0,Hepatitis B,Chronic hepatitis B,8,6.89162930886259e-21
+hcc_vs_nonhcc,EE85872,1,Liver cancer,,8,1.0
+hcc_vs_nonhcc,EE85904,0,Healthy,Healthy,8,8.777914928018024e-29
+hcc_vs_nonhcc,EE85908,0,Healthy,Healthy,8,3.1579452387723554e-10
+hcc_vs_nonhcc,EE85913,0,Hepatitis B,Chronic hepatitis B,8,1.894477398873308e-07
+hcc_vs_nonhcc,EE85916,1,Liver cancer,,8,0.9999999944118751
+hcc_vs_nonhcc,EE85917,0,Cirrhosis,HBV-associated cirrhosis,8,1.3790785382561303e-16
+hcc_vs_nonhcc,EE85918,0,Healthy,Healthy,8,3.136583470721389e-53
+hcc_vs_nonhcc,EE85923,0,Cirrhosis,HBV-associated cirrhosis,8,4.597421800680519e-39
+hcc_vs_nonhcc,EE85926,0,Hepatitis B,Chronic hepatitis B,8,4.9798178086715945e-24
+hcc_vs_nonhcc,EE85928,0,Healthy,Healthy,8,7.826654376714141e-09
+hcc_vs_nonhcc,EE85935,1,Liver cancer,,8,0.0142789700623468
+hcc_vs_nonhcc,EE85953,1,Liver cancer,,8,1.0
+hcc_vs_nonhcc,EE85957,0,Hepatitis B,Chronic hepatitis B,8,0.0078663605532264
+hcc_vs_nonhcc,EE85964,1,Liver cancer,,8,1.0
+hcc_vs_nonhcc,EE86001,0,Hepatitis B,Chronic hepatitis B,8,0.9938519985684242
+hcc_vs_nonhcc,EE85756,0,Healthy,Healthy,9,0.0172343862203841
+hcc_vs_nonhcc,EE85771,0,Cirrhosis,HBV-associated cirrhosis,9,0.0002594953024729
+hcc_vs_nonhcc,EE85780,0,Cirrhosis,HBV-associated cirrhosis,9,8.913184672274647e-09
+hcc_vs_nonhcc,EE85797,0,Hepatitis B,Chronic hepatitis B,9,2.1058668167619132e-08
+hcc_vs_nonhcc,EE85805,1,Liver cancer,,9,0.999999923195754
+hcc_vs_nonhcc,EE85807,1,Liver cancer,,9,0.9999999951822728
+hcc_vs_nonhcc,EE85813,1,Liver cancer,,9,0.999999680812624
+hcc_vs_nonhcc,EE85843,1,Liver cancer,,9,0.0203227889640543
+hcc_vs_nonhcc,EE85854,0,Healthy,Healthy,9,0.0012776621552762
+hcc_vs_nonhcc,EE85861,0,Healthy,Healthy,9,0.1154105600244302
+hcc_vs_nonhcc,EE85863,1,Liver cancer,,9,0.9999997027353588
+hcc_vs_nonhcc,EE85885,1,Liver cancer,,9,0.0068260579890626
+hcc_vs_nonhcc,EE85901,1,Liver cancer,,9,0.999999999999911
+hcc_vs_nonhcc,EE85919,0,Cirrhosis,HBV-associated cirrhosis,9,1.7833756814813503e-05
+hcc_vs_nonhcc,EE85938,1,Liver cancer,,9,0.9999999999999584
+hcc_vs_nonhcc,EE85942,0,Hepatitis B,Chronic hepatitis B,9,0.0075364771268624
+hcc_vs_nonhcc,EE85950,0,Hepatitis B,Chronic hepatitis B,9,0.1656297749651342
+hcc_vs_nonhcc,EE85966,0,Hepatitis B,Chronic hepatitis B,9,6.40280483981463e-06
+hcc_vs_nonhcc,EE85981,0,Hepatitis B,Chronic hepatitis B,9,6.02442235381323e-08
+hcc_vs_nonhcc,EE85985,0,Healthy,Healthy,9,2.1453429616499444e-06
+hcc_vs_nonhcc,EE85994,0,Hepatitis B,Chronic hepatitis B,9,0.0001366988353187
+hcc_vs_nonhcc,EE85997,1,Liver cancer,,9,1.0
+hcc_vs_nonhcc,EE85767,0,Hepatitis B,Chronic hepatitis B,10,1.9922627626000607e-20
+hcc_vs_nonhcc,EE85768,0,Cirrhosis,HBV-associated cirrhosis,10,1.84375997193537e-17
+hcc_vs_nonhcc,EE85777,1,Liver cancer,,10,1.0
+hcc_vs_nonhcc,EE85779,0,Hepatitis B,Chronic hepatitis B,10,1.8128770726849204e-70
+hcc_vs_nonhcc,EE85784,0,Healthy,Healthy,10,1.6056800215670606e-07
+hcc_vs_nonhcc,EE85799,1,Liver cancer,,10,0.9999999999506396
+hcc_vs_nonhcc,EE85809,0,Hepatitis B,Chronic hepatitis B,10,5.238101171422129e-29
+hcc_vs_nonhcc,EE85823,1,Liver cancer,,10,3.1603820628959885e-11
+hcc_vs_nonhcc,EE85832,1,Liver cancer,,10,0.9999999996240054
+hcc_vs_nonhcc,EE85842,0,Healthy,Healthy,10,1.921059155589792e-24
+hcc_vs_nonhcc,EE85857,1,Liver cancer,,10,1.0
+hcc_vs_nonhcc,EE85858,1,Liver cancer,,10,1.0
+hcc_vs_nonhcc,EE85879,0,Hepatitis B,Chronic hepatitis B,10,1.3633132003370078e-29
+hcc_vs_nonhcc,EE85882,0,Hepatitis B,Chronic hepatitis B,10,7.500467695009173e-51
+hcc_vs_nonhcc,EE85884,0,Cirrhosis,HBV-associated cirrhosis,10,1.9939134462965527e-36
+hcc_vs_nonhcc,EE85888,1,Liver cancer,,10,9.058290110065228e-11
+hcc_vs_nonhcc,EE85902,0,Cirrhosis,HBV-associated cirrhosis,10,7.108988002147209e-38
+hcc_vs_nonhcc,EE85922,0,Hepatitis B,Chronic hepatitis B,10,2.7082419375912783e-28
+hcc_vs_nonhcc,EE85949,1,Liver cancer,,10,0.9999999999999865
+hcc_vs_nonhcc,EE85986,0,Cirrhosis,HBV-associated cirrhosis,10,1.6074891465209616e-45
+hcc_vs_nonhcc,EE85988,0,Healthy,Healthy,10,2.241429447757303e-29
+hcc_vs_nonhcc,EE86002,1,Liver cancer,,10,0.999999999999876
+hcc_vs_healthy,EE85786,1,Liver cancer,,1,0.9206058794576324
+hcc_vs_healthy,EE85814,1,Liver cancer,,1,0.9772321375498226
+hcc_vs_healthy,EE85830,0,Healthy,Healthy,1,0.9706626843194744
+hcc_vs_healthy,EE85891,1,Liver cancer,,1,0.9249128335990272
+hcc_vs_healthy,EE85904,0,Healthy,Healthy,1,0.7800418030814247
+hcc_vs_healthy,EE85905,0,Healthy,Healthy,1,0.5834413207658393
+hcc_vs_healthy,EE85918,0,Healthy,Healthy,1,0.8135023249957255
+hcc_vs_healthy,EE85921,1,Liver cancer,,1,0.8775290618241419
+hcc_vs_healthy,EE85938,1,Liver cancer,,1,0.9959472030323612
+hcc_vs_healthy,EE85943,1,Liver cancer,,1,0.9370578002806362
+hcc_vs_healthy,EE85949,1,Liver cancer,,1,0.9437587232084704
+hcc_vs_healthy,EE85965,1,Liver cancer,,1,0.9965491987217148
+hcc_vs_healthy,EE85969,1,Liver cancer,,1,0.9880154740212868
+hcc_vs_healthy,EE85799,1,Liver cancer,,2,0.873873029886704
+hcc_vs_healthy,EE85805,1,Liver cancer,,2,0.9381246733521535
+hcc_vs_healthy,EE85831,1,Liver cancer,,2,0.9540234812622554
+hcc_vs_healthy,EE85842,0,Healthy,Healthy,2,0.4679315349372422
+hcc_vs_healthy,EE85849,1,Liver cancer,,2,0.9340518612112756
+hcc_vs_healthy,EE85860,0,Healthy,Healthy,2,0.7654646471981108
+hcc_vs_healthy,EE85869,1,Liver cancer,,2,0.993726357667308
+hcc_vs_healthy,EE85903,1,Liver cancer,,2,0.910299064838142
+hcc_vs_healthy,EE85946,1,Liver cancer,,2,0.884029066612881
+hcc_vs_healthy,EE85953,1,Liver cancer,,2,0.9890486098846952
+hcc_vs_healthy,EE85970,0,Healthy,Healthy,2,0.905046614464073
+hcc_vs_healthy,EE85988,0,Healthy,Healthy,2,0.7791611002337364
+hcc_vs_healthy,EE85992,1,Liver cancer,,2,0.9758705203215668
+hcc_vs_healthy,EE85761,1,Liver cancer,,3,0.9999996727000232
+hcc_vs_healthy,EE85772,1,Liver cancer,,3,0.8118527092988366
+hcc_vs_healthy,EE85784,0,Healthy,Healthy,3,0.005466759744825
+hcc_vs_healthy,EE85787,0,Healthy,Healthy,3,8.775008683411004e-05
+hcc_vs_healthy,EE85794,1,Liver cancer,,3,0.0060857286619013
+hcc_vs_healthy,EE85810,1,Liver cancer,,3,0.9274420623309008
+hcc_vs_healthy,EE85843,1,Liver cancer,,3,0.5627804251258868
+hcc_vs_healthy,EE85846,1,Liver cancer,,3,0.9962982501395384
+hcc_vs_healthy,EE85856,1,Liver cancer,,3,0.9999849819498569
+hcc_vs_healthy,EE85880,1,Liver cancer,,3,0.9999325867618496
+hcc_vs_healthy,EE85964,1,Liver cancer,,3,0.9996032542139012
+hcc_vs_healthy,EE85971,0,Healthy,Healthy,3,0.0004436603815195
+hcc_vs_healthy,EE85774,1,Liver cancer,,4,0.7026832477895718
+hcc_vs_healthy,EE85790,1,Liver cancer,,4,0.9999999999999988
+hcc_vs_healthy,EE85816,0,Healthy,Healthy,4,5.745355619319106e-05
+hcc_vs_healthy,EE85832,1,Liver cancer,,4,0.9998214689895852
+hcc_vs_healthy,EE85839,1,Liver cancer,,4,0.0603500175876866
+hcc_vs_healthy,EE85861,0,Healthy,Healthy,4,4.663034599529304e-07
+hcc_vs_healthy,EE85863,1,Liver cancer,,4,0.9997697110760122
+hcc_vs_healthy,EE85870,1,Liver cancer,,4,0.9999884269770808
+hcc_vs_healthy,EE85878,0,Healthy,Healthy,4,0.0136889792195655
+hcc_vs_healthy,EE85883,1,Liver cancer,,4,4.9938160169793405e-05
+hcc_vs_healthy,EE85901,1,Liver cancer,,4,0.999909211232894
+hcc_vs_healthy,EE85911,1,Liver cancer,,4,1.0
+hcc_vs_healthy,EE85757,0,Healthy,Healthy,5,0.3788003452107628
+hcc_vs_healthy,EE85781,1,Liver cancer,,5,0.9712166602939852
+hcc_vs_healthy,EE85785,1,Liver cancer,,5,0.9999996535479576
+hcc_vs_healthy,EE85789,1,Liver cancer,,5,0.9854919473598448
+hcc_vs_healthy,EE85823,1,Liver cancer,,5,0.9425772938747348
+hcc_vs_healthy,EE85854,0,Healthy,Healthy,5,0.3062282520088239
+hcc_vs_healthy,EE85857,1,Liver cancer,,5,0.9999989932562416
+hcc_vs_healthy,EE85899,1,Liver cancer,,5,0.9914973649127043
+hcc_vs_healthy,EE85927,1,Liver cancer,,5,0.9953374886801084
+hcc_vs_healthy,EE85961,1,Liver cancer,,5,0.903566361840892
+hcc_vs_healthy,EE85980,0,Healthy,Healthy,5,0.8968904716881112
+hcc_vs_healthy,EE86002,1,Liver cancer,,5,0.9894285015301804
+hcc_vs_healthy,EE85775,0,Healthy,Healthy,6,0.9932463288293732
+hcc_vs_healthy,EE85777,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85807,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85835,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85845,1,Liver cancer,,6,0.9999999999998626
+hcc_vs_healthy,EE85847,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85900,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85939,1,Liver cancer,,6,0.9999988065143344
+hcc_vs_healthy,EE85941,0,Healthy,Healthy,6,0.9997800408437824
+hcc_vs_healthy,EE85978,1,Liver cancer,,6,0.8313580789844688
+hcc_vs_healthy,EE85983,1,Liver cancer,,6,1.0
+hcc_vs_healthy,EE85987,0,Healthy,Healthy,6,0.7695262482806364
+hcc_vs_healthy,EE85798,1,Liver cancer,,7,1.0
+hcc_vs_healthy,EE85802,1,Liver cancer,,7,1.0
+hcc_vs_healthy,EE85821,1,Liver cancer,,7,4.0454596456870364e-14
+hcc_vs_healthy,EE85858,1,Liver cancer,,7,1.0
+hcc_vs_healthy,EE85867,1,Liver cancer,,7,1.0
+hcc_vs_healthy,EE85925,1,Liver cancer,,7,1.0
+hcc_vs_healthy,EE85928,0,Healthy,Healthy,7,3.6419441744356057e-07
+hcc_vs_healthy,EE85937,0,Healthy,Healthy,7,3.571476162563553e-05
+hcc_vs_healthy,EE85963,0,Healthy,Healthy,7,1.1723025770026638e-22
+hcc_vs_healthy,EE85974,1,Liver cancer,,7,0.9999999962330764
+hcc_vs_healthy,EE85991,1,Liver cancer,,7,8.16256541184841e-06
+hcc_vs_healthy,EE86000,1,Liver cancer,,7,0.0084268681885238
+hcc_vs_healthy,EE85769,1,Liver cancer,,8,0.999998510310885
+hcc_vs_healthy,EE85770,0,Healthy,Healthy,8,0.4857919851590915
+hcc_vs_healthy,EE85795,0,Healthy,Healthy,8,0.4527259487206009
+hcc_vs_healthy,EE85827,1,Liver cancer,,8,0.9779002148078656
+hcc_vs_healthy,EE85864,1,Liver cancer,,8,0.6860871805004833
+hcc_vs_healthy,EE85872,1,Liver cancer,,8,0.9999955458344862
+hcc_vs_healthy,EE85892,1,Liver cancer,,8,0.8668399970127845
+hcc_vs_healthy,EE85893,1,Liver cancer,,8,0.9999974146568826
+hcc_vs_healthy,EE85898,0,Healthy,Healthy,8,0.5319214279930964
+hcc_vs_healthy,EE85907,1,Liver cancer,,8,0.9604421736843698
+hcc_vs_healthy,EE85935,1,Liver cancer,,8,0.8688823242248085
+hcc_vs_healthy,EE85973,1,Liver cancer,,8,0.9897694166031312
+hcc_vs_healthy,EE85759,1,Liver cancer,,9,5.7352256909886535e-05
+hcc_vs_healthy,EE85773,1,Liver cancer,,9,7.439598974474591e-07
+hcc_vs_healthy,EE85793,1,Liver cancer,,9,0.0266585310320127
+hcc_vs_healthy,EE85813,1,Liver cancer,,9,0.2658912308390899
+hcc_vs_healthy,EE85851,1,Liver cancer,,9,0.99994414394036
+hcc_vs_healthy,EE85881,1,Liver cancer,,9,0.0007834720421435
+hcc_vs_healthy,EE85885,1,Liver cancer,,9,0.1141656357323657
+hcc_vs_healthy,EE85908,0,Healthy,Healthy,9,3.172498012040763e-07
+hcc_vs_healthy,EE85936,0,Healthy,Healthy,9,5.057547555985394e-09
+hcc_vs_healthy,EE85962,1,Liver cancer,,9,4.1501056156685905e-09
+hcc_vs_healthy,EE85985,0,Healthy,Healthy,9,1.6921894076519014e-10
+hcc_vs_healthy,EE85997,1,Liver cancer,,9,0.9999999999994564
+hcc_vs_healthy,EE85756,0,Healthy,Healthy,10,0.6686612432155756
+hcc_vs_healthy,EE85765,1,Liver cancer,,10,0.762360487509049
+hcc_vs_healthy,EE85788,1,Liver cancer,,10,0.6218472004705655
+hcc_vs_healthy,EE85791,0,Healthy,Healthy,10,0.7158106596158998
+hcc_vs_healthy,EE85862,1,Liver cancer,,10,0.7646144993936786
+hcc_vs_healthy,EE85888,1,Liver cancer,,10,0.763481561425124
+hcc_vs_healthy,EE85916,1,Liver cancer,,10,0.7158181813496305
+hcc_vs_healthy,EE85947,1,Liver cancer,,10,0.8115313386331364
+hcc_vs_healthy,EE85959,0,Healthy,Healthy,10,0.763339437682149
+hcc_vs_healthy,EE85968,1,Liver cancer,,10,0.7640958834766999
+hcc_vs_healthy,EE85982,1,Liver cancer,,10,0.8107958147947442
+hcc_vs_healthy,EE85990,1,Liver cancer,,10,0.8110321048679437

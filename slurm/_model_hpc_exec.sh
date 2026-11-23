@@ -1,15 +1,38 @@
 # Shared execution helper for the slurm/ model-experiment wrappers.
 # Not an sbatch script — source it from a wrapper, then call run_model_hpc "$@".
 #
-# The apptainer invocation (bind list included) is copied verbatim from the
-# retired run_model.sh, so every wrapper runs model_hpc.py in the exact same
-# container environment as the historical runs.
+# Every wrapper runs model_hpc.py through the same apptainer invocation
+# (bind list included) defined here.
 #
 # REQUIREMENT: submit jobs from the repository root (all binds are relative),
-# i.e. `sbatch slurm/<wrapper>.sh ...`. This is the same requirement the old
-# run_model.sh already had.
+# i.e. `sbatch slurm/<wrapper>.sh ...`.
+#
+# Workstation mode (no slurm, no apptainer): MODEL_HPC_LOCAL=1 runs the same
+# model_hpc.py call through the repository's pixi environment (`pixi install`
+# once; pixi.lock pins the container's library versions). Every wrapper can be
+# executed as a plain shell script this way, e.g.
+#   MODEL_HPC_LOCAL=1 CORES=16 EXPERIMENT_NAME=... sh slurm/nested_cv_rna.sh
+# CORES replaces the wrapper's -c value (the cluster scripts ask for 32-64).
+#
+# EXCLUDE_SAMPLES=<file> appends --exclude_samples <file> to every call (the
+# sensitivity runs without the 30 deep-sequenced healthy samples:
+# EXCLUDE_SAMPLES=accessory_files/cris_exclude_deep_healthy.txt, with an
+# EXPERIMENT_NAME carrying the _nodeep suffix the exporters look for).
+. slurm/_site.sh   # site settings: slurm/site.env (scheduler, storage paths, container, Apptainer cache)
 
 run_model_hpc() {
+	if [ -n "${EXCLUDE_SAMPLES}" ]; then
+		set -- "$@" --exclude_samples "${EXCLUDE_SAMPLES}"
+	fi
+	if [ -n "${CORES}" ]; then
+		# replace the wrapper's "-c <n>" (always the first two arguments)
+		[ "$1" = "-c" ] && { shift 2; set -- -c "${CORES}" "$@"; }
+	fi
+	if [ -n "${MODEL_HPC_LOCAL}" ]; then
+		echo "[local] pixi run python -u src/comp/model_hpc.py $*"
+		pixi run python -u src/comp/model_hpc.py "$@"
+		return $?
+	fi
 	apptainer exec --writable-tmpfs --pwd /opt/app --containall \
 		--bind src/:/opt/app/src/ \
 		--bind features.py:/opt/app/features.py \
@@ -19,22 +42,16 @@ run_model_hpc() {
 		--bind nested_cv_results/:/opt/app/nested_cv_results/ \
 		--bind nested_cv_results_cris/:/opt/app/nested_cv_results_cris/ \
 		--bind nested_cv_results_jiang/:/opt/app/nested_cv_results_jiang/ \
-		--bind nested_cv_results_lucas/:/opt/app/nested_cv_results_lucas/ \
-		--bind nested_cv_results_mathios/:/opt/app/nested_cv_results_mathios/ \
 		--bind results/:/opt/app/results/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/cris/:/opt/app/cris/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/jiang/:/opt/app/jiang/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/lucas/:/opt/app/lucas/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/mathios/:/opt/app/mathios/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/GCfix_Software/:/opt/app/GC \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/TSSClassification/data/:/opt/app/data/ \
-		--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/GCfix_Software/hg38/:/opt/app/hg38 \
+		--bind ${PREPROCESSING_DIR}/cris/:/opt/app/cris/ \
+		--bind ${PREPROCESSING_DIR}/jiang/:/opt/app/jiang/ \
+		--bind ${GCFIX_DIR}/:/opt/app/GC \
+		--bind ${GCFIX_DIR}/hg38/:/opt/app/hg38 \
 		--bind extracted_features/:/opt/app/extracted_features/ \
-			./comp.sif pixi run python -u src/comp/model_hpc.py "$@"
+			${CONTAINER} pixi run python -u src/comp/model_hpc.py "$@"
 }
 
-# Standard log header shared by the wrappers (mirrors the old run_model.sh echo block,
-# so new logs stay grep-compatible with logs/slurm_archive/).
+# Standard log header shared by the wrappers.
 print_job_header() {
 	echo "============================================"
 	echo "Running job: ${JOB_NAME}"
@@ -46,6 +63,9 @@ print_job_header() {
 	echo "Mode Arguments: ${MODE_ARGS}"
 	if [ ! -z "${CANCER_TYPES}" ]; then
 		echo "Cancer Types: ${CANCER_TYPES}"
+	fi
+	if [ -n "${EXCLUDE_SAMPLES}" ]; then
+		echo "Excluded samples: ${EXCLUDE_SAMPLES}"
 	fi
 	echo "============================================"
 	echo ""

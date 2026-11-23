@@ -1,35 +1,22 @@
-"""Export source data for manuscript Figure 3 (and Supplementary Figure S3).
+"""Source data for Figure 3 and Figure S3: the data-driven model against the RNA and ATAC
+comparators and ichorCNA on healthy vs BRCA/CRC (Cristiano cohort).
 
-Figure 3: nested-CV comparison of the data-driven model against the ATAC and
-RNA baselines and ichorCNA on healthy vs BRCA+CRC (Cristiano cohort):
-  a) mean ROC over the 10 outer folds,
-  b) classification metrics at the fold-specific 95%-specificity threshold,
-  c) paired posterior differences relative to the data-driven model by stage.
-Figure S3 re-uses the same source data with ichorCNA at the fixed TF >= 0.03
-operating point.
+Inputs (result directories in _common.py, cohort variant from COHORT_VARIANT):
+NESTED_FULL_DIR (fully nested data-driven run), RNA_RESULT_DIR (Zhu regions, rcov),
+ATAC_RESULT_DIR (Ulz TFBS) and accessory_files/cris_stage_vaf_coverage_ichor_aggregate.csv.
+RNA and ATAC classifiers are chosen per outer fold on inner-CV scores.
 
-Writes:
-  src/figures/data/fig3_predictions.csv
-      one row per (method, sample): out-of-fold prediction score, fold id,
-      label, fold-specific train-derived 95%-specificity threshold
-      (data_driven / rna / atac), plus every ichorCNA sample (score =
-      ichorCNA tumor fraction; samples outside the BRCA/CRC task carry
-      fold = NA and enter only the per-fold ichorCNA threshold derivation,
-      exactly as in the original notebook).
-  src/figures/data/fig3_config.csv
-      the selected configuration per method (provenance).
+Writes to src/figures/data/<COHORT_VARIANT>/: fig3_predictions.csv (out-of-fold score, fold,
+label and 95%-specificity threshold per method and sample; ichorCNA rows outside the task have
+fold = NA), fig3_config.csv (configuration per method) and fig3_model_selection.csv (per-fold
+selection table for the QC section of fig3.ipynb).
 
-Source experiments (see src/figures/export/_common.py for the manifest):
-  data_driven : nested_cv_results_cris/brca_crc_dd (+ pre-fix dir for the
-                other ranking functions, used only for model selection)
-  rna         : nested_cv_results_cris/brca_crc_rna
-  atac        : nested_cv_results_cris/brca_crc_atac
-  ichorcna    : accessory_files/cris_stage_vaf_coverage_ichor_aggregate.csv
-Selection replicates src/comp/hypo_nestedcv_plots.ipynb: best mean AUC over
-the grid, with the data-driven gene count then pinned to all 14,224 TSSs.
+Run from the repository root:
+    python src/figures/export/export_fig3.py
 """
 
 import os
+import pickle
 import sys
 
 import numpy as np
@@ -39,12 +26,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _common import (  # noqa: E402
     ATAC_RESULT_DIR,
     DATA_DIR,
-    DD_RESULT_DIRS,
     ICHOR_AGG_CSV,
-    ICHOR_CSV,
+    NESTED_FULL_DIR,
     RNA_RESULT_DIR,
+    apply_rerun_ichorcna_tf,
     assert_predictions_match_stored,
     best_mean_auc_config,
+    excluded_sample_ids,
     load_results,
     rp,
 )
@@ -53,60 +41,83 @@ KEEP = [
     "feature", "classifier", "top_genes", "fold", "auc_full_model",
     "test_sample_ids", "y_pred_proba", "y_test",
     "full_model_thresholds", "confusion_matrix_full_model",
+    # optional (absent in older pickles): inner-CV score of the
+    # winning hyperparameters — load_results keeps them only when present
+    "selection_type", "inner_cv_best_score",
 ]
+
+
+def nested_classifier_selection(cand: pd.DataFrame, locked_feature: str,
+                                result_dir: str, label: str) -> tuple[dict, dict]:
+    """Per outer fold, the classifier with the best inner-CV AUROC on a locked feature.
+    Returns ({'sel': per-fold rows, 'candidates': candidates with inner scores},
+    post-hoc best-mean-outer-AUC config as a diagnostic)."""
+    cand = cand[cand["feature"] == locked_feature].copy()
+    if "inner_cv_best_score" not in cand.columns or cand["inner_cv_best_score"].isna().any():
+        scores_path = rp(result_dir, "inner_cv_scores.csv")
+        assert os.path.exists(scores_path), (
+            f"{label}: pickles lack inner_cv_best_score and {scores_path} is missing - rerun the "
+            f"nested CV of {result_dir} with the current model_hpc.py")
+        sc = pd.read_csv(scores_path)
+        sc = sc[sc["feature"] == locked_feature][["classifier", "fold", "inner_cv_auc"]]
+        cand = cand.drop(columns=[c for c in ["inner_cv_best_score"] if c in cand.columns])
+        cand = cand.merge(sc.rename(columns={"inner_cv_auc": "inner_cv_best_score"}),
+                          on=["classifier", "fold"], how="left")
+        assert cand["inner_cv_best_score"].notna().all(), f"{label}: inner scores incomplete"
+        print(f"  {label}: inner-CV scores taken from {os.path.basename(result_dir)}/inner_cv_scores.csv")
+    sel = cand.loc[cand.groupby("fold")["inner_cv_best_score"].idxmax()].sort_values("fold")
+    posthoc = best_mean_auc_config(cand, ["classifier"])
+    chosen = sel["classifier"].value_counts().to_dict()
+    posthoc["per_fold"] = chosen
+    print(f"  {label}: fully nested per-fold classifier choice {chosen}; mean outer AUC "
+          f"{sel['auc_full_model'].mean():.4f} (post-hoc best-of-{cand['classifier'].nunique()} "
+          f"{posthoc['classifier']} would give {posthoc['mean_auc']:.4f}, "
+          f"optimism {posthoc['mean_auc'] - sel['auc_full_model'].mean():+.4f})")
+    return {"sel": sel, "candidates": cand}, posthoc
+
+
+def load_nested_full() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Per-fold table (columns renamed to the load_results schema) and the run's OOF CSV."""
+    with open(rp(NESTED_FULL_DIR, "nested_full_per_fold.pkl"), "rb") as fh:
+        per_fold = pickle.load(fh)
+    oof = pd.read_csv(rp(NESTED_FULL_DIR, "nested_full_oof_predictions.csv"))
+    per_fold = per_fold.rename(columns={"test_auc": "auc_full_model", "n_top_genes": "top_genes"})
+    return per_fold, oof
 
 
 def main() -> None:
     os.makedirs(DATA_DIR, exist_ok=True)
 
     # ------------------------------------------------------------------ load
-    dd_frames = []
-    for wf, dd_dir in DD_RESULT_DIRS.items():
-        dd_frames.append(load_results(f"{dd_dir}/results*{wf}.pkl", KEEP,
-                                      extra={"weighting_function": wf,
-                                             "source_dir": os.path.basename(dd_dir)}))
-    dd = pd.concat(dd_frames, ignore_index=True)
-    dd["top_genes"] = dd["top_genes"].replace(15000, 14224)
+    dd_sel, dd_oof = load_nested_full()
     rna = load_results(f"{RNA_RESULT_DIR}/results*.pkl", KEEP)
     atac = load_results(f"{ATAC_RESULT_DIR}/results*.pkl", KEEP)
-    print(f"loaded: dd {len(dd)} rows, rna {len(rna)} rows, atac {len(atac)} rows")
+    print(f"loaded: dd nested_full {len(dd_sel)} folds, rna {len(rna)} rows, atac {len(atac)} rows")
 
     # ------------------------------------------------------- model selection
-    dd_pool = dd[dd["feature"] == "griffin_diff"]
-    best_dd = best_mean_auc_config(dd_pool, ["classifier", "weighting_function", "top_genes"])
-    # The manuscript figure pins the gene count to all retained TSSs (14,224).
-    # At that k the ranking function selects nothing (every gene is kept), so
-    # all five weighting functions are literally the same model — asserted
-    # below. We pin weighting_function = "mean_diff" because only that run
-    # lives in the post-fix directory (train-derived operating thresholds;
-    # the pre-fix rows carry test-derived thresholds, i.e. the leak the fix
-    # removed) and because its stored thresholds reproduce the submitted
-    # Fig 3b bars exactly (precision .87 / recall .79 / F1 .82 / acc .90 /
-    # spec .95).
-    tie_check = dd[(dd["feature"] == "griffin_diff")
-                   & (dd["classifier"] == best_dd["classifier"])
-                   & (dd["top_genes"] == 14224)]
-    tie_aucs = tie_check.groupby("weighting_function")["auc_full_model"].mean()
-    assert np.allclose(tie_aucs, tie_aucs.iloc[0]), (
-        "expected identical AUCs across weighting functions at top_genes=14224 "
-        f"(all genes kept), got: {tie_aucs.to_dict()}")
-    best_dd["weighting_function"] = "mean_diff"
-    dd_sel = dd[(dd["feature"] == "griffin_diff")
-                & (dd["classifier"] == best_dd["classifier"])
-                & (dd["weighting_function"] == "mean_diff")
-                & (dd["top_genes"] == 14224)]
-    best_rna = best_mean_auc_config(rna[rna["feature"] == "rcov"], ["classifier"])
-    rna_sel = rna[(rna["feature"] == "rcov") & (rna["classifier"] == best_rna["classifier"])]
-    best_atac = best_mean_auc_config(atac[atac["feature"] == "ulz_atac_tfbs_features"], ["classifier"])
-    atac_sel = atac[(atac["feature"] == "ulz_atac_tfbs_features")
-                    & (atac["classifier"] == best_atac["classifier"])]
+    # Data-driven: chosen inside each fold. RNA / ATAC: classifier chosen per outer fold on
+    # inner-CV scores (from the pickles, else inner_cv_scores.csv).
+    rna_sel, best_rna = nested_classifier_selection(rna, "rcov", RNA_RESULT_DIR, "rna")
+    atac_sel, best_atac = nested_classifier_selection(atac, "ulz_atac_tfbs_features",
+                                                      ATAC_RESULT_DIR, "atac")
+    rna = rna_sel.pop("candidates")
+    atac = atac_sel.pop("candidates")
+    rna_sel, atac_sel = rna_sel["sel"], atac_sel["sel"]
 
     for name, sel in [("data_driven", dd_sel), ("rna", rna_sel), ("atac", atac_sel)]:
         assert len(sel) == 10, f"{name}: expected 10 folds, got {len(sel)}"
 
+    dd_modal = {
+        "feature": dd_sel["feature"].mode().iloc[0],
+        "classifier": dd_sel["classifier"].mode().iloc[0],
+        "weighting_function": dd_sel["selection_type"].mode().iloc[0],
+        "top_genes": int(dd_sel["top_genes"].mode().iloc[0]),
+    }
+    n_distinct = len(dd_sel[["feature", "selection_type", "top_genes", "classifier"]].drop_duplicates())
     print("selected configs:")
-    print(f"  data_driven: {best_dd} -> pinned top_genes=14224, "
-          f"mean AUC {dd_sel['auc_full_model'].mean():.4f} ± {dd_sel['auc_full_model'].std(ddof=0):.4f}")
+    print(f"  data_driven: chosen per fold (fully nested), modal = {dd_modal}, "
+          f"{n_distinct} distinct config(s); mean AUC "
+          f"{dd_sel['auc_full_model'].mean():.4f} ± {dd_sel['auc_full_model'].std(ddof=0):.4f}")
     print(f"  rna:         {best_rna}")
     print(f"  atac:        {best_atac}")
 
@@ -120,13 +131,20 @@ def main() -> None:
         "assignment below would be ambiguous")
     print("fold partitions identical across data_driven / rna / atac")
 
+    # cross-check the per-fold table against the run's own OOF CSV
+    oof_map = dict(zip(dd_oof["sample_id"], dd_oof["y_pred_proba"]))
+    for _, row in dd_sel.iterrows():
+        for sid, s in zip(row["test_sample_ids"], row["y_pred_proba"]):
+            assert np.isclose(oof_map[sid], s), f"dd OOF mismatch for {sid}"
+    print("data_driven per-fold scores match nested_full_oof_predictions.csv")
+
     # ------------------------------------------------ score/threshold checks
     for name, sel in [("data_driven", dd_sel), ("rna", rna_sel), ("atac", atac_sel)]:
         assert_predictions_match_stored(sel, name)
         has_train_fields = all("train_fpr_at_95spec" in r["full_model_thresholds"]
                                for _, r in sel.iterrows())
         print(f"  {name}: stored AUC + 95%-spec confusion matrices reproduced; "
-              f"post-fix (train-derived) threshold fields present: {has_train_fields}")
+              f"train-derived threshold fields present: {has_train_fields}")
 
     # ----------------------------------------------------------- assemble
     records = []
@@ -139,27 +157,25 @@ def main() -> None:
                                 "score": float(s), "threshold_95spec": thr})
     pred = pd.DataFrame(records)
 
-    # ichorCNA: every sample in the aggregate CSV, with the fold in which it
-    # appears as a test sample (NA when outside the BRCA/CRC task). The
-    # original notebook derives fold thresholds from ALL samples not in the
-    # fold's test set — including cancer types outside this task — so those
-    # rows must be exported too.
-    #
-    # The aggregate CSV contains 16 healthy samples twice (byte-identical
-    # rows). The original analysis used the file as-is, and the duplicate
-    # weighting is what reproduces the submitted ichorCNA AUC of
-    # 0.600 ± 0.086 (deduplicated it becomes 0.602). We export one row per
-    # sample with n_rows_in_source recording the multiplicity; the figure
-    # notebook repeats rows by that column to match the original computation.
+    # ichorCNA: every sample, with its test fold (NA outside the task; those rows only feed
+    # the per-fold ichorCNA thresholds).
     ichor = pd.read_csv(rp(ICHOR_AGG_CSV), index_col=0)
     multiplicity = ichor.groupby("ID").size()
     dup_ids = multiplicity[multiplicity > 1]
-    for sid in dup_ids.index:
-        grp = ichor[ichor["ID"] == sid]
-        assert (grp.nunique() <= 1).all(), f"duplicate rows for {sid} are not identical"
-    ichor = ichor.drop_duplicates(subset="ID")
-    print(f"ichorCNA CSV: {len(ichor)} unique samples "
-          f"({len(dup_ids)} duplicated, all byte-identical)")
+    if len(dup_ids):
+        # duplicated rows must be identical; tumour fractions are replaced below
+        for sid in dup_ids.index:
+            grp = ichor[ichor["ID"] == sid]
+            assert (grp.nunique() <= 1).all(), f"duplicate rows for {sid} are not identical"
+        ichor = ichor.drop_duplicates(subset="ID")
+    # samples excluded by the cohort variant also leave the ichorCNA arm
+    excl = set(excluded_sample_ids())
+    if excl:
+        n_before = len(ichor)
+        ichor = ichor[~ichor["ID"].isin(excl)]
+        print(f"ichorCNA CSV: {n_before - len(ichor)} excluded sample(s) removed (cohort variant)")
+    ichor = apply_rerun_ichorcna_tf(ichor)   # tumour fractions of the rerun (cohort panel of normals)
+    print(f"ichorCNA CSV: {len(ichor)} unique samples")
 
     sample_to_fold = {sid: f for f, ids in dd_folds.items() for sid in ids}
     ichor_rows = pd.DataFrame({
@@ -171,40 +187,87 @@ def main() -> None:
         "threshold_95spec": np.nan,
     })
     pred = pd.concat([pred, ichor_rows], ignore_index=True)
-    pred["n_rows_in_source"] = np.where(
-        (pred["method"] == "ichorcna") & pred["sample_id"].isin(dup_ids.index), 2, 1)
+    # every source row is unique; column kept for the notebook
+    pred["n_rows_in_source"] = 1
 
     # stage + disease annotations (Cristiano et al. publication metadata)
     ann = ichor.set_index("ID")
-    pred["stage"] = pred["sample_id"].map(ann["Stage"])
+    # strip: one stage I patient is stored as "I "
+    pred["stage"] = pred["sample_id"].map(ann["Stage"].astype("string").str.strip())
     pred["disease"] = pred["sample_id"].map(ann["disease"])
+    task_cancer = pred[(pred["method"] == "data_driven") & (pred["y_true"] == 1)]
+    n_nostage = int(task_cancer["stage"].isna().sum())
+    if n_nostage:
+        print(f"WARNING: {n_nostage} task cancer sample(s) lack a Stage annotation "
+              f"({sorted(task_cancer.loc[task_cancer['stage'].isna(), 'sample_id'])[:5]} ...)")
 
     n_task = pred[pred["method"] == "data_driven"]["sample_id"].nunique()
     print(f"task samples: {n_task}; ichorCNA rows: {len(ichor_rows)} "
-          f"({ichor_rows['fold'].notna().sum()} inside the task folds)")
+          f"({int(ichor_rows['fold'].notna().sum())} inside the task folds)")
 
     out = os.path.join(DATA_DIR, "fig3_predictions.csv")
     pred.to_csv(out, index=False)
     print(f"wrote {out} ({len(pred)} rows)")
 
     cfg = pd.DataFrame([
-        {"method": "data_driven", "feature": "griffin_diff",
-         "classifier": best_dd["classifier"], "weighting_function": best_dd["weighting_function"],
-         "top_genes": 14224, "source_dir": DD_RESULT_DIRS["mean_diff"],
-         "selection_mean_auc": best_dd["mean_auc"]},
-        {"method": "rna", "feature": "rcov", "classifier": best_rna["classifier"],
+        {"method": "data_driven", "feature": dd_modal["feature"],
+         "classifier": dd_modal["classifier"], "weighting_function": dd_modal["weighting_function"],
+         "top_genes": 14224 if dd_modal["top_genes"] >= 14224 else dd_modal["top_genes"],
+         "source_dir": NESTED_FULL_DIR,
+         "selection_mean_auc": float(dd_sel["auc_full_model"].mean()),
+         "note": f"fully nested: config chosen per fold; modal shown ({n_distinct} distinct)"},
+        {"method": "rna", "feature": "rcov",
+         "classifier": rna_sel["classifier"].mode().iloc[0],
          "weighting_function": "", "top_genes": "", "source_dir": RNA_RESULT_DIR,
-         "selection_mean_auc": best_rna["mean_auc"]},
-        {"method": "atac", "feature": "ulz_atac_tfbs_features", "classifier": best_atac["classifier"],
+         "selection_mean_auc": float(rna_sel["auc_full_model"].mean()),
+         "note": f"fully nested: classifier chosen per fold on inner CV {best_rna['per_fold']}; "
+                 f"modal shown (post-hoc best-of-6 {best_rna['classifier']} would give {best_rna['mean_auc']:.4f})"},
+        {"method": "atac", "feature": "ulz_atac_tfbs_features",
+         "classifier": atac_sel["classifier"].mode().iloc[0],
          "weighting_function": "", "top_genes": "", "source_dir": ATAC_RESULT_DIR,
-         "selection_mean_auc": best_atac["mean_auc"]},
+         "selection_mean_auc": float(atac_sel["auc_full_model"].mean()),
+         "note": f"fully nested: classifier chosen per fold on inner CV {best_atac['per_fold']}; "
+                 f"modal shown (post-hoc best-of-6 {best_atac['classifier']} would give {best_atac['mean_auc']:.4f})"},
         {"method": "ichorcna", "feature": "ichorcna_tf", "classifier": "",
          "weighting_function": "", "top_genes": "", "source_dir": ICHOR_AGG_CSV,
-         "selection_mean_auc": ""},
+         "selection_mean_auc": "", "note": ""},
     ])
     out_cfg = os.path.join(DATA_DIR, "fig3_config.csv")
     cfg.to_csv(out_cfg, index=False)
     print(f"wrote {out_cfg}")
+
+    # ------------------------------------------- per-fold selection audit trail
+    # data_driven: per-fold winner plus inner scores of the other features;
+    # rna/atac: every candidate classifier on the locked feature
+    sel_rows = []
+    for _, r in dd_sel.iterrows():
+        sel_rows.append({"method": "data_driven", "fold": int(r["fold"]),
+                         "feature": r["feature"], "classifier": r["classifier"],
+                         "selection_type": r["selection_type"], "top_genes": r["top_genes"],
+                         "inner_cv_auc": float(r["inner_best_score"]),
+                         "test_auc": float(r["auc_full_model"]), "chosen": True})
+        for feat, sc in r["inner_best_score_per_feature"].items():
+            if feat == r["feature"]:
+                continue
+            sel_rows.append({"method": "data_driven", "fold": int(r["fold"]),
+                             "feature": feat, "classifier": np.nan,
+                             "selection_type": np.nan, "top_genes": np.nan,
+                             "inner_cv_auc": float(sc), "test_auc": np.nan, "chosen": False})
+    for method, cand, locked, sel in [
+            ("rna", rna, "rcov", rna_sel),
+            ("atac", atac, "ulz_atac_tfbs_features", atac_sel)]:
+        chosen_pairs = set(zip(sel["fold"].astype(int), sel["classifier"]))
+        for _, r in cand[cand["feature"] == locked].iterrows():
+            sel_rows.append({"method": method, "fold": int(r["fold"]),
+                             "feature": r["feature"], "classifier": r["classifier"],
+                             "selection_type": r.get("selection_type", "none"),
+                             "top_genes": r["top_genes"],
+                             "inner_cv_auc": float(r["inner_cv_best_score"]),
+                             "test_auc": float(r["auc_full_model"]),
+                             "chosen": (int(r["fold"]), r["classifier"]) in chosen_pairs})
+    out_sel = os.path.join(DATA_DIR, "fig3_model_selection.csv")
+    pd.DataFrame(sel_rows).to_csv(out_sel, index=False)
+    print(f"wrote {out_sel} ({len(sel_rows)} rows)")
 
 
 if __name__ == "__main__":

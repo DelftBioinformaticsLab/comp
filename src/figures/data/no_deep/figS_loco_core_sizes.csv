@@ -1,0 +1,81 @@
+arm,left_out,fold,n_core
+seen,,1,5
+loco,Bile duct cancer,1,8
+loco,Breast cancer,1,8
+loco,Colorectal cancer,1,8
+loco,Gastric cancer,1,7
+loco,Lung cancer naive nsclc,1,8
+loco,Ovarian cancer,1,6
+loco,Pancreatic cancer,1,8
+seen,,2,8
+loco,Bile duct cancer,2,7
+loco,Breast cancer,2,7
+loco,Colorectal cancer,2,7
+loco,Gastric cancer,2,8
+loco,Lung cancer naive nsclc,2,5
+loco,Ovarian cancer,2,7
+loco,Pancreatic cancer,2,7
+seen,,3,5
+loco,Bile duct cancer,3,5
+loco,Breast cancer,3,7
+loco,Colorectal cancer,3,5
+loco,Gastric cancer,3,10
+loco,Lung cancer naive nsclc,3,6
+loco,Ovarian cancer,3,5
+loco,Pancreatic cancer,3,6
+seen,,4,4
+loco,Bile duct cancer,4,4
+loco,Breast cancer,4,4
+loco,Colorectal cancer,4,3
+loco,Gastric cancer,4,7
+loco,Lung cancer naive nsclc,4,5
+loco,Ovarian cancer,4,4
+loco,Pancreatic cancer,4,6
+seen,,5,3
+loco,Bile duct cancer,5,7
+loco,Breast cancer,5,7
+loco,Colorectal cancer,5,8
+loco,Gastric cancer,5,6
+loco,Lung cancer naive nsclc,5,9
+loco,Ovarian cancer,5,9
+loco,Pancreatic cancer,5,8
+seen,,6,2
+loco,Bile duct cancer,6,6
+loco,Breast cancer,6,6
+loco,Colorectal cancer,6,6
+loco,Gastric cancer,6,10
+loco,Lung cancer naive nsclc,6,7
+loco,Ovarian cancer,6,7
+loco,Pancreatic cancer,6,6
+seen,,7,4
+loco,Bile duct cancer,7,5
+loco,Breast cancer,7,6
+loco,Colorectal cancer,7,6
+loco,Gastric cancer,7,8
+loco,Lung cancer naive nsclc,7,7
+loco,Ovarian cancer,7,6
+loco,Pancreatic cancer,7,6
+seen,,8,6
+loco,Bile duct cancer,8,5
+loco,Breast cancer,8,6
+loco,Colorectal cancer,8,8
+loco,Gastric cancer,8,9
+loco,Lung cancer naive nsclc,8,5
+loco,Ovarian cancer,8,5
+loco,Pancreatic cancer,8,7
+seen,,9,9
+loco,Bile duct cancer,9,8
+loco,Breast cancer,9,5
+loco,Colorectal cancer,9,7
+loco,Gastric cancer,9,8
+loco,Lung cancer naive nsclc,9,7
+loco,Ovarian cancer,9,6
+loco,Pancreatic cancer,9,9
+seen,,10,3
+loco,Bile duct cancer,10,5
+loco,Breast cancer,10,6
+loco,Colorectal cancer,10,4
+loco,Gastric cancer,10,9
+loco,Lung cancer naive nsclc,10,7
+loco,Ovarian cancer,10,5
+loco,Pancreatic cancer,10,6

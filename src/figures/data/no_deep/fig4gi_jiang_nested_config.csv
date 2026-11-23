@@ -1,0 +1,3 @@
+task,n_samples,n_hcc,n_control,control_groups,mean_test_auc,std_test_auc,oof_auc_pooled,modal_feature,modal_selection_type,modal_n_top_genes,modal_classifier,n_distinct_configs,source_dir
+hcc_vs_nonhcc,225,90,135,Cirrhosis | Healthy | Hepatitis B,0.9018925518925519,0.07610039692905705,0.8750617283950618,griffin_diff,weighted,10000,Multi-Layer Perceptron,8,nested_cv_results_jiang/nested_full_jiang_hcc_nested_full
+hcc_vs_healthy,122,90,32,Healthy,0.9287037037037038,0.06204394654722573,0.8166666666666667,griffin_diff,mean_diff,10000,Multi-Layer Perceptron,8,nested_cv_results_jiang/nested_full_jiang_hcc_vs_healthy_nested_full

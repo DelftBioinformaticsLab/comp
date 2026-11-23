@@ -1,14 +1,12 @@
 #!/bin/bash
-#SBATCH --account=ewi-insy-prb
-#SBATCH --partition=insy,general
 #SBATCH --job-name=jiang_coverage
-#SBATCH --qos=short
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4GB
+#SBATCH --mem=3277MB
 #SBATCH --array=1-249
 #SBATCH --output=logs/jiang_coverage_%A_%a.out
 #SBATCH --error=logs/jiang_coverage_%A_%a.out
+. slurm/_site.sh   # site settings: slurm/site.env (scheduler, storage paths, container, Apptainer cache)
 
 echo "=========================================="
 echo "Jiang Mean Coverage - Array Task"
@@ -30,8 +28,8 @@ apptainer exec --writable-tmpfs --pwd /opt/app --containall \
     --bind src/:/opt/app/src/ \
     --bind input/:/opt/app/input/ \
     --bind results/:/opt/app/results/ \
-    --bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/jiang/:/opt/app/jiang/ \
-    ./comp.sif pixi run python -u src/comp/compute_mean_coverage.py \
+    --bind ${PREPROCESSING_DIR}/jiang/:/opt/app/jiang/ \
+    ${CONTAINER} pixi run python -u src/comp/compute_mean_coverage.py \
         "/opt/app/${BAM_FILE}" \
         "/opt/app/results/jiang_coverage/${SAMPLE}.csv"
 

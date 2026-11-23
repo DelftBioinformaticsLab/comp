@@ -1,17 +1,51 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-HPC-optimized script for running nested cross-validation on genomic data.
+HPC entry point for every cfDNA classification experiment in this project.
 
-It iterates through multiple classifiers, genomic features, and feature selection
-settings (top_genes), running each combination as an independent parallel job.
-The results for each experiment are saved to a unique .pkl file.
+One script, one CLI, many modes. The SLURM wrappers in slurm/ all end up calling
+`python src/comp/model_hpc.py <mode flag> ...`. Mode flags map onto functions here:
+
+    CLI mode flag                                 implementation
+    -------------------------------------------  ------------------------------------------
+    --run_best_model_search                      run_best_model_search
+    --run_label_shuffle_experiment               run_label_shuffle_experiment
+    --run_nested_cv                              run_single_experiment / _no_selection
+    --run_nested_cv_full [...]                   run_nested_experiment_full
+      (also the comparator region sweep: the same fully nested procedure, k grid
+       included, on the RNA (Zhu) region set via --no_gene_selection --features_dir
+       and on the ATAC (Ulz TFBS) matrix via --predefined_feature_matrix; see
+       slurm/nested_full.sh FEATURE_SET=rna|atac)
+    --run_cross_depth_eval                       run_cross_depth_eval
+    --recompute_inner_scores DIR                 run_nested_classifier_selection
+    --run_baseline_aggregate                     run_baseline_aggregate_study
+    --validate_external                          validate_best_model_on_external_dataset
+    --validate_external + --comprehensive_...    run_comprehensive_external_validation
+    --run_within_dataset_generalization_train    run_within_dataset_generalization_training
+    --run_within_dataset_generalization_eval     run_within_dataset_generalization_evaluation
+    --run_within_dataset_generalization_compare  run_within_dataset_generalization_compare
+
+Before dispatching to a mode, main() does the work every mode shares: resolve the
+cohort from the metadata file (or manifest), load the feature matrices (per-sample
+CSVs or a predefined .npy matrix), apply blacklist/duplicate-column filtering,
+normalize, and build the label arrays. The stages are marked with STAGE banners
+inside main().
+
+File layout (top to bottom):
+    - data loading & preprocessing helpers
+    - feature selection (TopGeneSelector) and operating-point threshold helpers
+    - shared evaluation helpers (per-fold and per-cancer-type metrics)
+    - one section per experiment mode (in the order of the table above)
+    - main() and the argparse CLI
 """
 
 import os
 import copy
 import glob
+import json
 import pickle
+import socket
+import threading
 import time
 import argparse
 import itertools
@@ -19,17 +53,17 @@ import multiprocessing
 from pathlib import Path
 from typing import List, Optional
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from difflib import SequenceMatcher
-from scipy.interpolate import interp1d
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, spearmanr
 
 from sklearn.base import BaseEstimator, TransformerMixin, clone
-from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_val_predict
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_val_predict, cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
@@ -37,13 +71,34 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import roc_auc_score, roc_curve, auc, classification_report, confusion_matrix, precision_recall_curve
+from sklearn.metrics import roc_auc_score, roc_curve, auc, classification_report, confusion_matrix, precision_recall_curve, average_precision_score
 
-# Import baseline aggregate functions
+# xgboost >= 2.1.3 is required for scikit-learn >= 1.6 compatibility (__sklearn_tags__).
+# Guarded so that a container built before xgboost was added to pyproject.toml can still
+# run every other classifier; main() prints a warning when XGBoost is skipped.
+try:
+    from xgboost import XGBClassifier
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+
+# Sibling module (this script is run from the repo root as src/comp/model_hpc.py,
+# so src/comp/ is on sys.path)
 from baseline_aggregate import aggregate_feature_from_raw_data
 
+# Short CLI names (-t/--cancer_types) -> disease labels in the CRIS metadata
+CANCER_MAP = {
+    'breast': 'Breast cancer',
+    'bileduct': 'Bile duct cancer',
+    'colorectal': 'Colorectal cancer',
+    'gastric': 'Gastric cancer',
+    'lung': 'Lung cancer naive nsclc',
+    'ovarian': 'Ovarian cancer',
+    'pancreatic': 'Pancreatic cancer'
+}
+
 # =================================================================================
-# --- Helper & Data Loading Functions (from Notebook) ---
+# --- Data loading & preprocessing helpers ---
 # =================================================================================
 
 def sync_file_lists(list1: List[str], list2: List[Path]) -> List[Optional[Path]]:
@@ -72,6 +127,36 @@ def sync_file_lists(list1: List[str], list2: List[Path]) -> List[Optional[Path]]
 
     return synced_list
 
+
+def exact_file_lists(ids: List[str], folder_path: str) -> List[Path]:
+    """
+    Exact-ID feature-file resolution: <folder>/<ID>.hg38.frag.tsv_BIN.csv.
+
+    Replaces the longest-substring matching of sync_file_lists for
+    manifest-driven runs. Substring matching silently substituted a
+    neighbouring sample's file when an ID had no feature file (the "phantom"
+    defect); this resolver
+    raises instead, listing every missing sample.
+    """
+    paths: List[Path] = []
+    missing: List[str] = []
+    for sid in ids:
+        p = Path(folder_path) / f"{sid}.hg38.frag.tsv_BIN.csv"
+        if p.exists():
+            paths.append(p)
+        else:
+            missing.append(str(sid))
+    if missing:
+        raise FileNotFoundError(
+            f"exact_file_lists: {len(missing)} sample(s) have no feature file in "
+            f"{folder_path}: {', '.join(missing[:10])}"
+            + (" ..." if len(missing) > 10 else "")
+            + " - run GCfix + feature extraction for them, or regenerate the "
+              "manifest (src/comp/build_cris_manifest.py) so they are marked "
+              "gcfix_pending and skipped explicitly.")
+    return paths
+
+
 def _worker_load_feature(file_path: Path, feature_name: str):
     """
     Worker function to read one feature column from a single CSV file.
@@ -86,21 +171,29 @@ def _worker_load_feature(file_path: Path, feature_name: str):
         print(f"Error processing file {os.path.basename(str(file_path))} (feature: {feature_name}): {e}")
         return None
 
-def load_feature_in_parallel(folder_path: str, feature_name: str, file_filter: Optional[List[str]] = None, num_cores: int = 4) -> Optional[np.ndarray]:
+def load_feature_in_parallel(folder_path: str, feature_name: str, file_filter: Optional[List[str]] = None, num_cores: int = 4, exact: bool = False) -> Optional[np.ndarray]:
     """
     Loads a single feature from all matching CSV files in a folder in parallel.
+
+    exact=True resolves file_filter entries as exact sample IDs
+    (<ID>.hg38.frag.tsv_BIN.csv) and raises on any missing file; exact=False
+    keeps the legacy longest-substring matching for old metadata files.
     """
     print(f"--- Loading feature '{feature_name}' in parallel ---")
-    all_files = sorted(glob.glob(os.path.join(folder_path, '*_BIN.csv')))
-    if not all_files:
-        print(f"Warning: No '*_BIN.csv' files found in {folder_path}")
-        return None
+    if exact and file_filter:
+        all_files = exact_file_lists(file_filter, folder_path)
+        print(f"Resolved {len(all_files)} files by exact sample ID.")
+    else:
+        all_files = sorted(glob.glob(os.path.join(folder_path, '*_BIN.csv')))
+        if not all_files:
+            print(f"Warning: No '*_BIN.csv' files found in {folder_path}")
+            return None
 
-    if file_filter:
-        all_files = sync_file_lists(file_filter, [Path(f) for f in all_files])
-        # Filter out None values that may result from sync_file_lists
-        all_files = [f for f in all_files if f is not None]
-        print(f"Filtered to {len(all_files)} files after applying the filter.")
+        if file_filter:
+            all_files = sync_file_lists(file_filter, [Path(f) for f in all_files])
+            # Filter out None values that may result from sync_file_lists
+            all_files = [f for f in all_files if f is not None]
+            print(f"Filtered to {len(all_files)} files after applying the filter.")
 
     if not all_files:
         print(f"Warning: No files remained after filtering for feature '{feature_name}'.")
@@ -153,6 +246,10 @@ def standardize_with_training_stats(feature_dict: dict, training_stats: dict) ->
 
     means_map = training_stats.get('feature_means_per_feature', {})
     stds_map = training_stats.get('feature_stds_per_feature', {})
+    # A model trained with --augment_covariates computed its column statistics on
+    # [TSS columns | covariate block]; the external TSS arrays arrive here without the
+    # block (it is appended, and standardized with the trailing statistics, in main).
+    n_trailing = int((training_stats.get('covariate_block') or {}).get('n') or 0)
 
     standardized = {}
     for feature, array in feature_dict.items():
@@ -160,13 +257,17 @@ def standardize_with_training_stats(feature_dict: dict, training_stats: dict) ->
             standardized[feature] = None
             continue
         if feature not in means_map or feature not in stds_map:
-            print(f"⚠️  No training stats for feature '{feature}', leaving unchanged")
+            print(f"No training stats for feature '{feature}', leaving unchanged")
             standardized[feature] = array
             continue
         means = np.array(means_map[feature])
         stds = np.array(stds_map[feature])
+        if n_trailing and array.shape[1] + n_trailing == len(means):
+            means, stds = means[:array.shape[1]], stds[:array.shape[1]]
+            print(f"'{feature}': training stats cover {n_trailing} trailing covariate column(s) "
+                  f"as well; they are standardized when the covariate block is appended")
         if array.shape[1] != len(means):
-            print(f"⚠️  Stats length mismatch for '{feature}': array has {array.shape[1]} cols, stats have {len(means)}")
+            print(f"Stats length mismatch for '{feature}': array has {array.shape[1]} cols, stats have {len(means)}")
             standardized[feature] = array
             continue
         stds[stds == 0] = 1
@@ -254,6 +355,32 @@ def compute_feature_weights(X: np.ndarray, y: np.ndarray, selection_type: str = 
     
     raise ValueError(f"Unknown selection_type: {selection_type}")
 
+# Per-process memo of the slow rankings. The ranking statistic depends on
+# (X_train, y_train, selection_type) only - not on n_top_genes and not on the
+# classifier - yet GridSearchCV refits the selector for every candidate, so in a
+# fully nested fold the per-TSS Mann-Whitney ranking (p_value / weighted, ~5 s on
+# 220 x 14k) was recomputed ~11,000 times per feature where 6 distinct rankings
+# exist. Keyed on a content hash of the inputs, so the result is identical to
+# recomputing; bounded size; each loky worker keeps its own copy. The cheap
+# rankings (mean_diff, fold_change, ~ms) are not cached, 'random' never is.
+_RANKING_MEMO: dict = {}
+_RANKING_MEMO_MAX = 64
+_RANKING_MEMO_TYPES = frozenset({'p_value', 'weighted'})
+
+
+def _ranking_memo_key(X_train: np.ndarray, y_train: np.ndarray, selection_type: str) -> bytes:
+    import hashlib
+    Xc = np.ascontiguousarray(X_train, dtype=np.float64)
+    yc = np.ascontiguousarray(y_train)
+    h = hashlib.blake2b(digest_size=16)
+    h.update(selection_type.encode())
+    h.update(repr(Xc.shape).encode())
+    h.update(memoryview(Xc))
+    h.update(repr((yc.shape, str(yc.dtype))).encode())
+    h.update(memoryview(yc))
+    return h.digest()
+
+
 def select_top_genes(X_train: np.ndarray, y_train: np.ndarray, n_top_genes: int, selection_type='mean_diff') -> np.ndarray:
     """
     Selects the top genes based on a metric calculated from the training data.
@@ -263,8 +390,17 @@ def select_top_genes(X_train: np.ndarray, y_train: np.ndarray, n_top_genes: int,
         num_genes_to_select = min(n_top_genes, X_train.shape[1])
         return np.random.choice(X_train.shape[1], size=num_genes_to_select, replace=False)
     
-    # Compute weights using the shared function
-    weights = compute_feature_weights(X_train, y_train, selection_type)
+    # Compute weights using the shared function (memoised for the slow rankings)
+    if selection_type in _RANKING_MEMO_TYPES:
+        key = _ranking_memo_key(X_train, y_train, selection_type)
+        weights = _RANKING_MEMO.get(key)
+        if weights is None:
+            weights = compute_feature_weights(X_train, y_train, selection_type)
+            if len(_RANKING_MEMO) >= _RANKING_MEMO_MAX:
+                _RANKING_MEMO.pop(next(iter(_RANKING_MEMO)))
+            _RANKING_MEMO[key] = weights
+    else:
+        weights = compute_feature_weights(X_train, y_train, selection_type)
     
     # Select top N genes based on weights
     num_genes_to_select = min(n_top_genes, len(weights))
@@ -280,13 +416,15 @@ def derive_operating_point_thresholds(y_train_true, train_scores):
     looking at the held-out test fold. Deriving the threshold from the test fold (the
     original behaviour) tuned the operating point to the very samples being scored.
 
-    IMPORTANT: `train_scores` must be OUT-OF-FOLD (cross-validated) predictions on the
-    training set, NOT the model's resubstitution predictions. A flexible classifier
-    (e.g. RBF-SVM) memorises its training set, so its in-sample scores are degenerate
-    (all healthy ~0, all cancer ~1). A threshold read off those is meaningless (the
-    95%-specificity point does not exist when training separation is perfect, giving an
-    infinite threshold that classifies everything negative on the test fold). Out-of-fold
-    scores have a realistic spread and transfer to the test fold.
+    IMPORTANT: for a fitted model `train_scores` must be the INNER-LOOP cross-validated
+    predictions on the training set (inner_cv_train_scores: the selected configuration
+    scored on the inner validation folds of the nested procedure), NOT the model's
+    resubstitution predictions. A flexible classifier (e.g. RBF-SVM) memorises its
+    training set, so its in-sample scores are degenerate (all healthy ~0, all cancer ~1).
+    A threshold read off those is meaningless (the 95%-specificity point does not exist
+    when training separation is perfect, giving an infinite threshold that classifies
+    everything negative on the test fold). Inner-loop scores have a realistic spread and
+    transfer to the test fold.
 
     Specificity thresholds are taken as quantiles of the HEALTHY training scores (a
     threshold at the q-quantile of healthy scores yields ~q specificity, score >= thr =>
@@ -345,22 +483,57 @@ def derive_operating_point_thresholds(y_train_true, train_scores):
     }
 
 
-def oof_train_scores(fitted_estimator, X_train, y_train, n_splits=5, random_state=42):
+# Provenance marker stored with every threshold set derived by
+# inner_cv_operating_thresholds(). Result pickles written before this derivation
+# (thresholds from a separate 5-fold pass over the training partition) lack it; the
+# figure exporters use it to tell the two apart.
+THRESHOLD_SOURCE_INNER_CV = 'inner_cv_selected_config'
+
+
+def inner_cv_train_scores(fitted_estimator, X_train, y_train, inner_splits,
+                          expected_mean_auc=None, n_jobs=1, label=''):
     """
-    Out-of-fold predict_proba scores on the training set, used to choose operating-point
-    thresholds without resubstitution bias. Clones the already-selected estimator
-    (best hyperparameters) and refits it inside an inner StratifiedKFold, so no test-fold
-    information is used and the inner folds are evaluated out-of-sample.
+    Held-out predict_proba scores of the SELECTED configuration on the inner validation
+    folds of the nested procedure - the same `inner_splits` model selection scored it
+    on. Every training sample is scored once, by the inner-fold model that was fitted
+    without it. Operating-point thresholds are read off these scores, so they come
+    from the nested cross-validated training predictions and from nothing else: there
+    is no cross-validation scheme beyond the outer and inner loops.
+
+    GridSearchCV keeps each candidate's inner-fold scores but not its per-sample
+    predictions, so the winner's inner-fold models are fitted again here on the same
+    splits. Every estimator is seeded, so these are the models the search evaluated;
+    `expected_mean_auc` (GridSearchCV.best_score_ of the winner) is compared with the
+    mean inner-fold AUROC of the returned scores to confirm it.
     """
-    n_pos = int(np.sum(y_train == 1))
-    n_neg = int(np.sum(y_train == 0))
-    k = max(2, min(n_splits, n_pos, n_neg))
-    inner_cv = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state)
+    y_train = np.asarray(y_train)
+    inner_splits = [(np.asarray(tr), np.asarray(va)) for tr, va in inner_splits]
     proba = cross_val_predict(
         clone(fitted_estimator), X_train, y_train,
-        cv=inner_cv, method='predict_proba', n_jobs=1,
+        cv=inner_splits, method='predict_proba', n_jobs=n_jobs,
     )
-    return proba[:, 1]
+    scores = proba[:, 1]
+    if expected_mean_auc is not None and np.isfinite(expected_mean_auc):
+        fold_aucs = [roc_auc_score(y_train[va], scores[va]) for _, va in inner_splits
+                     if len(np.unique(y_train[va])) == 2]
+        if fold_aucs and abs(float(np.mean(fold_aucs)) - float(expected_mean_auc)) > 1e-4:
+            print(f"  WARNING{' (' + label + ')' if label else ''}: mean inner-fold AUROC of "
+                  f"the threshold scores ({np.mean(fold_aucs):.6f}) differs from the inner "
+                  f"score the configuration was selected on ({expected_mean_auc:.6f}) - "
+                  f"the inner-fold models were not reproduced exactly.")
+    return scores
+
+
+def inner_cv_operating_thresholds(fitted_estimator, X_train, y_train, inner_splits,
+                                  expected_mean_auc=None, n_jobs=1, label=''):
+    """Operating-point thresholds of the selected configuration from its inner-loop
+    cross-validated training scores. Returns (op_thr, inner_cv_scores)."""
+    scores = inner_cv_train_scores(fitted_estimator, X_train, y_train, inner_splits,
+                                   expected_mean_auc=expected_mean_auc, n_jobs=n_jobs,
+                                   label=label)
+    op_thr = derive_operating_point_thresholds(y_train, scores)
+    op_thr['threshold_source'] = THRESHOLD_SOURCE_INNER_CV
+    return op_thr, scores
 
 class TopGeneSelector(BaseEstimator, TransformerMixin):
     """
@@ -368,9 +541,13 @@ class TopGeneSelector(BaseEstimator, TransformerMixin):
     
     This is used in a Pipeline to allow GridSearchCV to search over 'n_top_genes'.
     """
-    def __init__(self, n_top_genes=100, selection_type='mean_diff'):
+    def __init__(self, n_top_genes=100, selection_type='mean_diff', n_passthrough=0):
         self.n_top_genes = n_top_genes
         self.selection_type = selection_type
+        # n_passthrough > 0: the LAST n_passthrough columns of X are a covariate block
+        # (--augment_covariates) that bypasses the ranking and is always kept, appended
+        # after the selected TSS columns.
+        self.n_passthrough = n_passthrough
         self.indices_ = None
 
     def fit(self, X, y=None):
@@ -379,7 +556,13 @@ class TopGeneSelector(BaseEstimator, TransformerMixin):
         """
         if y is None:
             raise ValueError("y (labels) must be provided to TopGeneSelector for gene selection.")
-        self.indices_ = select_top_genes(X, y, self.n_top_genes, self.selection_type)
+        n_pass = int(self.n_passthrough or 0)
+        n_rank = X.shape[1] - n_pass
+        selected = select_top_genes(X[:, :n_rank], y, self.n_top_genes, self.selection_type)
+        if n_pass:
+            selected = np.concatenate([np.asarray(selected, dtype=int),
+                                       np.arange(n_rank, X.shape[1], dtype=int)])
+        self.indices_ = selected
         return self
 
     def transform(self, X):
@@ -396,6 +579,486 @@ class TopGeneSelector(BaseEstimator, TransformerMixin):
     def _get_tags(self):
         # This tag is important to tell scikit-learn that this transformer needs 'y' in 'fit'
         return {"requires_y": True}
+
+
+class _StoredIndexSelector(TopGeneSelector):
+    """TopGeneSelector with a fixed, stored selection (cross-depth refit of a source model)."""
+    def __init__(self, stored_indices=None):
+        super().__init__()
+        self.stored_indices = stored_indices
+
+    def fit(self, X, y=None):
+        self.indices_ = np.asarray(self.stored_indices, dtype=int)
+        return self
+
+
+# =================================================================================
+# --- Covariate block: TSS features + sample-level covariates in ONE nested model ---
+# =================================================================================
+# Does the data-driven model need the sample-level covariates
+# of Fig S10, and does its TSS signal survive adjusting for the confounders among
+# them? Two modes, both set once in main() and read by _nested_full_one_fold:
+#   augment     the covariate columns are appended to every TSS matrix (after the
+#               per-sample row z-score and the duplicate-column removal), BYPASS the
+#               TSS ranking (TopGeneSelector n_passthrough) and enter the classifier
+#               next to the selected TSSs, column-scaled like them.
+#   residualize the covariate columns travel with the matrix but a transformer
+#               fitted on the training partition regresses them out of every TSS
+#               column (OLS on [1, covariates]); the classifier sees residual TSS
+#               features only.
+# Fold records then carry 'covariate_block' (names, mode, the fitted weights or
+# importances of the covariates ranked among the TSS weights, block permutation
+# importance on the test fold, residual R2 summaries).
+COVARIATE_BLOCK = {'mode': None, 'n': 0, 'names': [], 'stem': None}
+COVARIATE_PERM_REPEATS = 20
+
+
+def load_covariate_block(stem, sample_ids):
+    """Covariate matrix of a panel stem (build_scalar_panel_matrix.py: <stem>.npy,
+    .metadata.csv, .tf_names.csv) aligned to sample_ids. Raises on missing samples
+    or NaN (the builder imputes cohort medians, label-free)."""
+    stem = str(stem)
+    X = np.load(stem + '.npy').astype(float)
+    meta = pd.read_csv(stem + '.metadata.csv')
+    names = pd.read_csv(stem + '.tf_names.csv').iloc[:, 0].astype(str).tolist()
+    id_col = 'sample_id' if 'sample_id' in meta.columns else 'ID'
+    pos = {sid: i for i, sid in enumerate(meta[id_col].astype(str))}
+    missing = [sid for sid in sample_ids if str(sid) not in pos]
+    if missing:
+        raise ValueError(f"{stem}: {len(missing)} cohort samples absent from the covariate matrix "
+                         f"(first: {missing[:5]})")
+    C = X[[pos[str(sid)] for sid in sample_ids]]
+    if np.isnan(C).any():
+        raise ValueError(f"{stem}: NaN in the covariate matrix (impute in the builder)")
+    if C.shape[1] != len(names):
+        raise ValueError(f"{stem}: {C.shape[1]} columns but {len(names)} names")
+    return C, names
+
+
+class CovariateResidualizer(BaseEstimator, TransformerMixin):
+    """Regress the LAST n_covariates columns of X out of every other column, with
+    coefficients fitted on the data given to fit() (the training partition inside
+    the nested procedure); transform() returns the residual columns only."""
+
+    def __init__(self, n_covariates=0):
+        self.n_covariates = n_covariates
+        self.beta_ = None
+        self.r2_ = None
+
+    def _split(self, X):
+        n = X.shape[1] - int(self.n_covariates)
+        return X[:, :n], np.column_stack([np.ones(X.shape[0]), X[:, n:]])
+
+    def fit(self, X, y=None):
+        T, D = self._split(X)
+        self.beta_, *_ = np.linalg.lstsq(D, T, rcond=None)
+        resid = T - D @ self.beta_
+        ss_res = (resid ** 2).sum(axis=0)
+        ss_tot = ((T - T.mean(axis=0)) ** 2).sum(axis=0)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            self.r2_ = np.where(ss_tot > 0, 1.0 - ss_res / ss_tot, np.nan)
+        return self
+
+    def transform(self, X):
+        if self.beta_ is None:
+            raise RuntimeError("CovariateResidualizer has not been fitted.")
+        T, D = self._split(X)
+        return T - D @ self.beta_
+
+
+def _covariate_block_report(best_model, X_train, X_test, y_test, y_pred_proba, label=''):
+    """Additive fold-record entry describing what the fitted model does with the
+    covariate block (see COVARIATE_BLOCK)."""
+    mode, n_cov, names = COVARIATE_BLOCK['mode'], int(COVARIATE_BLOCK['n']), list(COVARIATE_BLOCK['names'])
+    out = {'mode': mode, 'n_covariates': n_cov, 'names': names, 'stem': COVARIATE_BLOCK['stem']}
+    clf = best_model.named_steps['clf']
+    out['classifier_class'] = type(clf).__name__
+    if mode == 'augment':
+        idx = np.asarray(best_model.named_steps['selector'].indices_)
+        n_tss = len(idx) - n_cov
+        out['n_tss_selected'] = int(n_tss)
+        weights = None
+        if hasattr(clf, 'coef_'):
+            weights, out['weight_kind'] = np.ravel(clf.coef_), 'coef'
+        elif hasattr(clf, 'feature_importances_'):
+            weights, out['weight_kind'] = np.ravel(clf.feature_importances_), 'feature_importance'
+        if weights is not None and len(weights) == len(idx):
+            w_abs = np.abs(weights)
+            w_cov, w_tss = w_abs[n_tss:], w_abs[:n_tss]
+            order = np.argsort(-w_abs)
+            rank = np.empty(len(w_abs), dtype=int)
+            rank[order] = np.arange(1, len(w_abs) + 1)
+            out['covariate_weights'] = [float(v) for v in weights[n_tss:]]
+            out['covariate_abs_rank'] = [int(v) for v in rank[n_tss:]]          # 1 = largest |weight| of all
+            out['covariate_abs_quantile_vs_tss'] = [float(np.mean(w_tss < v)) for v in w_cov] if n_tss else [np.nan] * n_cov
+            out['tss_abs_weight_median'] = float(np.median(w_tss)) if n_tss else np.nan
+            out['tss_abs_weight_max'] = float(w_tss.max()) if n_tss else np.nan
+            out['tss_abs_weight_sum'] = float(w_tss.sum()) if n_tss else np.nan
+            out['covariate_abs_weight_sum'] = float(w_cov.sum())
+        else:
+            out['weight_kind'] = None
+        # block permutation importance on the held-out fold: shuffle the covariate rows
+        # (jointly) / the TSS rows (jointly) and re-score; mean AUROC drop over repeats
+        base = roc_auc_score(y_test, y_pred_proba) if len(np.unique(y_test)) == 2 else np.nan
+        rng = np.random.default_rng(0)
+        n_total = X_test.shape[1]
+        drops = {'covariates': [], 'tss': []}
+        for _ in range(COVARIATE_PERM_REPEATS):
+            perm = rng.permutation(X_test.shape[0])
+            for block, cols in (('covariates', slice(n_total - n_cov, n_total)), ('tss', slice(0, n_total - n_cov))):
+                Xp = X_test.copy()
+                Xp[:, cols] = X_test[perm][:, cols]
+                pp = best_model.predict_proba(Xp)[:, 1]
+                drops[block].append(base - roc_auc_score(y_test, pp) if np.isfinite(base) else np.nan)
+        out['perm_drop_covariates_mean'] = float(np.nanmean(drops['covariates']))
+        out['perm_drop_covariates_sd'] = float(np.nanstd(drops['covariates']))
+        out['perm_drop_tss_mean'] = float(np.nanmean(drops['tss']))
+        out['perm_drop_tss_sd'] = float(np.nanstd(drops['tss']))
+        # per-covariate permutation importance (single covariate shuffled)
+        per = []
+        for j in range(n_cov):
+            d = []
+            for _ in range(COVARIATE_PERM_REPEATS):
+                perm = rng.permutation(X_test.shape[0])
+                Xp = X_test.copy()
+                Xp[:, n_total - n_cov + j] = X_test[perm, n_total - n_cov + j]
+                d.append(base - roc_auc_score(y_test, best_model.predict_proba(Xp)[:, 1]) if np.isfinite(base) else np.nan)
+            per.append(float(np.nanmean(d)))
+        out['perm_drop_per_covariate'] = per
+    elif mode == 'residualize':
+        r2 = np.asarray(best_model.named_steps['residualizer'].r2_, dtype=float)
+        r2 = r2[np.isfinite(r2)]
+        out['residual_r2_median'] = float(np.median(r2)) if r2.size else np.nan
+        out['residual_r2_p90'] = float(np.percentile(r2, 90)) if r2.size else np.nan
+        out['residual_r2_max'] = float(r2.max()) if r2.size else np.nan
+        out['residual_r2_frac_gt_0.1'] = float(np.mean(r2 > 0.1)) if r2.size else np.nan
+        out['residual_r2_frac_gt_0.25'] = float(np.mean(r2 > 0.25)) if r2.size else np.nan
+        out['n_tss_selected'] = int(len(np.asarray(best_model.named_steps['selector'].indices_)))
+    return out
+
+
+# =================================================================================
+# --- Shared evaluation helpers ---
+# =================================================================================
+# The per-fold / per-cohort metric blocks below used to be copy-pasted into every
+# experiment mode. They are defined once here; every mode still produces the exact
+# same result-dictionary keys as before, so existing notebooks and figure scripts
+# keep working on old and new pickles alike.
+
+def _sens_spec_at_95(fpr_arr, tpr_arr, target_spec=0.95):
+    """Sensitivity and specificity at the ROC point closest to the target specificity."""
+    if fpr_arr is None or tpr_arr is None or len(fpr_arr) == 0:
+        return None, None
+    target_fpr = 1 - target_spec
+    idx = int(np.nanargmin(np.abs(np.array(fpr_arr) - target_fpr)))
+    return float(tpr_arr[idx]), float(1 - fpr_arr[idx])
+
+
+def _operating_point_reports(y_test, y_pred_proba, y_pred_default, op_thr, sample_ids_test):
+    """Test-fold reports at four operating points with TRAIN-fold-derived thresholds.
+
+    op_thr comes from derive_operating_point_thresholds() on the training fold, so
+    no threshold is ever tuned on the fold being scored. Returns
+    (report_full, confusion_matrix_full, misclassified_sample_ids, full_model_thresholds)
+    with the same keys the per-mode copies used to build inline.
+    """
+    threshold_95spec = op_thr['95_percent_specificity']
+    threshold_90spec = op_thr['90_percent_specificity']
+    threshold_youden = op_thr['youden_optimal']
+    preds = {
+        'default_0.5': y_pred_default,
+        '95_percent_specificity': (y_pred_proba >= threshold_95spec).astype(int),
+        '90_percent_specificity': (y_pred_proba >= threshold_90spec).astype(int),
+        'youden_optimal': (y_pred_proba >= threshold_youden).astype(int),
+    }
+    report_full = {
+        key: classification_report(y_test, pred, output_dict=True, zero_division=0)
+        for key, pred in preds.items()
+    }
+    confusion_matrix_full = {
+        key: confusion_matrix(y_test, pred).tolist() for key, pred in preds.items()
+    }
+    misclassified_sample_ids = {
+        key: sample_ids_test[y_test != pred].tolist() for key, pred in preds.items()
+    }
+    # train_*_at_* record where each threshold landed on the TRAIN-fold ROC.
+    full_model_thresholds = {
+        'default': 0.5,
+        '95_percent_specificity': float(threshold_95spec),
+        '90_percent_specificity': float(threshold_90spec),
+        'youden_optimal': float(threshold_youden),
+        'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
+        'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
+        'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
+        'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
+        # How the thresholds were derived (THRESHOLD_SOURCE_INNER_CV for fitted models).
+        'threshold_source': op_thr.get('threshold_source'),
+    }
+    return report_full, confusion_matrix_full, misclassified_sample_ids, full_model_thresholds
+
+
+def _clopper_pearson(k, n, alpha=0.05):
+    """Exact binomial (Clopper-Pearson) confidence interval for k successes in n."""
+    from scipy.stats import beta as _beta
+    if n == 0:
+        return float('nan'), float('nan')
+    lo = 0.0 if k == 0 else float(_beta.ppf(alpha / 2, k, n - k + 1))
+    hi = 1.0 if k == n else float(_beta.ppf(1 - alpha / 2, k + 1, n - k))
+    return lo, hi
+
+
+def _load_deployment_thresholds(best_model_path):
+    """Frozen operating points of a deployed best-model-search model.
+
+    They live in summary_<base>.pkl next to best_model_GridSearchCV_<base>.pkl
+    (written by run_best_model_search from the search's own cross-validated scores).
+    Returns None for summaries predating that field.
+    """
+    p = Path(str(best_model_path))
+    summary_path = p.with_name(p.name.replace("best_model_GridSearchCV_", "summary_"))
+    if not summary_path.exists():
+        return None
+    with open(summary_path, 'rb') as fh:
+        summary = pickle.load(fh)
+    return summary.get('deployment_thresholds')
+
+
+def _fixed_threshold_evaluation(y_score, y_true, strat_labels, thresholds):
+    """Score an external cohort at thresholds FROZEN on the training cohort.
+
+    For every operating point in `thresholds` (95%/90% specificity, Youden)
+    returns TP/FN/TN/FP with exact binomial CIs — overall and per control
+    subgroup (each subgroup's specificity; the cancer class, hence the
+    sensitivity, is shared). Nothing here looks at the external labels to
+    choose a threshold; this is the deployment view reviewer 4 asked for
+    next to the descriptive external-ROC operating points.
+    """
+    y_score = np.asarray(y_score, dtype=float)
+    y_true = np.asarray(y_true, dtype=int)
+    strat_labels = np.asarray(strat_labels)
+    control_groups = [g for g in np.unique(strat_labels[y_true == 0])]
+
+    def _counts(mask, thr):
+        yhat = (y_score[mask] >= thr).astype(int)
+        yt = y_true[mask]
+        tp = int(np.sum((yt == 1) & (yhat == 1))); fn = int(np.sum((yt == 1) & (yhat == 0)))
+        tn = int(np.sum((yt == 0) & (yhat == 0))); fp = int(np.sum((yt == 0) & (yhat == 1)))
+        sens = tp / (tp + fn) if tp + fn else float('nan')
+        spec = tn / (tn + fp) if tn + fp else float('nan')
+        return {'tp': tp, 'fn': fn, 'tn': tn, 'fp': fp,
+                'sensitivity': sens, 'sensitivity_ci95': _clopper_pearson(tp, tp + fn),
+                'specificity': spec, 'specificity_ci95': _clopper_pearson(tn, tn + fp)}
+
+    out = {}
+    for name in ('95_percent_specificity', '90_percent_specificity', 'youden_optimal'):
+        thr = thresholds.get(name)
+        if thr is None or not np.isfinite(thr):
+            continue
+        entry = {'threshold': float(thr), 'overall': _counts(np.ones_like(y_true, dtype=bool), thr)}
+        entry['per_control_group'] = {
+            g: _counts((strat_labels == g) | (y_true == 1), thr) for g in control_groups}
+        out[name] = entry
+    return out
+
+
+def _per_cancer_type_train_threshold_eval(y_test, y_pred_proba, strat_test, sample_ids_test, op_thr):
+    """Per-cancer-type test-fold evaluation at the SAME train-derived thresholds.
+
+    For each cancer type present in the test fold, evaluates the subset (all healthy
+    vs this one type) using the fold-level op_thr thresholds unchanged. This mirrors
+    single-threshold deployment and never tunes a threshold on the per-type subset.
+    ROC/PR curves are kept as raw arrays (historic format of the nested-CV pickles).
+    """
+    auc_per_type, roc_per_type, pr_per_type = {}, {}, {}
+    confusion_matrix_per_type = {}
+    classification_report_per_type = {}
+    sample_classification_per_type = {}
+    healthy_labels_in_test = np.unique(strat_test[y_test == 0])
+    unique_cancer_types_in_test = np.unique(strat_test[y_test == 1])
+
+    threshold_95spec = op_thr['95_percent_specificity']
+    threshold_90spec = op_thr['90_percent_specificity']
+    threshold_youden = op_thr['youden_optimal']
+
+    for cancer_type in unique_cancer_types_in_test:
+        mask = np.isin(strat_test, healthy_labels_in_test) | (strat_test == cancer_type)
+        y_test_subset = (strat_test[mask] == cancer_type).astype(int)
+        y_pred_proba_subset = y_pred_proba[mask]
+        sample_ids_subset = sample_ids_test[mask]
+
+        fpr, tpr, thresholds = roc_curve(y_test_subset, y_pred_proba_subset)
+        precision, recall, _ = precision_recall_curve(y_test_subset, y_pred_proba_subset)
+
+        auc_per_type[cancer_type] = auc(fpr, tpr)
+        roc_per_type[cancer_type] = {'fpr': fpr, 'tpr': tpr}
+        pr_per_type[cancer_type] = {'precision': precision, 'recall': recall}
+
+        preds = {
+            'default_0.5': (y_pred_proba_subset >= 0.5).astype(int),
+            '95_percent_specificity': (y_pred_proba_subset >= threshold_95spec).astype(int),
+            '90_percent_specificity': (y_pred_proba_subset >= threshold_90spec).astype(int),
+            'youden_optimal': (y_pred_proba_subset >= threshold_youden).astype(int),
+        }
+        confusion_matrix_per_type[cancer_type] = {
+            key: confusion_matrix(y_test_subset, pred).tolist() for key, pred in preds.items()
+        }
+        classification_report_per_type[cancer_type] = {
+            key: classification_report(y_test_subset, pred, output_dict=True, zero_division=0)
+            for key, pred in preds.items()
+        }
+        roc_per_type[cancer_type]['thresholds'] = {
+            'default': 0.5,
+            '95_percent_specificity': float(threshold_95spec),
+            '90_percent_specificity': float(threshold_90spec),
+            'youden_optimal': float(threshold_youden),
+            'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
+            'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
+            'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
+            'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
+        }
+        sample_classification_per_type[cancer_type] = {
+            key: {
+                'correct': sample_ids_subset[y_test_subset == pred].tolist(),
+                'incorrect': sample_ids_subset[y_test_subset != pred].tolist(),
+            }
+            for key, pred in preds.items()
+        }
+
+    return (auc_per_type, roc_per_type, pr_per_type, confusion_matrix_per_type,
+            classification_report_per_type, sample_classification_per_type)
+
+
+def _per_cancer_type_descriptive_eval(scores, y_binary, strat_labels, sample_ids_array):
+    """Per-cancer-type evaluation with DESCRIPTIVE per-subset operating points.
+
+    For each cancer type, evaluates the subset (all healthy vs this one type) and
+    reads the 95%/90%-specificity and Youden thresholds off the subset's OWN ROC
+    curve. These describe the best achievable operating point on that cohort; they
+    are not pre-specified deployment thresholds (see the notes at the call sites).
+    ROC/PR curves are stored as plain lists (historic format of these pickles).
+    """
+    auc_per_type, roc_per_type, pr_per_type = {}, {}, {}
+    confusion_per_type, report_per_type = {}, {}
+    sample_classification_per_type = {}
+    healthy_labels = np.unique(strat_labels[y_binary == 0])
+    cancer_types = np.unique(strat_labels[y_binary == 1])
+
+    for cancer_type in cancer_types:
+        mask = np.isin(strat_labels, healthy_labels) | (strat_labels == cancer_type)
+        y_true_subset = (strat_labels[mask] == cancer_type).astype(int)
+        scores_subset = scores[mask]
+        sample_ids_subset = sample_ids_array[mask]
+
+        if len(np.unique(y_true_subset)) < 2:
+            continue
+
+        fpr, tpr, thresholds = roc_curve(y_true_subset, scores_subset)
+        precision, recall, _ = precision_recall_curve(y_true_subset, scores_subset)
+
+        auc_per_type[cancer_type] = auc(fpr, tpr)
+        roc_per_type[cancer_type] = {'fpr': fpr.tolist(), 'tpr': tpr.tolist()}
+        pr_per_type[cancer_type] = {'precision': precision.tolist(), 'recall': recall.tolist()}
+
+        idx_95spec = np.argmin(np.abs(fpr - 0.05))
+        threshold_95spec = thresholds[idx_95spec] if idx_95spec < len(thresholds) else 0.5
+        idx_90spec = np.argmin(np.abs(fpr - 0.10))
+        threshold_90spec = thresholds[idx_90spec] if idx_90spec < len(thresholds) else 0.5
+        idx_youden = np.argmax(tpr - fpr)
+        threshold_youden = thresholds[idx_youden] if idx_youden < len(thresholds) else 0.5
+
+        preds = {
+            'default_0.5': (scores_subset >= 0.5).astype(int),
+            '95_percent_specificity': (scores_subset >= threshold_95spec).astype(int),
+            '90_percent_specificity': (scores_subset >= threshold_90spec).astype(int),
+            'youden_optimal': (scores_subset >= threshold_youden).astype(int),
+        }
+        confusion_per_type[cancer_type] = {
+            key: confusion_matrix(y_true_subset, pred).tolist() for key, pred in preds.items()
+        }
+        report_per_type[cancer_type] = {
+            key: classification_report(y_true_subset, pred, output_dict=True, zero_division=0)
+            for key, pred in preds.items()
+        }
+        sample_classification_per_type[cancer_type] = {
+            key: {
+                'correct': sample_ids_subset[y_true_subset == pred].tolist(),
+                'incorrect': sample_ids_subset[y_true_subset != pred].tolist(),
+            }
+            for key, pred in preds.items()
+        }
+        roc_per_type[cancer_type]['thresholds'] = {
+            'default': 0.5,
+            '95_percent_specificity': float(threshold_95spec),
+            '90_percent_specificity': float(threshold_90spec),
+            'youden_optimal': float(threshold_youden),
+            'actual_fpr_at_95spec': float(fpr[idx_95spec]) if idx_95spec < len(fpr) else None,
+            'actual_tpr_at_95spec': float(tpr[idx_95spec]) if idx_95spec < len(tpr) else None,
+            'actual_fpr_at_90spec': float(fpr[idx_90spec]) if idx_90spec < len(fpr) else None,
+            'actual_tpr_at_90spec': float(tpr[idx_90spec]) if idx_90spec < len(tpr) else None,
+        }
+
+    return (auc_per_type, roc_per_type, pr_per_type, confusion_per_type,
+            report_per_type, sample_classification_per_type)
+
+
+def _best_model_search_passthrough():
+    """Number of trailing passthrough columns for the best-model search's selector: the
+    covariate block of --augment_covariates (0 without it). --residualize_covariates is a
+    fully nested-run construct and is refused here."""
+    if COVARIATE_BLOCK['mode'] == 'residualize':
+        raise ValueError("--residualize_covariates is only defined for --run_nested_cv_full")
+    return int(COVARIATE_BLOCK['n']) if COVARIATE_BLOCK['mode'] == 'augment' else 0
+
+
+def _refresh_deployment_thresholds(summary_path, X_data, y_labels, stratification_labels,
+                                   sample_ids_array, use_selector, use_scaler,
+                                   n_top_genes, selection_type):
+    """
+    --refresh_deployment_thresholds: re-derive the frozen operating points of a
+    completed best-model-search configuration from the selected configuration's
+    held-out scores on the search's own ten folds, without repeating the grid search.
+    The thresholds being replaced are kept as 'deployment_thresholds_previous'.
+    """
+    with open(summary_path, 'rb') as fh:
+        summary = pickle.load(fh)
+    prev = summary.get('deployment_thresholds') or {}
+    if prev.get('threshold_source') == THRESHOLD_SOURCE_INNER_CV:
+        print(f"    deployment thresholds of {summary_path.name} already come from the "
+              f"search's own folds - nothing to refresh.")
+        return
+    stored_ids = summary.get('oof_sample_ids')
+    if stored_ids is not None and list(stored_ids) != list(sample_ids_array):
+        raise ValueError(f"{summary_path.name}: stored sample order differs from the loaded "
+                         f"cohort - use the data arguments of the original search.")
+    best_params = dict(summary['best_params'])
+    steps = []
+    if use_selector:
+        steps.append(('selector', TopGeneSelector(n_top_genes=n_top_genes,
+                                                  selection_type=selection_type,
+                                                  n_passthrough=_best_model_search_passthrough())))
+    if use_scaler:
+        steps.append(('scaler', StandardScaler()))
+    steps.append(('clf', best_params['clf']))
+    pipe = Pipeline(steps).set_params(**best_params)
+    cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+    cv_splits = list(cv.split(X_data, stratification_labels))
+    thresholds, scores = inner_cv_operating_thresholds(
+        pipe, X_data, y_labels, cv_splits,
+        expected_mean_auc=summary.get('best_cv_auc'), label=summary_path.name)
+    summary['deployment_thresholds_previous'] = prev
+    summary['deployment_thresholds'] = thresholds
+    summary['oof_scores'] = scores.tolist()
+    summary['oof_sample_ids'] = np.asarray(sample_ids_array).tolist()
+    summary['oof_y_true'] = np.asarray(y_labels).tolist()
+    summary['oof_auc'] = float(roc_auc_score(y_labels, scores))
+    tmp_path = summary_path.with_name(summary_path.name + '.tmp')
+    with open(tmp_path, 'wb') as fh:
+        pickle.dump(summary, fh)
+    os.replace(tmp_path, summary_path)
+    print(f"    refreshed {summary_path.name}: thr@95%spec "
+          f"{prev.get('95_percent_specificity', float('nan')):.4f} -> "
+          f"{thresholds['95_percent_specificity']:.4f}")
+
 
 def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, stratification_labels: np.ndarray,
                           sample_ids: np.ndarray, CLASSIFIERS: dict, CLF_PARAM_GRIDS: dict, 
@@ -422,12 +1085,12 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
         metadata_file = best_model_output_dir / "preprocessing_metadata.pkl"
         with open(metadata_file, 'wb') as f:
             pickle.dump(preprocessing_metadata, f)
-        print(f"✓ Saved preprocessing metadata to: {metadata_file}")
+        print(f"Saved preprocessing metadata to: {metadata_file}")
         print(f"  This will ensure external datasets use identical column filtering")
         
         # Debug: Print what's being saved
         kept_cols = preprocessing_metadata.get('kept_columns_per_feature', {})
-        print(f"\n  📊 Saved column counts:")
+        print(f"\n  Saved column counts:")
         for feat, indices in kept_cols.items():
             print(f"     {feat}: {len(indices)} column indices")
         print()
@@ -446,13 +1109,30 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
         use_scaler = not getattr(args, 'skip_scaler', False)
         if use_selector:
             top_genes_list = DATA_PARAM_GRIDS['top_genes']
+            if getattr(args, 'best_model_top_genes', None):
+                # Resubmission of a subset of the k grid (e.g. only the k=15000 configurations
+                # that were OOM-killed at the default memory), into the same output directory.
+                top_genes_list = [k for k in top_genes_list if k in set(args.best_model_top_genes)]
+                print(f"\n--- k grid restricted to {top_genes_list} (--best_model_top_genes) ---")
         else:
             top_genes_list = [X_data.shape[1]]
             print(f"\n--- No gene selection mode: using all {X_data.shape[1]} features for '{feature_name}' ---")
 
         # --- Output a model for each number of top genes ---
         for n_top_genes in top_genes_list:
-                
+
+            # Resume: a configuration whose summary is already on disk is not refitted
+            # (summary_* is written last, so its presence means the config completed).
+            existing = list(best_model_output_dir.glob(f"summary_{feature_name}_{n_top_genes}_genes_*_{args.selection_type}.pkl"))
+            if existing:
+                print(f"\n--- '{feature_name} | Genes={n_top_genes}' already complete ({existing[0].name}) - skipping ---")
+                if getattr(args, 'refresh_deployment_thresholds', False):
+                    _refresh_deployment_thresholds(
+                        existing[0], X_data, y_labels, stratification_labels,
+                        sample_ids_array, use_selector, use_scaler, n_top_genes,
+                        args.selection_type)
+                continue
+
             print(f"\n==================================================================")
             print(f"--- Starting Best Model Search for feature: '{feature_name} | Genes={n_top_genes}' ---")
             print(f"--- Data shape: {X_data.shape} ---")
@@ -472,7 +1152,10 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
             # --- Define the pipeline ---
             pipeline_steps = []
             if use_selector:
-                pipeline_steps.append(('selector', TopGeneSelector(n_top_genes=n_top_genes, selection_type=args.selection_type)))
+                # --augment_covariates: the trailing covariate block bypasses the ranking
+                # (n_passthrough), exactly as in the fully nested runs
+                pipeline_steps.append(('selector', TopGeneSelector(n_top_genes=n_top_genes, selection_type=args.selection_type,
+                                                                   n_passthrough=_best_model_search_passthrough())))
             if use_scaler:
                 pipeline_steps.append(('scaler', StandardScaler()))
             pipeline_steps.append(('clf', CLASSIFIERS["Support Vector Machine"]))  # Placeholder, will be replaced by grid search
@@ -526,10 +1209,10 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
                 
                 # DEBUG: Show selector indices (if selector exists)
                 if use_selector:
-                    print(f"\n  🔍 DEBUG: TopGeneSelector stored indices (first 20):")
+                    print(f"\n  DEBUG: TopGeneSelector stored indices (first 20):")
                     print(f"     {best_gene_indices[:20].tolist() if len(best_gene_indices) >= 20 else best_gene_indices.tolist()}")
-                    print(f"     → Are indices sorted? {np.all(best_gene_indices[:-1] <= best_gene_indices[1:])}")
-                    print(f"     → These will be saved in the pipeline pickle file")
+                    print(f"     -> Are indices sorted? {np.all(best_gene_indices[:-1] <= best_gene_indices[1:])}")
+                    print(f"     -> These will be saved in the pipeline pickle file")
                 
                 # --- Calculate feature selection weights on the full dataset ---
                 selection_weights_full = None
@@ -570,104 +1253,34 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
                 misclassified_indices = np.where(y_labels != y_pred_binary_full)[0]
                 misclassified_sample_ids = sample_ids_array[misclassified_indices].tolist()
 
-                # 3. Calculate PER-CANCER-TYPE EVALUATION
-                auc_per_type, roc_per_type, pr_per_type = {}, {}, {}
-                confusion_matrix_per_type = {}
-                classification_report_per_type = {}
-                sample_classification_per_type = {}  # Track correct/incorrect samples per threshold
-                healthy_labels_in_data = np.unique(stratification_labels[y_labels == 0])
-                unique_cancer_types = np.unique(stratification_labels[y_labels == 1])    
-                        
-                for cancer_type in unique_cancer_types:
-                    # Create a subset of (All Healthy vs. This One Cancer Type)
-                    mask = np.isin(stratification_labels, healthy_labels_in_data) | (stratification_labels == cancer_type)
-                    y_true_subset = (stratification_labels[mask] == cancer_type).astype(int) # Healthy=0, ThisCancer=1
-                    y_pred_proba_subset = y_pred_proba_full[mask]
-                    sample_ids_subset = sample_ids_array[mask]  # Get sample IDs for this subset
-                    
-                    if len(np.unique(y_true_subset)) < 2:
-                        continue
-                        
-                    fpr, tpr, thresholds = roc_curve(y_true_subset, y_pred_proba_subset)
-                    precision, recall, _ = precision_recall_curve(y_true_subset, y_pred_proba_subset)
-                    
-                    auc_per_type[cancer_type] = auc(fpr, tpr)
-                    roc_per_type[cancer_type] = {'fpr': fpr.tolist(), 'tpr': tpr.tolist()} # convert to list for pickle/json
-                    pr_per_type[cancer_type] = {'precision': precision.tolist(), 'recall': recall.tolist()}
-                    
-                    # Calculate confusion matrix and classification report at multiple operating points
-                    # 1. Default: 0.5 threshold
-                    y_pred_default = (y_pred_proba_subset >= 0.5).astype(int)
-                    
-                    # 2. At 95% specificity (FPR = 0.05)
-                    target_fpr = 0.05  # 95% specificity
-                    idx_95spec = np.argmin(np.abs(fpr - target_fpr))
-                    threshold_95spec = thresholds[idx_95spec] if idx_95spec < len(thresholds) else 0.5
-                    y_pred_95spec = (y_pred_proba_subset >= threshold_95spec).astype(int)
-                    
-                    # 3. At 90% specificity (FPR = 0.10)
-                    target_fpr_90 = 0.10  # 90% specificity
-                    idx_90spec = np.argmin(np.abs(fpr - target_fpr_90))
-                    threshold_90spec = thresholds[idx_90spec] if idx_90spec < len(thresholds) else 0.5
-                    y_pred_90spec = (y_pred_proba_subset >= threshold_90spec).astype(int)
-                    
-                    # 4. At Youden's Index (optimal threshold maximizing sensitivity + specificity)
-                    youden_index = tpr - fpr
-                    idx_youden = np.argmax(youden_index)
-                    threshold_youden = thresholds[idx_youden] if idx_youden < len(thresholds) else 0.5
-                    y_pred_youden = (y_pred_proba_subset >= threshold_youden).astype(int)
-                    
-                    # Store confusion matrices and reports for each operating point
-                    confusion_matrix_per_type[cancer_type] = {
-                        'default_0.5': confusion_matrix(y_true_subset, y_pred_default).tolist(),
-                        '95_percent_specificity': confusion_matrix(y_true_subset, y_pred_95spec).tolist(),
-                        '90_percent_specificity': confusion_matrix(y_true_subset, y_pred_90spec).tolist(),
-                        'youden_optimal': confusion_matrix(y_true_subset, y_pred_youden).tolist(),
-                    }
-                    
-                    classification_report_per_type[cancer_type] = {
-                        'default_0.5': classification_report(y_true_subset, y_pred_default, output_dict=True, zero_division=0),
-                        '95_percent_specificity': classification_report(y_true_subset, y_pred_95spec, output_dict=True, zero_division=0),
-                        '90_percent_specificity': classification_report(y_true_subset, y_pred_90spec, output_dict=True, zero_division=0),
-                        'youden_optimal': classification_report(y_true_subset, y_pred_youden, output_dict=True, zero_division=0),
-                    }
-                    
-                    # Track which samples were correctly/incorrectly classified at each threshold
-                    sample_classification_per_type[cancer_type] = {
-                        'default_0.5': {
-                            'correct': sample_ids_subset[y_true_subset == y_pred_default].tolist(),
-                            'incorrect': sample_ids_subset[y_true_subset != y_pred_default].tolist(),
-                        },
-                        '95_percent_specificity': {
-                            'correct': sample_ids_subset[y_true_subset == y_pred_95spec].tolist(),
-                            'incorrect': sample_ids_subset[y_true_subset != y_pred_95spec].tolist(),
-                        },
-                        '90_percent_specificity': {
-                            'correct': sample_ids_subset[y_true_subset == y_pred_90spec].tolist(),
-                            'incorrect': sample_ids_subset[y_true_subset != y_pred_90spec].tolist(),
-                        },
-                        'youden_optimal': {
-                            'correct': sample_ids_subset[y_true_subset == y_pred_youden].tolist(),
-                            'incorrect': sample_ids_subset[y_true_subset != y_pred_youden].tolist(),
-                        },
-                    }
-                    
-                    # Also store the thresholds used
-                    if cancer_type not in roc_per_type:
-                        roc_per_type[cancer_type] = {}
-                    roc_per_type[cancer_type]['thresholds'] = {
-                        'default': 0.5,
-                        '95_percent_specificity': float(threshold_95spec),
-                        '90_percent_specificity': float(threshold_90spec),
-                        'youden_optimal': float(threshold_youden),
-                        'actual_fpr_at_95spec': float(fpr[idx_95spec]) if idx_95spec < len(fpr) else None,
-                        'actual_tpr_at_95spec': float(tpr[idx_95spec]) if idx_95spec < len(tpr) else None,
-                        'actual_fpr_at_90spec': float(fpr[idx_90spec]) if idx_90spec < len(fpr) else None,
-                        'actual_tpr_at_90spec': float(tpr[idx_90spec]) if idx_90spec < len(tpr) else None,
-                    }
-                
+                # 3. Per-cancer-type evaluation (all healthy vs one cancer type),
+                #    with descriptive operating points read off each subset's ROC.
+                (auc_per_type, roc_per_type, pr_per_type, confusion_matrix_per_type,
+                 classification_report_per_type, sample_classification_per_type) = \
+                    _per_cancer_type_descriptive_eval(
+                        y_pred_proba_full, y_labels, stratification_labels, sample_ids_array)
+
                 print(f"  Overall AUC (on full data): {auc_full:.4f}")
                 print(f"  Total misclassified samples (on full data): {len(misclassified_sample_ids)}")
+
+                # --- Deployment operating points: CROSS-VALIDATED, not resubstitution ---
+                # This refitted model is the one applied to external cohorts, so its
+                # operating thresholds must be frozen from the training cohort alone.
+                # The in-sample scores above separate the classes (near-)perfectly for
+                # flexible classifiers, which makes the 95%-specificity threshold read
+                # off them infinite (the 'inf' that reached fig4bc_config.csv). The
+                # thresholds below come from the selected configuration's held-out
+                # scores on the search's own ten folds (cv_splits) instead, which have
+                # a realistic spread and transfer to a new cohort.
+                print("  Deriving deployment thresholds from the search's cross-validated scores...")
+                deployment_thresholds, oof_scores = inner_cv_operating_thresholds(
+                    best_model, X_data, y_labels, cv_splits,
+                    expected_mean_auc=best_score, label=f"{feature_name} best-model search")
+                oof_auc = float(roc_auc_score(y_labels, oof_scores))
+                print(f"  OOF AUC of the selected configuration: {oof_auc:.4f} | "
+                      f"thr@95%spec = {deployment_thresholds['95_percent_specificity']:.4f} "
+                      f"(train sens {deployment_thresholds['train_tpr_at_95spec']:.3f}), "
+                      f"thr@90%spec = {deployment_thresholds['90_percent_specificity']:.4f}")
 
                 # --- Save all results ---
                 base_name = f"{feature_name}_{n_top_genes}_genes_{clf_name_safe}_{args.selection_type}"
@@ -683,32 +1296,14 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
                 np.save(indices_output_path, best_gene_indices)
                 print(f"  Saved best gene indices to: {indices_output_path}")
 
-                # Extract model weights (coefficients or feature importances)
-                clf_step = best_model.named_steps['clf']
-                model_weights = None
-                model_weights_type = None
-                
-                if hasattr(clf_step, 'coef_'):
-                    # Linear models (SVM linear, Logistic Regression, MLP)
-                    model_weights = clf_step.coef_.flatten() if clf_step.coef_.ndim > 1 else clf_step.coef_
-                    model_weights_type = 'coefficients'
-                    print(f"  Extracted {len(model_weights)} model coefficients.")
-                elif hasattr(clf_step, 'feature_importances_'):
-                    # Tree-based models (Random Forest)
-                    model_weights = clf_step.feature_importances_
-                    model_weights_type = 'feature_importances'
-                    print(f"  Extracted {len(model_weights)} feature importances.")
-                elif hasattr(clf_step, 'coefs_'):
-                    # MLPClassifier has coefs_ (list of weight matrices)
-                    # For interpretation, use the first layer weights
-                    first_layer_weights = clf_step.coefs_[0]  # Shape: (n_features, n_hidden)
-                    # Aggregate across hidden units (e.g., L2 norm)
-                    model_weights = np.linalg.norm(first_layer_weights, axis=1)
-                    model_weights_type = 'mlp_first_layer_norms'
-                    print(f"  Extracted {len(model_weights)} MLP first layer weight norms.")
+                # Extract model weights (coefficients, feature importances, or
+                # MLP first-layer norms) from the refitted pipeline
+                model_weights, model_weights_type = _extract_model_weights(best_model)
+                if model_weights is not None:
+                    print(f"  Extracted {len(model_weights)} model weights ({model_weights_type}).")
                 else:
                     print(f"  Warning: Could not extract weights from {best_clf_name}.")
-                
+
                 # Save model weights separately
                 if model_weights is not None:
                     weights_output_path = best_model_output_dir / f"best_model_weights_{base_name}.npy"
@@ -744,7 +1339,17 @@ def run_best_model_search(all_feature_arrays: dict, y_labels: np.ndarray, strati
                     'selection_weights_all_features': selection_weights_full,
                     'selection_weights_selected_features': selection_weights_selected,
                     'selection_weights_file': str(selection_weights_output_path) if selection_weights_selected is not None else None,
-                    
+
+                    # Frozen operating points for external application (from the
+                    # search's cross-validated scores, see above). Older summaries lack
+                    # these keys; external validation then reports no fixed-threshold
+                    # block.
+                    'deployment_thresholds': deployment_thresholds,
+                    'oof_scores': oof_scores.tolist(),
+                    'oof_sample_ids': sample_ids_array.tolist(),
+                    'oof_y_true': y_labels.tolist(),
+                    'oof_auc': oof_auc,
+
                     # --- New Detailed Evaluation Metrics ---
                     'full_dataset_evaluation': {
                         'description': "Metrics from evaluating the refitted best model on the *entire* dataset.",
@@ -799,8 +1404,6 @@ def get_best_model_feature_name(results_dir: str) -> str:
     >>> feature_needed = get_best_model_feature_name('./best_model_results/best_model_myexp/')
     >>> print(f"Only need to load: {feature_needed}")
     """
-    import pandas as pd
-    from pathlib import Path
     
     results_dir = Path(results_dir)
     
@@ -850,15 +1453,15 @@ def get_best_model_feature_name(results_dir: str) -> str:
                 best_feature = feature_name
                 
         except Exception as e:
-            print(f"   ⚠️  Error reading {pkl_file.name}: {e}")
+            print(f"    Error reading {pkl_file.name}: {e}")
             continue
     
     if best_feature is None:
         raise ValueError("Could not identify best model feature")
     
-    print(f"\n✓ Best model uses feature: '{best_feature}'")
+    print(f"\nBest model uses feature: '{best_feature}'")
     print(f"  CV AUC: {best_auc:.4f}")
-    print(f"  → Only this feature will be loaded for external validation")
+    print(f"  -> Only this feature will be loaded for external validation")
     print(f"{'='*90}\n")
     
     return best_feature
@@ -907,8 +1510,6 @@ def analyze_best_models_and_get_best(results_dir: str, verbose: bool = True,
     >>> best_pipeline = best_model.best_estimator_  # Already fitted on ALL data!
     >>> y_pred = best_pipeline.predict(X_new)  # Ready to use!
     """
-    import re
-    from pathlib import Path
     
     results_dir = Path(results_dir)
     
@@ -1065,7 +1666,7 @@ def analyze_best_models_and_get_best(results_dir: str, verbose: bool = True,
         print(f"N Genes:          {best_model_row['n_genes']}")
         print(f"Classifier:       {best_model_row['classifier']}")
         print(f"Selection Type:   {best_model_row['selection_type']}")
-        print(f"CV AUC:           {best_model_row['cv_auc']:.4f} ± {best_model_row['cv_std']:.4f}")
+        print(f"CV AUC:           {best_model_row['cv_auc']:.4f} +/- {best_model_row['cv_std']:.4f}")
         print(f"Combinations:     {best_model_row['n_combinations_tested']}")
         print(f"\nBest Hyperparameters:")
         for param_name, param_value in best_model_row['best_params'].items():
@@ -1144,7 +1745,6 @@ def run_label_shuffle_experiment(
     This estimates whether model weights/metrics collapse under no-signal labels.
     Produces debug logs, summary tables, and paper-quality plots.
     """
-    import matplotlib.gridspec as gridspec
 
     print("\n" + "="*90)
     print("LABEL SHUFFLE EXPERIMENT (BEST MODEL ONLY)")
@@ -1152,14 +1752,14 @@ def run_label_shuffle_experiment(
 
     best_model_results_dir = Path(best_model_results_dir)
     if not best_model_results_dir.exists():
-        print(f"❌ Error: Best model directory not found: {best_model_results_dir}")
+        print(f"Error: Best model directory not found: {best_model_results_dir}")
         return
 
-    print(f"📂 Best model directory: {best_model_results_dir}")
+    print(f"Best model directory: {best_model_results_dir}")
     if filter_feature:
-        print(f"🔎 Filter: feature={filter_feature}")
+        print(f"Filter: feature={filter_feature}")
     if filter_n_genes:
-        print(f"🔎 Filter: n_genes={filter_n_genes}")
+        print(f"Filter: n_genes={filter_n_genes}")
 
     best_results = analyze_best_models_and_get_best(
         str(best_model_results_dir),
@@ -1173,7 +1773,7 @@ def run_label_shuffle_experiment(
 
     feature_name = best_info['feature']
     if feature_name not in all_feature_arrays:
-        print(f"❌ Error: Feature '{feature_name}' not found in loaded arrays.")
+        print(f"Error: Feature '{feature_name}' not found in loaded arrays.")
         print(f"   Available: {list(all_feature_arrays.keys())}")
         return
 
@@ -1191,7 +1791,7 @@ def run_label_shuffle_experiment(
     # Prepare output directory
     output_dir = Path(args.label_shuffle_output_dir) if args.label_shuffle_output_dir else Path(args.output_dir) / f"label_shuffle_{args.experiment_name}"
     os.makedirs(output_dir, exist_ok=True)
-    print(f"\n📁 Output directory: {output_dir}")
+    print(f"\nOutput directory: {output_dir}")
 
     # Extract true model weights and indices
     true_selector = best_pipeline.named_steps.get('selector')
@@ -1199,15 +1799,15 @@ def run_label_shuffle_experiment(
     true_weights, true_weights_type = _extract_model_weights(best_pipeline)
 
     if true_selected_indices is None:
-        print("⚠️  Warning: Best model has no selector indices. Skipping weight comparisons.")
+        print("Warning: Best model has no selector indices. Skipping weight comparisons.")
 
     if true_selected_indices is not None:
-        print(f"\n🔍 DEBUG: True selector indices (first 20):")
+        print(f"\nDEBUG: True selector indices (first 20):")
         print(f"   {true_selected_indices[:20].tolist() if len(true_selected_indices) >= 20 else true_selected_indices.tolist()}")
-        print(f"   → Are indices sorted? {np.all(true_selected_indices[:-1] <= true_selected_indices[1:])}")
+        print(f"   -> Are indices sorted? {np.all(true_selected_indices[:-1] <= true_selected_indices[1:])}")
         true_indices_path = output_dir / "true_selected_indices.npy"
         np.save(true_indices_path, true_selected_indices)
-        print(f"   ✓ Saved true selected indices to: {true_indices_path}")
+        print(f"   Saved true selected indices to: {true_indices_path}")
 
     # Full-data AUC for the true model (same data)
     y_true_proba = best_pipeline.predict_proba(X)[:, 1]
@@ -1219,16 +1819,16 @@ def run_label_shuffle_experiment(
     true_full_weights = None
     if true_weights is not None and true_selected_indices is not None:
         if len(true_weights) != len(true_selected_indices):
-            print(f"⚠️  Warning: True weights length ({len(true_weights)}) does not match indices length ({len(true_selected_indices)}).")
+            print(f"Warning: True weights length ({len(true_weights)}) does not match indices length ({len(true_selected_indices)}).")
         true_full_weights = np.full(n_features, np.nan)
         true_full_weights[true_selected_indices] = true_weights
         print(f"True weights extracted ({true_weights_type}).")
     else:
-        print("⚠️  Warning: True model weights not available; weight stability plots will be skipped.")
+        print("Warning: True model weights not available; weight stability plots will be skipped.")
 
     # Build reusable classifier configuration
     if best_info['classifier'] not in CLASSIFIERS:
-        print(f"❌ Error: Classifier '{best_info['classifier']}' not in CLASSIFIERS dictionary.")
+        print(f"Error: Classifier '{best_info['classifier']}' not in CLASSIFIERS dictionary.")
         return
 
     base_classifier = CLASSIFIERS[best_info['classifier']]
@@ -1275,7 +1875,7 @@ def run_label_shuffle_experiment(
         rng = np.random.RandomState(seed)
         y_perm = rng.permutation(y_labels)
 
-        print(f"\n🔁 Shuffle {i+1}/{n_shuffles} (seed={seed})")
+        print(f"\nShuffle {i+1}/{n_shuffles} (seed={seed})")
         print(f"   Label distribution: {format_distribution(y_perm)}")
 
         # CV AUC on shuffled labels
@@ -1291,7 +1891,7 @@ def run_label_shuffle_experiment(
 
         cv_auc = float(np.mean(fold_aucs))
         cv_std = float(np.std(fold_aucs))
-        print(f"   CV AUC (mean±std): {cv_auc:.4f} ± {cv_std:.4f}")
+        print(f"   CV AUC (mean+/-std): {cv_auc:.4f} +/- {cv_std:.4f}")
 
         # Fit full model for weights + full-data AUC
         pipeline_full = _build_best_pipeline(base_classifier, best_params, best_info['n_genes'], best_info['selection_type'])
@@ -1307,7 +1907,7 @@ def run_label_shuffle_experiment(
         shuffle_full = None
         if shuffle_weights is not None and selected_indices is not None:
             if len(shuffle_weights) != len(selected_indices):
-                print(f"   ⚠️  Weight/indices length mismatch: {len(shuffle_weights)} vs {len(selected_indices)}")
+                print(f"    Weight/indices length mismatch: {len(shuffle_weights)} vs {len(selected_indices)}")
             shuffle_full = np.full(n_features, np.nan)
             shuffle_full[selected_indices] = shuffle_weights
 
@@ -1385,7 +1985,7 @@ def run_label_shuffle_experiment(
     if len(shuffle_selected_indices) > 0:
         indices_path = output_dir / "shuffle_selected_indices.npy"
         np.save(indices_path, np.array(shuffle_selected_indices, dtype=object), allow_pickle=True)
-        print(f"   ✓ Saved per-shuffle selected indices to: {indices_path}")
+        print(f"   Saved per-shuffle selected indices to: {indices_path}")
 
     # Plotting
     plot_path = output_dir / "label_shuffle_stability.png"
@@ -1483,7 +2083,7 @@ def run_label_shuffle_experiment(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"\n✅ Label shuffle results saved:")
+    print(f"\nLabel shuffle results saved:")
     print(f"   CSV: {results_csv}")
     print(f"   Summary: {summary_path}")
     print(f"   Plot: {plot_path}")
@@ -1549,7 +2149,7 @@ def validate_best_model_on_external_dataset(
     print("="*90)
     
     # Step 1: Find the best model from training results
-    print("\n📊 Step 1: Analyzing training results to find best model...")
+    print("\nStep 1: Analyzing training results to find best model...")
     
     # Apply filters if specified
     filter_desc = []
@@ -1559,7 +2159,7 @@ def validate_best_model_on_external_dataset(
         filter_desc.append(f"n_genes={filter_n_genes}")
     
     if filter_desc:
-        print(f"   🔍 Filtering models: {', '.join(filter_desc)}")
+        print(f"   Filtering models: {', '.join(filter_desc)}")
     
     best_results = analyze_best_models_and_get_best(
         best_model_results_dir, 
@@ -1571,7 +2171,7 @@ def validate_best_model_on_external_dataset(
     best_info = best_results['best_model_info']
     best_pipeline = best_results['best_model'].best_estimator_
     
-    print(f"\n✓ Best model identified:")
+    print(f"\nBest model identified:")
     print(f"  Feature: {best_info['feature']}")
     print(f"  N Genes: {best_info['n_genes']}")
     print(f"  Classifier: {best_info['classifier']}")
@@ -1580,7 +2180,7 @@ def validate_best_model_on_external_dataset(
     print(f"  Validation Mode: {validation_mode.upper()}")
     
     if validation_mode == 'clinical':
-        print(f"\n⚕️  CLINICAL MODE: Will test without training StandardScaler statistics")
+        print(f"\n CLINICAL MODE: Will test without training StandardScaler statistics")
         print(f"   This simulates deployment where only gene selection + coefficients are available")
     
     # Step 2: Get external data for the same feature
@@ -1590,13 +2190,13 @@ def validate_best_model_on_external_dataset(
     if X_external is None:
         raise ValueError(f"Feature '{feature_name}' not found in external dataset. Available: {list(external_feature_arrays.keys())}")
     
-    print(f"\n📊 Step 2: Loading external dataset...")
+    print(f"\nStep 2: Loading external dataset...")
     print(f"  Feature: {feature_name}")
     print(f"  Shape: {X_external.shape}")
     print(f"  Samples: {len(external_sample_ids)} ({np.sum(external_y_labels == 0)} healthy, {np.sum(external_y_labels == 1)} cancer)")
     
     # Step 3: Validate feature alignment
-    print(f"\n🔬 Step 3: Validating feature alignment...")
+    print(f"\nStep 3: Validating feature alignment...")
     
     # Check if pipeline has a selector step (absent for --no_gene_selection / --predefined_feature_matrix models)
     has_selector = 'selector' in best_pipeline.named_steps
@@ -1610,21 +2210,21 @@ def validate_best_model_on_external_dataset(
         print(f"  External data: {X_external.shape[1]} features available")
         
         if max_index >= X_external.shape[1]:
-            print(f"\n❌ CRITICAL ERROR: Feature misalignment!")
+            print(f"\nCRITICAL ERROR: Feature misalignment!")
             print(f"   Model needs index {max_index}, external has {X_external.shape[1]} features")
             print(f"   Missing {max_index - X_external.shape[1] + 1} features")
             print(f"\n   SOLUTION: Ensure preprocessing_metadata.pkl exists in training directory")
             print(f"   and was correctly applied to external data (see output above).")
             raise ValueError(f"Feature misalignment: model needs index {max_index}, external has {X_external.shape[1]} features")
         
-        print(f"  ✓ Alignment verified")
+        print(f"  Alignment verified")
         
         # DEBUG: Show selector indices ordering
-        print(f"\n🔍 DEBUG: TopGeneSelector indices (first 20):")
+        print(f"\nDEBUG: TopGeneSelector indices (first 20):")
         print(f"   {selected_indices[:20].tolist() if len(selected_indices) >= 20 else selected_indices.tolist()}")
-        print(f"   → These are indices into the {X_external.shape[1]}-column external data")
-        print(f"   → Model coefficient[i] corresponds to feature at selected_indices[i]")
-        print(f"   → Are indices sorted? {np.all(selected_indices[:-1] <= selected_indices[1:])}")
+        print(f"   -> These are indices into the {X_external.shape[1]}-column external data")
+        print(f"   -> Model coefficient[i] corresponds to feature at selected_indices[i]")
+        print(f"   -> Are indices sorted? {np.all(selected_indices[:-1] <= selected_indices[1:])}")
         
         # Verify gene names from bed file
         try:
@@ -1636,19 +2236,19 @@ def validate_best_model_on_external_dataset(
                 # Get gene names for selected indices (sample first 10 for display)
                 selected_gene_names = [all_gene_names[i] for i in selected_indices[:10]]
                 
-                print(f"\n  🧬 Selected gene verification (first 10):")
+                print(f"\n  Selected gene verification (first 10):")
                 for i, (idx, gene) in enumerate(zip(selected_indices[:10], selected_gene_names)):
                     print(f"     [{i}] Index {idx}: {gene}")
                 
                 # Check if training and external would have same genes at these indices
                 if training_preprocessing_metadata:
                     training_dataset = training_preprocessing_metadata.get('dataset', 'unknown')
-                    print(f"  ✓ Gene names from bed file match training indices")
+                    print(f"  Gene names from bed file match training indices")
                     print(f"    (Training: {training_dataset}, External: {args.external_metadata_file})")
             else:
-                print(f"\n  ℹ️  Bed file not found at {bed_file}, skipping gene name verification")
+                print(f"\n   Bed file not found at {bed_file}, skipping gene name verification")
         except Exception as e:
-            print(f"\n  ⚠️  Could not verify gene names: {e}")
+            print(f"\n   Could not verify gene names: {e}")
     else:
         # No selector: pipeline uses all features directly (RNA/ATAC models)
         n_selected = X_external.shape[1]
@@ -1659,29 +2259,17 @@ def validate_best_model_on_external_dataset(
         
         if n_selected != X_external.shape[1]:
             raise ValueError(f"Feature count mismatch: model expects {n_selected}, external has {X_external.shape[1]}")
-        print(f"  ✓ Alignment verified")
+        print(f"  Alignment verified")
     
-    # Extract model weights
+    # Extract model weights (coefficients / importances / MLP first-layer norms)
     clf_step = best_pipeline.named_steps['clf']
-    model_weights = None
-    model_weights_type = None
-    
-    if hasattr(clf_step, 'coef_'):
-        model_weights = clf_step.coef_.flatten() if clf_step.coef_.ndim > 1 else clf_step.coef_
-        model_weights_type = 'coefficients'
-    elif hasattr(clf_step, 'feature_importances_'):
-        model_weights = clf_step.feature_importances_
-        model_weights_type = 'feature_importances'
-    elif hasattr(clf_step, 'coefs_'):
-        first_layer_weights = clf_step.coefs_[0]
-        model_weights = np.linalg.norm(first_layer_weights, axis=1)
-        model_weights_type = 'mlp_first_layer_norms'
-    
+    model_weights, model_weights_type = _extract_model_weights(best_pipeline)
+
     if model_weights is not None:
-        print(f"  ✓ Extracted {len(model_weights)} {model_weights_type}")
+        print(f"  Extracted {len(model_weights)} {model_weights_type}")
     
     # Step 4: Apply the fitted model to external data
-    print(f"\n🔬 Step 4: Applying model to external dataset...")
+    print(f"\nStep 4: Applying model to external dataset...")
     
     start_time = time.time()
     
@@ -1693,7 +2281,7 @@ def validate_best_model_on_external_dataset(
             print(f"  Bypassing pipeline's internal StandardScaler (data already standardized with training stats)")
             if has_selector:
                 X_transformed = best_pipeline.named_steps['selector'].transform(X_external)
-                print(f"  Applied gene selection: {X_external.shape[1]} → {X_transformed.shape[1]} features")
+                print(f"  Applied gene selection: {X_external.shape[1]} -> {X_transformed.shape[1]} features")
             else:
                 X_transformed = X_external
             clf_step_pred = best_pipeline.named_steps['clf']
@@ -1702,7 +2290,7 @@ def validate_best_model_on_external_dataset(
         
         elif validation_mode == 'clinical':
             # Clinical mode: Only gene selection (if applicable), fresh StandardScaler on external data
-            print(f"  ⚕️  Clinical mode: Applying gene selection only, then fresh StandardScaler")
+            print(f"   Clinical mode: Applying gene selection only, then fresh StandardScaler")
             
             # Step 1: Apply gene selection using training indices (if selector exists)
             if has_selector:
@@ -1710,7 +2298,7 @@ def validate_best_model_on_external_dataset(
                 print(f"     Selected {X_external_selected.shape[1]} features from external data")
             else:
                 X_external_selected = X_external
-                print(f"     No gene selector — using all {X_external_selected.shape[1]} features")
+                print(f"     No gene selector - using all {X_external_selected.shape[1]} features")
             
             # Step 2: Apply NEW StandardScaler fitted on external data
             scaler_clinical = StandardScaler()
@@ -1729,11 +2317,11 @@ def validate_best_model_on_external_dataset(
             raise ValueError(f"Unknown validation_mode: {validation_mode}")
             
     except Exception as e:
-        print(f"❌ Error applying model: {e}")
+        print(f"Error applying model: {e}")
         raise
     
     elapsed = time.time() - start_time
-    print(f"  ✓ Predictions completed in {elapsed:.2f}s")
+    print(f"  Predictions completed in {elapsed:.2f}s")
     
     # Store decision_function scores for SVM (more reliable than Platt-scaled probabilities)
     y_decision_function = None
@@ -1741,25 +2329,25 @@ def validate_best_model_on_external_dataset(
         try:
             clf_for_df = clf_step_pred if validation_mode == 'pipeline' else best_pipeline.named_steps['clf']
             y_decision_function = clf_for_df.decision_function(X_transformed if validation_mode == 'pipeline' else X_external_scaled).astype(float)
-            print(f"  ✓ Stored decision_function scores (range: {y_decision_function.min():.4f} to {y_decision_function.max():.4f})")
+            print(f"  Stored decision_function scores (range: {y_decision_function.min():.4f} to {y_decision_function.max():.4f})")
         except Exception as e:
-            print(f"  ⚠️  Could not compute decision_function: {e}")
+            print(f"   Could not compute decision_function: {e}")
     
     # Probability degeneracy diagnostic
     proba_std = float(np.std(y_pred_proba))
     proba_range = float(np.ptp(y_pred_proba))
     proba_degenerate = proba_range < 0.01  # All probabilities within 1% of each other
     if proba_degenerate:
-        print(f"  ⚠️  PROBABILITY DEGENERACY DETECTED: all predictions within {proba_range:.2e} of each other")
-        print(f"     → Platt scaling has saturated (all samples far from decision boundary)")
-        print(f"     → AUC is still valid (ranking-based) but probabilities are meaningless")
-        print(f"     → Use decision_function scores for threshold analysis instead")
+        print(f"   PROBABILITY DEGENERACY DETECTED: all predictions within {proba_range:.2e} of each other")
+        print(f"     -> Platt scaling has saturated (all samples far from decision boundary)")
+        print(f"     -> AUC is still valid (ranking-based) but probabilities are meaningless")
+        print(f"     -> Use decision_function scores for threshold analysis instead")
         if y_decision_function is not None:
             df_range = float(np.ptp(y_decision_function))
-            print(f"     → Decision function range: {df_range:.4f} (vs probability range: {proba_range:.2e})")
+            print(f"     -> Decision function range: {df_range:.4f} (vs probability range: {proba_range:.2e})")
     
     # Step 4: Calculate comprehensive metrics
-    print(f"\n📈 Step 5: Computing evaluation metrics...")
+    print(f"\nStep 5: Computing evaluation metrics...")
     
     # Use decision_function for ROC if probabilities are degenerate (more numerically stable)
     y_scores_for_roc = y_decision_function if (proba_degenerate and y_decision_function is not None) else y_pred_proba
@@ -1785,9 +2373,9 @@ def validate_best_model_on_external_dataset(
     # achievable operating point on the external set (e.g. "sensitivity attainable at
     # 95% specificity on this cohort"), NOT a pre-specified deployment threshold. It is
     # not the same as the nested-CV leakage (there the threshold was tuned on held-out
-    # folds used for generalization estimates). If a frozen deployment threshold is
-    # required, reuse the internal training threshold (full_model_thresholds saved with
-    # the best model) instead of recomputing here.
+    # folds used for generalization estimates). The frozen deployment view - the
+    # training cohort's OOF-derived thresholds applied unchanged - follows below
+    # (deployment_thresholds / fixed_threshold_evaluation).
     # Operating point metrics: sensitivity @ 95% specificity (FPR = 0.05)
     target_fpr_95 = 0.05
     idx_95spec = np.argmin(np.abs(fpr - target_fpr_95))
@@ -1822,112 +2410,51 @@ def validate_best_model_on_external_dataset(
     print(f"  Sensitivity @95% specificity: {overall_sens_at_95spec:.4f} (threshold={threshold_95spec:.4f})")
     print(f"  Sensitivity @90% specificity: {overall_sens_at_90spec:.4f} (threshold={threshold_90spec:.4f})")
     print(f"  Youden optimal: sens={overall_sens_at_youden:.4f}, spec={overall_spec_at_youden:.4f} (threshold={threshold_youden:.4f})")
-    
+
+    # Deployment view: the SAME thresholds the training cohort froze (OOF-derived,
+    # saved with the deployed model), applied unchanged to the external cohort.
+    # Complements the descriptive operating points above, which are read off the
+    # external ROC and therefore use its labels. Applied to predict_proba: that is
+    # the scale the thresholds were derived on; when the external probabilities are
+    # degenerate (saturated Platt scaling) the block is still reported, flagged.
+    deployment_thresholds = _load_deployment_thresholds(best_results['best_model_path'])
+    fixed_threshold_evaluation = {}
+    if deployment_thresholds is None:
+        print("  No deployment thresholds in the deployed model's summary (older best-model "
+              "search); fixed-threshold evaluation skipped - rerun the best-model search.")
+    else:
+        fixed_threshold_evaluation = _fixed_threshold_evaluation(
+            y_pred_proba, external_y_labels, external_stratification_labels, deployment_thresholds)
+        print(f"\n  Frozen training-cohort thresholds applied to the external cohort"
+              f"{' (WARNING: external probabilities degenerate)' if proba_degenerate else ''}:")
+        for name, entry in fixed_threshold_evaluation.items():
+            o = entry['overall']
+            print(f"    {name:<24} thr={entry['threshold']:.4f}  "
+                  f"sens={o['sensitivity']:.3f} [{o['sensitivity_ci95'][0]:.3f}-{o['sensitivity_ci95'][1]:.3f}] "
+                  f"(TP={o['tp']}, FN={o['fn']})  "
+                  f"spec={o['specificity']:.3f} [{o['specificity_ci95'][0]:.3f}-{o['specificity_ci95'][1]:.3f}] "
+                  f"(TN={o['tn']}, FP={o['fp']})")
+            for g, c in entry['per_control_group'].items():
+                print(f"      {g:<22} spec={c['specificity']:.3f} "
+                      f"[{c['specificity_ci95'][0]:.3f}-{c['specificity_ci95'][1]:.3f}] "
+                      f"(TN={c['tn']}, FP={c['fp']})")
+
     # Misclassified samples
     external_sample_ids_array = np.array(external_sample_ids)
     misclassified_idx = np.where(external_y_labels != y_pred)[0]
     misclassified_ids = external_sample_ids_array[misclassified_idx].tolist()
     
-    # Per-cancer-type evaluation
+    # Per-cancer-type evaluation (all healthy vs one cancer type), with descriptive
+    # operating points read off each subset's ROC (see the leakage note above).
     healthy_labels = np.unique(external_stratification_labels[external_y_labels == 0])
-    cancer_types = np.unique(external_stratification_labels[external_y_labels == 1])
-    
-    auc_per_type = {}
-    roc_per_type = {}
-    pr_per_type = {}
-    confusion_per_type = {}
-    report_per_type = {}
-    
-    sample_classification_per_type = {}
-    
-    for cancer_type in cancer_types:
-        # Subset: all healthy vs this cancer type
-        mask = np.isin(external_stratification_labels, healthy_labels) | (external_stratification_labels == cancer_type)
-        y_true_subset = (external_stratification_labels[mask] == cancer_type).astype(int)
-        y_pred_proba_subset = y_pred_proba[mask]
-        sample_ids_subset = external_sample_ids_array[mask]
-        
-        if len(np.unique(y_true_subset)) < 2:
-            continue
-        
-        fpr_ct, tpr_ct, thresh_ct = roc_curve(y_true_subset, y_pred_proba_subset)
-        prec_ct, rec_ct, _ = precision_recall_curve(y_true_subset, y_pred_proba_subset)
-        
-        auc_per_type[cancer_type] = auc(fpr_ct, tpr_ct)
-        roc_per_type[cancer_type] = {'fpr': fpr_ct.tolist(), 'tpr': tpr_ct.tolist()}
-        pr_per_type[cancer_type] = {'precision': prec_ct.tolist(), 'recall': rec_ct.tolist()}
-        
-        # Calculate predictions at multiple operating points
-        # 1. Default: 0.5 threshold
-        y_pred_default = (y_pred_proba_subset >= 0.5).astype(int)
-        
-        # 2. At 95% specificity (FPR = 0.05)
-        target_fpr = 0.05  # 95% specificity
-        idx_95spec = np.argmin(np.abs(fpr_ct - target_fpr))
-        threshold_95spec = thresh_ct[idx_95spec] if idx_95spec < len(thresh_ct) else 0.5
-        y_pred_95spec = (y_pred_proba_subset >= threshold_95spec).astype(int)
-        
-        # 3. At 90% specificity (FPR = 0.10)
-        target_fpr_90 = 0.10  # 90% specificity
-        idx_90spec = np.argmin(np.abs(fpr_ct - target_fpr_90))
-        threshold_90spec = thresh_ct[idx_90spec] if idx_90spec < len(thresh_ct) else 0.5
-        y_pred_90spec = (y_pred_proba_subset >= threshold_90spec).astype(int)
-        
-        # 4. At Youden's Index (optimal threshold maximizing sensitivity + specificity)
-        youden_index = tpr_ct - fpr_ct
-        idx_youden = np.argmax(youden_index)
-        threshold_youden = thresh_ct[idx_youden] if idx_youden < len(thresh_ct) else 0.5
-        y_pred_youden = (y_pred_proba_subset >= threshold_youden).astype(int)
-        
-        # Store confusion matrices and reports for each operating point
-        confusion_per_type[cancer_type] = {
-            'default_0.5': confusion_matrix(y_true_subset, y_pred_default).tolist(),
-            '95_percent_specificity': confusion_matrix(y_true_subset, y_pred_95spec).tolist(),
-            '90_percent_specificity': confusion_matrix(y_true_subset, y_pred_90spec).tolist(),
-            'youden_optimal': confusion_matrix(y_true_subset, y_pred_youden).tolist(),
-        }
-        
-        report_per_type[cancer_type] = {
-            'default_0.5': classification_report(y_true_subset, y_pred_default, output_dict=True, zero_division=0),
-            '95_percent_specificity': classification_report(y_true_subset, y_pred_95spec, output_dict=True, zero_division=0),
-            '90_percent_specificity': classification_report(y_true_subset, y_pred_90spec, output_dict=True, zero_division=0),
-            'youden_optimal': classification_report(y_true_subset, y_pred_youden, output_dict=True, zero_division=0),
-        }
-        
-        # Track which samples were correctly/incorrectly classified at each threshold
-        sample_classification_per_type[cancer_type] = {
-            'default_0.5': {
-                'correct': sample_ids_subset[y_true_subset == y_pred_default].tolist(),
-                'incorrect': sample_ids_subset[y_true_subset != y_pred_default].tolist(),
-            },
-            '95_percent_specificity': {
-                'correct': sample_ids_subset[y_true_subset == y_pred_95spec].tolist(),
-                'incorrect': sample_ids_subset[y_true_subset != y_pred_95spec].tolist(),
-            },
-            '90_percent_specificity': {
-                'correct': sample_ids_subset[y_true_subset == y_pred_90spec].tolist(),
-                'incorrect': sample_ids_subset[y_true_subset != y_pred_90spec].tolist(),
-            },
-            'youden_optimal': {
-                'correct': sample_ids_subset[y_true_subset == y_pred_youden].tolist(),
-                'incorrect': sample_ids_subset[y_true_subset != y_pred_youden].tolist(),
-            },
-        }
-        
-        # Store the thresholds used
-        roc_per_type[cancer_type]['thresholds'] = {
-            'default': 0.5,
-            '95_percent_specificity': float(threshold_95spec),
-            '90_percent_specificity': float(threshold_90spec),
-            'youden_optimal': float(threshold_youden),
-            'actual_fpr_at_95spec': float(fpr_ct[idx_95spec]) if idx_95spec < len(fpr_ct) else None,
-            'actual_tpr_at_95spec': float(tpr_ct[idx_95spec]) if idx_95spec < len(tpr_ct) else None,
-            'actual_fpr_at_90spec': float(fpr_ct[idx_90spec]) if idx_90spec < len(fpr_ct) else None,
-            'actual_tpr_at_90spec': float(tpr_ct[idx_90spec]) if idx_90spec < len(tpr_ct) else None,
-        }
-    
+    (auc_per_type, roc_per_type, pr_per_type, confusion_per_type,
+     report_per_type, sample_classification_per_type) = \
+        _per_cancer_type_descriptive_eval(
+            y_pred_proba, external_y_labels, external_stratification_labels,
+            external_sample_ids_array)
+
     # Detailed Control Group Analysis (Healthy, Cirrhosis, Hepatitis B breakdown)
-    print(f"\n🔬 Analyzing control group composition...")
+    print(f"\nAnalyzing control group composition...")
     control_subgroups = {}
     control_subgroup_predictions = {}
     
@@ -1955,7 +2482,7 @@ def validate_best_model_on_external_dataset(
                   f"misclassified: {np.sum(pred_vals == 1)}/{n_samples} ({np.sum(pred_vals == 1)/n_samples*100:.1f}%)")
     
     # Create confusion matrix per control subgroup + cancer
-    print(f"\n📊 Creating detailed confusion matrix (control subgroups + cancer)...")
+    print(f"\nCreating detailed confusion matrix (control subgroups + cancer)...")
     
     # Build a multi-class confusion matrix
     # Classes: Healthy, Cirrhosis, Hepatitis B, Cancer (all cancer types combined)
@@ -2023,34 +2550,31 @@ def validate_best_model_on_external_dataset(
         print(f"    Std deviation: {rate_std:.1f}%")
         print(f"    Range: {rate_range:.1f}%")
         if rate_range < 10:
-            print(f"    ✓ Subgroups show similar behavior (range < 10%)")
-            print(f"      → Including all in class 0 appears reasonable")
+            print(f"    Subgroups show similar behavior (range < 10%)")
+            print(f"      -> Including all in class 0 appears reasonable")
         elif rate_range < 20:
-            print(f"    ⚠ Moderate variation in subgroups (range 10-20%)")
-            print(f"      → Review detailed plot for specific differences")
+            print(f"    Moderate variation in subgroups (range 10-20%)")
+            print(f"      -> Review detailed plot for specific differences")
         else:
-            print(f"    ⚠️ High variation in subgroups (range > 20%)")
-            print(f"      → One or more subgroups may behave differently")
-            print(f"      → Consider separate analysis or exclusion")
+            print(f"    High variation in subgroups (range > 20%)")
+            print(f"      -> One or more subgroups may behave differently")
+            print(f"      -> Consider separate analysis or exclusion")
     
     print(f"{'='*90}")
     
-    # Save results - fix output directory path
-    print("Is there an output directory specified?", args.output_dir)
-    print("best model results dir:", best_model_results_dir)
+    # Resolve the output directory
     if args.output_dir:
         output_dir = Path(args.output_dir) / f"external_validation_{args.experiment_name}"
     else:
         output_dir = Path(best_model_results_dir).parent / f"external_validation_{args.experiment_name}"
     os.makedirs(output_dir, exist_ok=True)
-    print("The output directory is:", output_dir)
+    print(f"Output directory: {output_dir}")
     
     # Create weight visualization if available
     weight_plot_path = None
     if model_weights is not None:
-        print(f"\n📊 Creating weight visualization...")
+        print(f"\nCreating weight visualization...")
         try:
-            import matplotlib.pyplot as plt
             
             fig, axes = plt.subplots(2, 2, figsize=(14, 10))
             fig.suptitle(f'Model Weights Visualization\n{best_info["classifier"]} | {best_info["feature"]} | {n_selected} genes', 
@@ -2116,18 +2640,17 @@ def validate_best_model_on_external_dataset(
             weight_plot_path = output_dir / f"weight_visualization_{feature_name}.png"
             plt.savefig(weight_plot_path, dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"  ✓ Weight visualization saved to: {weight_plot_path}")
+            print(f"  Weight visualization saved to: {weight_plot_path}")
             
         except Exception as e:
-            print(f"  ⚠ Could not create weight visualization: {e}")
+            print(f"  Could not create weight visualization: {e}")
             weight_plot_path = None
     
     # Create control subgroup confusion matrix visualization
     control_confusion_plot_path = None
     if len(control_subgroups) > 0:
-        print(f"\n📊 Creating control subgroup confusion matrix...")
+        print(f"\nCreating control subgroup confusion matrix...")
         try:
-            import matplotlib.pyplot as plt
             
             fig, ax = plt.subplots(figsize=(10, 8))
             
@@ -2187,9 +2710,9 @@ def validate_best_model_on_external_dataset(
                 rate_std = np.std(control_miscl_rates)
                 rate_range = max(control_miscl_rates) - min(control_miscl_rates)
                 if rate_range < 10:
-                    summary_text += f'✓ Similar (range: {rate_range:.1f}%)'
+                    summary_text += f'Similar (range: {rate_range:.1f}%)'
                 else:
-                    summary_text += f'⚠ Variable (range: {rate_range:.1f}%)'
+                    summary_text += f'Variable (range: {rate_range:.1f}%)'
             
             ax.text(1.35, 0.5, summary_text,
                    transform=ax.transAxes, verticalalignment='center', fontsize=10,
@@ -2199,10 +2722,10 @@ def validate_best_model_on_external_dataset(
             control_confusion_plot_path = output_dir / f"control_subgroup_confusion_matrix_{feature_name}.png"
             plt.savefig(control_confusion_plot_path, dpi=300, bbox_inches='tight')
             plt.close()
-            print(f"  ✓ Control subgroup confusion matrix saved to: {control_confusion_plot_path}")
+            print(f"  Control subgroup confusion matrix saved to: {control_confusion_plot_path}")
             
         except Exception as e:
-            print(f"  ⚠ Could not create control subgroup confusion matrix: {e}")
+            print(f"  Could not create control subgroup confusion matrix: {e}")
             import traceback
             traceback.print_exc()
             control_confusion_plot_path = None
@@ -2210,7 +2733,7 @@ def validate_best_model_on_external_dataset(
     # Create diagnostic plots comparing training vs external dataset
     diagnostic_plots = None
     if training_preprocessing_metadata:
-        print(f"\n📊 Creating diagnostic plots (training vs external comparison)...")
+        print(f"\nCreating diagnostic plots (training vs external comparison)...")
         try:
             # Load training dataset to compare statistics
             training_metadata_file = training_preprocessing_metadata.get('dataset', '')
@@ -2260,9 +2783,9 @@ def validate_best_model_on_external_dataset(
                             training_cancer_data = full_mat[~healthy_mask.values]
                             print(f"  Training matrix: {full_mat.shape[0]} samples ({training_healthy_data.shape[0]} healthy, {training_cancer_data.shape[0]} cancer)")
                         else:
-                            print(f"  ⚠ No metadata CSV found for training matrix")
+                            print(f"  No metadata CSV found for training matrix")
                     else:
-                        print(f"  ⚠ Could not find training predefined matrix")
+                        print(f"  Could not find training predefined matrix")
                 else:
                     # CSV features (DD/RNA): load from features_dir
                     features_dir = args.features_dir if hasattr(args, 'features_dir') else './extracted_features/biomart_10kb'
@@ -2303,11 +2826,13 @@ def validate_best_model_on_external_dataset(
                     training_feature_means = np.mean(training_combined, axis=0)
                     training_feature_stds = np.std(training_combined, axis=0)
                     
-                    external_feature_means = np.mean(X_external, axis=0)
-                    external_feature_stds = np.std(X_external, axis=0)
-                    
+                    # the external array carries the covariate block (--augment_covariates) after
+                    # the TSS columns; the diagnostic compares the TSS columns only
+                    X_external_tss = X_external[:, :training_combined.shape[1]] if COVARIATE_BLOCK['n'] else X_external
+                    external_feature_means = np.mean(X_external_tss, axis=0)
+                    external_feature_stds = np.std(X_external_tss, axis=0)
+
                     # Calculate Spearman correlations
-                    from scipy.stats import spearmanr
                     
                     # Correlation for means
                     corr_means, pval_means = spearmanr(training_feature_means, external_feature_means)
@@ -2395,10 +2920,10 @@ def validate_best_model_on_external_dataset(
                     diagnostic_plots = output_dir / f"diagnostic_training_vs_external_{feature_name}.png"
                     plt.savefig(diagnostic_plots, dpi=300, bbox_inches='tight')
                     plt.close()
-                    print(f"  ✓ Diagnostic plots saved to: {diagnostic_plots}")
+                    print(f"  Diagnostic plots saved to: {diagnostic_plots}")
                     
                     # Additional summary statistics
-                    print(f"\n  📊 Summary Statistics:")
+                    print(f"\n  Summary Statistics:")
                     print(f"     Training means: min={training_feature_means.min():.4f}, max={training_feature_means.max():.4f}, median={np.median(training_feature_means):.4f}")
                     print(f"     External means: min={external_feature_means.min():.4f}, max={external_feature_means.max():.4f}, median={np.median(external_feature_means):.4f}")
                     print(f"     Training stds:  min={training_feature_stds.min():.4f}, max={training_feature_stds.max():.4f}, median={np.median(training_feature_stds):.4f}")
@@ -2407,12 +2932,12 @@ def validate_best_model_on_external_dataset(
                     print(f"     Prediction scores - Healthy: median={np.median(healthy_scores):.4f}, mean={np.mean(healthy_scores):.4f}")
                     print(f"     Prediction scores - Cancer:  median={np.median(cancer_scores):.4f}, mean={np.mean(cancer_scores):.4f}")
                 else:
-                    print(f"  ⚠ Could not load training data for comparison")
+                    print(f"  Could not load training data for comparison")
             else:
-                print(f"  ⚠ Training metadata file not found: {training_metadata_file}")
+                print(f"  Training metadata file not found: {training_metadata_file}")
                 
         except Exception as e:
-            print(f"  ⚠ Could not create diagnostic plots: {e}")
+            print(f"  Could not create diagnostic plots: {e}")
             import traceback
             traceback.print_exc()
     
@@ -2494,7 +3019,12 @@ def validate_best_model_on_external_dataset(
         'threshold_youden': threshold_youden,
         'classification_report_youden': report_youden,
         'confusion_matrix_youden': conf_matrix_youden,
-        
+
+        # Frozen training-cohort thresholds applied unchanged (deployment view);
+        # None / {} when the deployed model predates deployment_thresholds.
+        'deployment_thresholds': deployment_thresholds,
+        'fixed_threshold_evaluation': fixed_threshold_evaluation,
+
         # Prediction scores for downstream analysis
         'y_pred_proba': y_pred_proba.tolist(),
         'y_decision_function': y_decision_function.tolist() if y_decision_function is not None else None,
@@ -2511,7 +3041,7 @@ def validate_best_model_on_external_dataset(
     with open(output_file, 'wb') as f:
         pickle.dump(results, f)
     
-    print(f"\n✅ Results saved to: {output_file}")
+    print(f"\nResults saved to: {output_file}")
     print(f"{'='*90}\n")
     
     return results
@@ -2557,7 +3087,7 @@ def run_comprehensive_external_validation(
     os.makedirs(output_dir, exist_ok=True)
     
     # Get available features and gene counts from models
-    print(f"\n📂 Scanning available models in {best_model_results_dir}...")
+    print(f"\nScanning available models in {best_model_results_dir}...")
     results_dir = Path(best_model_results_dir)
     gridsearch_files = list(results_dir.glob("best_model_GridSearchCV_*.pkl"))
     
@@ -2586,7 +3116,7 @@ def run_comprehensive_external_validation(
                     available_gene_counts.add(n_genes)
                     break
         except Exception as e:
-            print(f"  ⚠️ Could not parse {pkl_file.name}: {e}")
+            print(f"  Could not parse {pkl_file.name}: {e}")
             continue
     
     print(f"   Found {len(available_features)} features: {sorted(available_features)}")
@@ -2596,9 +3126,9 @@ def run_comprehensive_external_validation(
     if filter_feature:
         if filter_feature in available_features:
             available_features = {filter_feature}
-            print(f"\n   🔎 Filtered to feature: {filter_feature}")
+            print(f"\n   Filtered to feature: {filter_feature}")
         else:
-            print(f"\n   ⚠️  Requested filter_feature '{filter_feature}' not found in available features: {sorted(available_features)}")
+            print(f"\n    Requested filter_feature '{filter_feature}' not found in available features: {sorted(available_features)}")
             print(f"   Proceeding with all available features")
     
     # Part 1: Validate best model per feature
@@ -2608,9 +3138,9 @@ def run_comprehensive_external_validation(
     
     feature_results = {}
     for feature in sorted(available_features):
-        print(f"\n{'─'*90}")
+        print(f"\n{'-'*90}")
         print(f"Evaluating best {feature} model...")
-        print(f"{'─'*90}")
+        print(f"{'-'*90}")
         
         try:
             result = validate_best_model_on_external_dataset(
@@ -2626,9 +3156,9 @@ def run_comprehensive_external_validation(
                 validation_mode=getattr(args, 'external_validation_mode', 'pipeline')
             )
             feature_results[feature] = result
-            print(f"✓ {feature}: AUC = {result['overall_auc']:.4f}")
+            print(f"{feature}: AUC = {result['overall_auc']:.4f}")
         except Exception as e:
-            print(f"❌ Failed to validate {feature}: {e}")
+            print(f"Failed to validate {feature}: {e}")
             feature_results[feature] = None
     
     # Identify best feature from Part 1 results
@@ -2640,9 +3170,9 @@ def run_comprehensive_external_validation(
             best_feature_auc = res['overall_auc']
     
     if best_feature is None:
-        print("❌ No valid feature results, cannot proceed with gene count analysis")
+        print("No valid feature results, cannot proceed with gene count analysis")
         best_feature = sorted(available_features)[0]  # Fallback to first feature
-        print(f"⚠️  Using fallback feature: {best_feature}")
+        print(f"Using fallback feature: {best_feature}")
     
     # Part 2: Validate best model at each gene count (unbiased by feature)
     print("\n" + "="*90)
@@ -2653,9 +3183,9 @@ def run_comprehensive_external_validation(
     
     gene_count_results = {}
     for n_genes in sorted(available_gene_counts):
-        print(f"\n{'─'*90}")
+        print(f"\n{'-'*90}")
         print(f"Finding best model with {n_genes} genes across all features...")
-        print(f"{'─'*90}")
+        print(f"{'-'*90}")
         
         try:
             result = validate_best_model_on_external_dataset(
@@ -2672,9 +3202,9 @@ def run_comprehensive_external_validation(
             )
             gene_count_results[n_genes] = result
             best_feat_this_count = result['best_model_info']['feature']
-            print(f"✓ {n_genes} genes: AUC = {result['overall_auc']:.4f} (best feature: {best_feat_this_count})")
+            print(f"{n_genes} genes: AUC = {result['overall_auc']:.4f} (best feature: {best_feat_this_count})")
         except Exception as e:
-            print(f"❌ Failed to validate {n_genes} genes: {e}")
+            print(f"Failed to validate {n_genes} genes: {e}")
             gene_count_results[n_genes] = None
     
     # Part 3: Create comprehensive visualizations
@@ -2682,8 +3212,6 @@ def run_comprehensive_external_validation(
     print("PART 3: GENERATING VISUALIZATIONS")
     print("="*90)
     
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
     
     # Create comprehensive figure
     fig = plt.figure(figsize=(20, 15))
@@ -2896,7 +3424,7 @@ def run_comprehensive_external_validation(
     # Overall title
     train_dataset = training_preprocessing_metadata.get('dataset', 'Unknown') if training_preprocessing_metadata else 'Unknown'
     external_dataset = args.external_metadata_file
-    fig.suptitle(f'Comprehensive External Validation Analysis\nTraining: {train_dataset} → External: {external_dataset}', 
+    fig.suptitle(f'Comprehensive External Validation Analysis\nTraining: {train_dataset} -> External: {external_dataset}', 
                 fontsize=16, fontweight='bold', y=0.995)
     
     # Save figure
@@ -2904,9 +3432,9 @@ def run_comprehensive_external_validation(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"\n✅ Comprehensive visualization saved to: {plot_path}")
+    print(f"\nComprehensive visualization saved to: {plot_path}")
     
-    # Save summary results — include detailed metrics for downstream analysis
+    # Save summary results - include detailed metrics for downstream analysis
     def _build_feature_summary(res):
         """Extract comprehensive metrics from a single validation result dict."""
         if res is None:
@@ -2977,6 +3505,19 @@ def run_comprehensive_external_validation(
                 'sens_at_95spec': res.get('overall_sens_at_95spec'),
                 'sens_at_youden': res.get('overall_sens_at_youden'),
                 'spec_at_youden': res.get('overall_spec_at_youden'),
+                # Per-sample scores per k (the per-feature result pickle is overwritten
+                # by every k evaluation, so this is the only place they survive):
+                # lets the figure layer bootstrap the AUROC-vs-k curve and split it by
+                # comparison subgroup.
+                'y_pred_proba': res.get('y_pred_proba'),
+                'y_scores_for_roc': res.get('y_scores_for_roc'),
+                'proba_degenerate': res.get('proba_degenerate'),
+                'y_true': res.get('y_true'),
+                'sample_ids': res.get('sample_ids'),
+                'stratification_labels': res.get('stratification_labels'),
+                'best_model_path': res.get('best_model_path'),
+                'deployment_thresholds': res.get('deployment_thresholds'),
+                'fixed_threshold_evaluation': res.get('fixed_threshold_evaluation'),
             } if res else None
             for n_genes, res in gene_count_results.items()
         },
@@ -2989,7 +3530,7 @@ def run_comprehensive_external_validation(
     with open(summary_path, 'wb') as f:
         pickle.dump(summary, f)
     
-    print(f"✅ Summary results saved to: {summary_path}")
+    print(f"Summary results saved to: {summary_path}")
     
     # Print summary table
     print("\n" + "="*90)
@@ -3032,19 +3573,19 @@ def run_comprehensive_external_validation(
     # Best generalizing feature
     best_feat = max(feature_results.items(), key=lambda x: x[1]['overall_auc'] if x[1] else 0)
     if best_feat[1]:
-        print(f"🏆 Best generalizing feature: {best_feat[0]} (AUC: {best_feat[1]['overall_auc']:.4f})")
+        print(f"Best generalizing feature: {best_feat[0]} (AUC: {best_feat[1]['overall_auc']:.4f})")
     
     # Best gene count for generalization
     best_genes = max(gene_count_results.items(), key=lambda x: x[1]['overall_auc'] if x[1] else 0)
     if best_genes[1]:
-        print(f"🏆 Best gene count: {best_genes[0]} genes (AUC: {best_genes[1]['overall_auc']:.4f}, Feature: {best_genes[1]['best_model_info']['feature']})")
+        print(f"Best gene count: {best_genes[0]} genes (AUC: {best_genes[1]['overall_auc']:.4f}, Feature: {best_genes[1]['best_model_info']['feature']})")
     
     # Smallest generalization gap
     gaps = [(feat, res['best_model_info']['cv_auc'] - res['overall_auc']) 
             for feat, res in feature_results.items() if res]
     if gaps:
         min_gap_feat = min(gaps, key=lambda x: x[1])
-        print(f"📊 Smallest generalization gap: {min_gap_feat[0]} (gap: {min_gap_feat[1]:.4f})")
+        print(f"Smallest generalization gap: {min_gap_feat[0]} (gap: {min_gap_feat[1]:.4f})")
     
     print("="*90)
     
@@ -3099,7 +3640,7 @@ def run_within_dataset_generalization_training(
     output_dir = Path(args.output_dir) / args.experiment_name
     os.makedirs(output_dir, exist_ok=True)
     
-    print(f"\n📋 Configuration:")
+    print(f"\nConfiguration:")
     print(f"   Training cancer types: {training_cancer_types}")
     print(f"   Withhold fraction: {withhold_fraction*100:.0f}%")
     print(f"   Output directory: {output_dir}")
@@ -3109,7 +3650,7 @@ def run_within_dataset_generalization_training(
         print(f"   Split seed: {split_seed}")
     
     # Step 1: Filter to healthy + training cancer types
-    print(f"\n🔍 Step 1: Filtering data to healthy + training cancer types...")
+    print(f"\nStep 1: Filtering data to healthy + training cancer types...")
     healthy_mask = y_labels == 0
     training_cancer_mask = np.isin(stratification_labels, training_cancer_types)
     combined_mask = healthy_mask | training_cancer_mask
@@ -3129,9 +3670,8 @@ def run_within_dataset_generalization_training(
         print(f"   {cancer_type}: {count}")
     
     # Step 2: Stratified split 80/20
-    print(f"\n✂️ Step 2: Stratified split ({int((1-withhold_fraction)*100)}% training, {int(withhold_fraction*100)}% withheld)...")
+    print(f"\nStep 2: Stratified split ({int((1-withhold_fraction)*100)}% training, {int(withhold_fraction*100)}% withheld)...")
     
-    from sklearn.model_selection import train_test_split
     
     # Split indices
     split_random_state = split_seed if split_seed is not None else 42
@@ -3166,7 +3706,7 @@ def run_within_dataset_generalization_training(
         print(f"     {cancer_type}: {count}")
     
     # Step 3: Save withheld information for later evaluation
-    print(f"\n💾 Step 3: Saving withheld sample information...")
+    print(f"\nStep 3: Saving withheld sample information...")
     withheld_info = {
         'withheld_sample_ids': withheld_ids.tolist(),
         'withheld_y_labels': withheld_y.tolist(),
@@ -3183,7 +3723,7 @@ def run_within_dataset_generalization_training(
     withheld_file = output_dir / "withheld_sample_info.pkl"
     with open(withheld_file, 'wb') as f:
         pickle.dump(withheld_info, f)
-    print(f"   ✓ Saved to: {withheld_file}")
+    print(f"   Saved to: {withheld_file}")
     
     # Also save as CSV for easy inspection
     withheld_df = pd.DataFrame({
@@ -3193,10 +3733,10 @@ def run_within_dataset_generalization_training(
     })
     withheld_csv = output_dir / "withheld_samples.csv"
     withheld_df.to_csv(withheld_csv, index=False)
-    print(f"   ✓ Saved CSV to: {withheld_csv}")
+    print(f"   Saved CSV to: {withheld_csv}")
     
     # Step 4: Training-only standardization stats (for withheld/novel evaluation)
-    print(f"\n📊 Step 4: Computing training-only standardization stats...")
+    print(f"\nStep 4: Computing training-only standardization stats...")
     training_feature_stats = {
         'feature_means_per_feature': {
             feature: np.nanmean(arr, axis=0).tolist()
@@ -3213,7 +3753,7 @@ def run_within_dataset_generalization_training(
     train_features = standardize_with_training_stats(train_features, training_feature_stats)
 
     # Step 5: Track preprocessing metadata
-    print(f"\n📊 Step 5: Preparing preprocessing metadata...")
+    print(f"\nStep 5: Preparing preprocessing metadata...")
     # Note: Preprocessing has already been done in main(), so we just need to record it
     # The kept_columns_per_feature should be passed from main or we can note that training uses the same preprocessing
     preprocessing_metadata = {
@@ -3227,7 +3767,7 @@ def run_within_dataset_generalization_training(
     }
     
     # Step 6: Run best_model_search on training set
-    print(f"\n🚀 Step 6: Running best_model_search on {len(train_ids)} training samples...")
+    print(f"\nStep 6: Running best_model_search on {len(train_ids)} training samples...")
     print(f"   This will find the best model using only healthy + {training_cancer_types}")
 
     prev_skip_scaler = getattr(args, 'skip_scaler', False)
@@ -3248,10 +3788,8 @@ def run_within_dataset_generalization_training(
     args.skip_scaler = prev_skip_scaler
     
     # Step 7: Create training summary visualizations
-    print(f"\n📊 Step 7: Creating training summary visualizations...")
+    print(f"\nStep 7: Creating training summary visualizations...")
     
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
     
     fig = plt.figure(figsize=(16, 10))
     gs = gridspec.GridSpec(2, 3, figure=fig, hspace=0.3, wspace=0.3)
@@ -3330,9 +3868,9 @@ def run_within_dataset_generalization_training(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"   ✓ Training summary saved: {plot_path}")
+    print(f"   Training summary saved: {plot_path}")
     
-    print(f"\n✅ TRAINING PHASE COMPLETE")
+    print(f"\nTRAINING PHASE COMPLETE")
     print(f"   Results saved to: {output_dir}")
     print(f"   Withheld samples: {withheld_file}")
     print(f"   Training summary plot: {plot_path}")
@@ -3382,7 +3920,7 @@ def run_within_dataset_generalization_evaluation(
     training_results_dir = Path(training_results_dir)
     split_dirs = sorted([d for d in training_results_dir.glob("split_*") if (d / "withheld_sample_info.pkl").exists()])
     if split_dirs and not training_results_dir.name.startswith("split_"):
-        print(f"\n🔁 Detected {len(split_dirs)} split directories; running per-split evaluations...")
+        print(f"\nDetected {len(split_dirs)} split directories; running per-split evaluations...")
 
         split_summaries = []
         for split_dir in split_dirs:
@@ -3433,6 +3971,7 @@ def run_within_dataset_generalization_evaluation(
             return mean_roc, ci
 
         no_novel_cancers = bool(split_summaries[0].get('no_novel_cancers')) if split_summaries else False
+        use_gene_counts = bool(split_summaries[0].get('use_gene_counts')) if split_summaries else False
         metric_key = 'withheld_auc' if no_novel_cancers else 'novel_auc'
 
         feature_names = sorted({
@@ -3708,12 +4247,10 @@ def run_within_dataset_generalization_evaluation(
         with open(summary_path, 'wb') as f:
             pickle.dump(summary, f)
 
-        print(f"\n✅ Aggregated multi-split summary saved: {summary_path}")
+        print(f"\nAggregated multi-split summary saved: {summary_path}")
 
         # Plot aggregated results with CIs
         try:
-            import matplotlib.pyplot as plt
-            import matplotlib.gridspec as gridspec
 
             fig = plt.figure(figsize=(20, 12))
             gs = gridspec.GridSpec(2, 3, figure=fig, hspace=0.3, wspace=0.3)
@@ -3815,7 +4352,9 @@ def run_within_dataset_generalization_evaluation(
             ax4.grid(alpha=0.3)
             ax4.legend(fontsize=8)
 
-            training_cancer_str = ', '.join([ct.replace(' cancer', '') for ct in (training_cancer_types or [])])
+            # In this multi-split scope the training types live in base_training_types
+            # (taken from the first split summary above).
+            training_cancer_str = ', '.join([ct.replace(' cancer', '') for ct in (base_training_types or [])])
             fig.suptitle(f'Comprehensive Within-Dataset Generalization (Multi-split)\nTraining: {training_cancer_str}',
                          fontsize=14, fontweight='bold', y=0.98)
 
@@ -3823,9 +4362,9 @@ def run_within_dataset_generalization_evaluation(
             plt.tight_layout()
             plt.savefig(plot_path, dpi=300, bbox_inches='tight')
             plt.close(fig)
-            print(f"✅ Aggregated comparison plot saved: {plot_path}")
+            print(f"Aggregated comparison plot saved: {plot_path}")
         except Exception as e:
-            print(f"⚠️  Failed to plot aggregated results: {e}")
+            print(f"Failed to plot aggregated results: {e}")
 
         return summary
     
@@ -3837,10 +4376,10 @@ def run_within_dataset_generalization_evaluation(
         filter_desc.append(f"n_genes={filter_n_genes}")
     
     if filter_desc:
-        print(f"   🔍 Filtering models: {', '.join(filter_desc)}")
+        print(f"   Filtering models: {', '.join(filter_desc)}")
     
     # Step 1: Load withheld sample information
-    print(f"\n📂 Step 1: Loading withheld sample information...")
+    print(f"\nStep 1: Loading withheld sample information...")
     withheld_file = training_results_dir / "withheld_sample_info.pkl"
     
     if not withheld_file.exists():
@@ -3854,12 +4393,12 @@ def run_within_dataset_generalization_evaluation(
     training_cancer_types = withheld_info['training_cancer_types']
     training_feature_stats = withheld_info.get('training_feature_stats')
     
-    print(f"   ✓ Loaded withheld info")
+    print(f"   Loaded withheld info")
     print(f"   Training cancer types: {training_cancer_types}")
     print(f"   Withheld samples: {len(withheld_sample_ids)}")
     
     # Step 2: Split PANCAN into evaluation sets
-    print(f"\n🔍 Step 2: Creating evaluation sets...")
+    print(f"\nStep 2: Creating evaluation sets...")
     
     # Convert sample_ids to array for indexing
     sample_ids_array = np.array(sample_ids)
@@ -3880,11 +4419,10 @@ def run_within_dataset_generalization_evaluation(
     eval_features = {k: v[eval_mask] if v is not None else None for k, v in all_feature_arrays.items()}
     eval_y = y_labels[eval_mask]
     eval_strat = stratification_labels[eval_mask]
-    eval_strat = stratification_labels[eval_mask]
     eval_ids = sample_ids_array[eval_mask]
 
     if training_feature_stats:
-        print("\n🔧 Applying training-only standardization to evaluation data")
+        print("\nApplying training-only standardization to evaluation data")
         eval_features = standardize_with_training_stats(eval_features, training_feature_stats)
     
     # Track which samples are withheld vs novel
@@ -3907,7 +4445,7 @@ def run_within_dataset_generalization_evaluation(
         print(f"       - {cancer_type}: {count}")
     
     # Step 3: Find and load best model
-    print(f"\n🤖 Step 3: Loading best model from training...")
+    print(f"\nStep 3: Loading best model from training...")
     
     # Look for best_model directory inside training_results_dir
     # Note: Don't use args.experiment_name here as it may differ between training and eval runs
@@ -3920,13 +4458,13 @@ def run_within_dataset_generalization_evaluation(
         if len(sibling_dirs) == 0:
             raise FileNotFoundError(f"No best_model_* directory found in {training_results_dir} or sibling dirs in {parent_dir}")
         elif len(sibling_dirs) > 1:
-            print(f"⚠️  Warning: Found {len(sibling_dirs)} matching sibling best_model directories, using first one")
+            print(f"Warning: Found {len(sibling_dirs)} matching sibling best_model directories, using first one")
             print(f"   Directories: {[d.name for d in sibling_dirs]}")
         best_model_dir = sibling_dirs[0]
-        print(f"⚠️  Using sibling model directory: {best_model_dir}")
+        print(f"Using sibling model directory: {best_model_dir}")
     else:
         if len(best_model_dirs) > 1:
-            print(f"⚠️  Warning: Found {len(best_model_dirs)} best_model directories, using first one")
+            print(f"Warning: Found {len(best_model_dirs)} best_model directories, using first one")
             print(f"   Directories: {[d.name for d in best_model_dirs]}")
         best_model_dir = best_model_dirs[0]
     print(f"   Using: {best_model_dir.name}")
@@ -3940,14 +4478,14 @@ def run_within_dataset_generalization_evaluation(
     best_info = best_results['best_model_info']
     best_pipeline = best_results['best_model'].best_estimator_
     
-    print(f"\n   ✓ Best model loaded:")
+    print(f"\n   Best model loaded:")
     print(f"     Feature: {best_info['feature']}")
     print(f"     N Genes: {best_info['n_genes']}")
     print(f"     Classifier: {best_info['classifier']}")
     print(f"     Training CV AUC: {best_info['cv_auc']:.4f}")
     
     # Step 4: Apply model to evaluation set
-    print(f"\n🔬 Step 4: Evaluating model on {len(eval_ids)} samples...")
+    print(f"\nStep 4: Evaluating model on {len(eval_ids)} samples...")
     
     feature_name = best_info['feature']
     X_eval = eval_features.get(feature_name)
@@ -3959,14 +4497,9 @@ def run_within_dataset_generalization_evaluation(
     y_pred = best_pipeline.predict(X_eval)
     
     # Step 5: Compute metrics
-    print(f"\n📈 Step 5: Computing evaluation metrics...")
+    print(f"\nStep 5: Computing evaluation metrics...")
 
-    def _sens_spec_at_95(fpr_arr, tpr_arr, target_spec=0.95):
-        if fpr_arr is None or tpr_arr is None or len(fpr_arr) == 0:
-            return None, None
-        target_fpr = 1 - target_spec
-        idx = int(np.nanargmin(np.abs(np.array(fpr_arr) - target_fpr)))
-        return float(tpr_arr[idx]), float(1 - fpr_arr[idx])
+    # (uses the module-level _sens_spec_at_95 helper)
     
     # Overall metrics
     fpr, tpr, _ = roc_curve(eval_y, y_pred_proba)
@@ -4047,7 +4580,7 @@ def run_within_dataset_generalization_evaluation(
     print(f"\nPer-Cancer-Type AUC:")
     for cancer_type in sorted(auc_per_type.keys()):
         info = auc_per_type[cancer_type]
-        marker = "✓ Training" if info['in_training'] else "⭐ Novel"
+        marker = "training" if info['in_training'] else "novel"
         print(f"  {marker} | {cancer_type}: {info['auc']:.4f} (n={info['n_samples']})")
     
     # Save results
@@ -4055,10 +4588,8 @@ def run_within_dataset_generalization_evaluation(
     os.makedirs(output_dir, exist_ok=True)
     
     # Step 6: Create comprehensive evaluation visualizations
-    print(f"\n📊 Step 6: Creating comprehensive evaluation visualizations...")
+    print(f"\nStep 6: Creating comprehensive evaluation visualizations...")
     
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
     
     fig = plt.figure(figsize=(20, 12))
     gs = gridspec.GridSpec(3, 3, figure=fig, hspace=0.35, wspace=0.3)
@@ -4257,7 +4788,7 @@ def run_within_dataset_generalization_evaluation(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"   ✓ Comprehensive evaluation plot saved: {plot_path}")
+    print(f"   Comprehensive evaluation plot saved: {plot_path}")
     
     # Create additional plot: Per-cancer-type detailed breakdown
     fig2, axes = plt.subplots(2, 1, figsize=(14, 10))
@@ -4327,7 +4858,7 @@ def run_within_dataset_generalization_evaluation(
     plt.savefig(detailed_plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"   ✓ Detailed cancer-type plot saved: {detailed_plot_path}")
+    print(f"   Detailed cancer-type plot saved: {detailed_plot_path}")
     
     # Save results dictionary
     results = {
@@ -4381,12 +4912,12 @@ def run_within_dataset_generalization_evaluation(
     print("KEY INSIGHTS & SUMMARY")
     print(f"{'='*90}")
     
-    print(f"\n📊 Overall Results:")
+    print(f"\nOverall Results:")
     print(f"   Total evaluated: {len(eval_ids)} samples")
     print(f"   Overall AUC: {overall_auc:.4f}")
     print(f"   Accuracy: {report['accuracy']:.4f}")
     
-    print(f"\n🎯 Same Distribution (Withheld Set):")
+    print(f"\nSame Distribution (Withheld Set):")
     if withheld_auc:
         gap_same = best_info['cv_auc'] - withheld_auc
         print(f"   AUC: {withheld_auc:.4f}")
@@ -4395,7 +4926,7 @@ def run_within_dataset_generalization_evaluation(
     else:
         print(f"   Not enough samples for evaluation")
     
-    print(f"\n⭐ Novel Cancer Types (True Generalization):")
+    print(f"\nNovel Cancer Types (True Generalization):")
     if novel_auc:
         gap_novel = best_info['cv_auc'] - novel_auc
         print(f"   AUC: {novel_auc:.4f}")
@@ -4405,44 +4936,44 @@ def run_within_dataset_generalization_evaluation(
     else:
         print(f"   Not enough samples for evaluation")
     
-    print(f"\n🔬 Best Performing Cancer Types (Top 3):")
+    print(f"\nBest Performing Cancer Types (Top 3):")
     sorted_cancers = sorted(auc_per_type.items(), key=lambda x: x[1]['auc'], reverse=True)[:3]
     for ct, info in sorted_cancers:
-        marker = "✓" if info['in_training'] else "⭐"
+        marker = "[training]" if info['in_training'] else "[novel]"
         print(f"   {marker} {ct.replace(' cancer', '')}: AUC={info['auc']:.4f} (n={info['n_samples']})")
     
-    print(f"\n⚠️  Challenging Cancer Types (Bottom 3):")
+    print(f"\n Challenging Cancer Types (Bottom 3):")
     bottom_cancers = sorted(auc_per_type.items(), key=lambda x: x[1]['auc'])[:3]
     for ct, info in bottom_cancers:
-        marker = "✓" if info['in_training'] else "⭐"
+        marker = "[training]" if info['in_training'] else "[novel]"
         print(f"   {marker} {ct.replace(' cancer', '')}: AUC={info['auc']:.4f} (n={info['n_samples']})")
     
-    print(f"\n📈 Generalization Performance Comparison:")
+    print(f"\nGeneralization Performance Comparison:")
     print(f"   Training CV AUC:    {best_info['cv_auc']:.4f}")
     if withheld_auc:
         print(f"   Withheld AUC:       {withheld_auc:.4f}  (gap: {best_info['cv_auc'] - withheld_auc:+.4f})")
     if novel_auc:
         print(f"   Novel Cancer AUC:   {novel_auc:.4f}  (gap: {best_info['cv_auc'] - novel_auc:+.4f})")
     
-    print(f"\n💡 Recommendations:")
+    print(f"\nRecommendations:")
     if withheld_auc and novel_auc:
         if gap_same < 0.05 and gap_novel < 0.15:
-            print(f"   ✓ Excellent: Model generalizes well to both same distribution and novel cancers")
+            print(f"   Excellent: Model generalizes well to both same distribution and novel cancers")
         elif gap_same < 0.10 and gap_novel < 0.25:
-            print(f"   ✓ Good: Reasonable generalization, suitable for deployment with monitoring")
+            print(f"   Good: Reasonable generalization, suitable for deployment with monitoring")
         elif gap_novel > gap_same + 0.10:
-            print(f"   ⚠️  Model performance drops significantly on novel cancer types")
+            print(f"    Model performance drops significantly on novel cancer types")
             print(f"      Consider: Training on more diverse cancer types or feature engineering")
         else:
-            print(f"   ⚠️  Moderate generalization gap observed")
+            print(f"    Moderate generalization gap observed")
             print(f"      Consider: Hyperparameter tuning or regularization adjustments")
     
-    print(f"\n📁 Output Files:")
+    print(f"\nOutput Files:")
     print(f"   Results: {output_file}")
     print(f"   Comprehensive plot: {plot_path}")
     print(f"   Detailed analysis: {detailed_plot_path}")
     
-    print(f"\n✅ WITHIN-DATASET GENERALIZATION EVALUATION COMPLETE")
+    print(f"\nWITHIN-DATASET GENERALIZATION EVALUATION COMPLETE")
     print("="*90)
     
     return results
@@ -4486,10 +5017,10 @@ def run_comprehensive_within_dataset_evaluation(
     output_dir = training_results_dir / "comprehensive_evaluation"
     os.makedirs(output_dir, exist_ok=True)
     
-    print(f"📁 Saving results to: {output_dir}")
+    print(f"Saving results to: {output_dir}")
     
     # Get available features and gene counts from training models
-    print(f"\n📂 Scanning available models in training results...")
+    print(f"\nScanning available models in training results...")
     # Look for best_model_* subdirectory (created by run_best_model_search)
     best_model_dirs = list(training_results_dir.glob("best_model_*"))
 
@@ -4502,13 +5033,13 @@ def run_comprehensive_within_dataset_evaluation(
                 f"No best_model_* directory found in {training_results_dir} or sibling dirs in {parent_dir}"
             )
         elif len(sibling_dirs) > 1:
-            print(f"⚠️  Warning: Found {len(sibling_dirs)} matching sibling best_model directories, using first one")
+            print(f"Warning: Found {len(sibling_dirs)} matching sibling best_model directories, using first one")
             print(f"   Directories: {[d.name for d in sibling_dirs]}")
         best_model_dir = sibling_dirs[0]
-        print(f"⚠️  Using sibling model directory: {best_model_dir}")
+        print(f"Using sibling model directory: {best_model_dir}")
     else:
         if len(best_model_dirs) > 1:
-            print(f"⚠️  Warning: Found {len(best_model_dirs)} best_model directories, using first one")
+            print(f"Warning: Found {len(best_model_dirs)} best_model directories, using first one")
             print(f"   Directories: {[d.name for d in best_model_dirs]}")
         best_model_dir = best_model_dirs[0]
     print(f"   Using model directory: {best_model_dir.name}")
@@ -4540,16 +5071,16 @@ def run_comprehensive_within_dataset_evaluation(
                     available_gene_counts.add(n_genes)
                     break
         except Exception as e:
-            print(f"  ⚠️ Could not parse {pkl_file.name}: {e}")
+            print(f"  Could not parse {pkl_file.name}: {e}")
             continue
     
     print(f"   Found {len(available_features)} features: {sorted(available_features)}")
     print(f"   Found {len(available_gene_counts)} gene counts: {sorted(available_gene_counts)}")
     if not use_gene_counts:
-        print("⚠️  No-gene-selection/predefined mode: gene count analysis will be skipped")
+        print("No-gene-selection/predefined mode: gene count analysis will be skipped")
     
     # Prepare evaluation masks once
-    print("\n🔬 Preparing evaluation masks for within-dataset generalization...")
+    print("\nPreparing evaluation masks for within-dataset generalization...")
     withheld_file = training_results_dir / "withheld_sample_info.pkl"
     if not withheld_file.exists():
         raise FileNotFoundError(f"Withheld sample info not found: {withheld_file}")
@@ -4578,29 +5109,24 @@ def run_comprehensive_within_dataset_evaluation(
 
     no_novel_cancers = np.sum(is_novel_cancer) == 0
     if no_novel_cancers:
-        print("⚠️  No novel cancer types available in evaluation; using withheld metrics for summaries")
+        print("No novel cancer types available in evaluation; using withheld metrics for summaries")
 
     # Filter available features to those present in evaluation data
     eval_feature_set = {k for k, v in eval_features.items() if v is not None}
     if eval_feature_set:
         missing_features = sorted(set(available_features) - eval_feature_set)
         if missing_features:
-            print(f"⚠️  Skipping {len(missing_features)} feature(s) with no eval data: {missing_features}")
+            print(f"Skipping {len(missing_features)} feature(s) with no eval data: {missing_features}")
         available_features = {f for f in available_features if f in eval_feature_set}
     else:
-        print("⚠️  No evaluation features available after filtering")
+        print("No evaluation features available after filtering")
         available_features = set()
 
     if training_feature_stats:
-        print("\n🔧 Applying training-only standardization to evaluation data")
+        print("\nApplying training-only standardization to evaluation data")
         eval_features = standardize_with_training_stats(eval_features, training_feature_stats)
 
-    def _sens_spec_at_95(fpr_arr, tpr_arr, target_spec=0.95):
-        if fpr_arr is None or tpr_arr is None or len(fpr_arr) == 0:
-            return None, None
-        target_fpr = 1 - target_spec
-        idx = int(np.nanargmin(np.abs(np.array(fpr_arr) - target_fpr)))
-        return float(tpr_arr[idx]), float(1 - fpr_arr[idx])
+    # (uses the module-level _sens_spec_at_95 helper)
 
     def _bootstrap_roc_ci(y_true, y_score, n_boot=200, seed=42, fpr_grid=None):
         if y_true is None or y_score is None:
@@ -4644,7 +5170,7 @@ def run_comprehensive_within_dataset_evaluation(
                 filter_n_genes=n_genes if n_genes is not None else None
             )
         except Exception as e:
-            print(f"   ⚠️  Skipping {feature} @ {n_genes}: {e}")
+            print(f"    Skipping {feature} @ {n_genes}: {e}")
             return None
 
         best_info = best_results['best_model_info']
@@ -4652,7 +5178,7 @@ def run_comprehensive_within_dataset_evaluation(
 
         X_eval = eval_features.get(feature)
         if X_eval is None:
-            print(f"   ⚠️  No eval data for feature '{feature}'")
+            print(f"    No eval data for feature '{feature}'")
             return None
 
         y_pred_proba = best_pipeline.predict_proba(X_eval)[:, 1]
@@ -4751,16 +5277,16 @@ def run_comprehensive_within_dataset_evaluation(
             'novel_spec_at_95spec': float(novel_spec_95) if novel_spec_95 is not None else None
         }
 
-    # Part 1: Evaluate ALL feature × gene count combinations
+    # Part 1: Evaluate ALL feature x gene count combinations
     print("\n" + "="*90)
-    print("PART 1: GENERALIZATION ACROSS ALL FEATURES × GENE COUNTS")
+    print("PART 1: GENERALIZATION ACROSS ALL FEATURES x GENE COUNTS")
     print("="*90)
 
     grid_results = {feat: {} for feat in sorted(available_features)}
     for feature in sorted(available_features):
-        print(f"\n{'─'*90}")
+        print(f"\n{'-'*90}")
         print(f"Evaluating feature: {feature}")
-        print(f"{'─'*90}")
+        print(f"{'-'*90}")
         if use_gene_counts:
             for n_genes in sorted(available_gene_counts):
                 res = _evaluate_feature_k(feature, n_genes)
@@ -4789,9 +5315,9 @@ def run_comprehensive_within_dataset_evaluation(
             best_res = max(valid, key=lambda r: r['novel_auc'])
         feature_results[feature] = best_res
         if no_novel_cancers:
-            print(f"✓ {feature}: best withheld AUC = {best_res.get('withheld_auc'):.4f}")
+            print(f"{feature}: best withheld AUC = {best_res.get('withheld_auc'):.4f}")
         else:
-            print(f"✓ {feature}: best novel AUC = {best_res.get('novel_auc'):.4f}")
+            print(f"{feature}: best novel AUC = {best_res.get('novel_auc'):.4f}")
 
     # Part 3: Summarize by gene count (best model at each K across all features)
     if use_gene_counts:
@@ -4809,7 +5335,7 @@ def run_comprehensive_within_dataset_evaluation(
             if candidates:
                 best_res = max(candidates, key=lambda r: r['novel_auc'])
                 gene_count_results[n_genes] = best_res
-                print(f"✓ {n_genes} genes: best novel AUC = {best_res.get('novel_auc'):.4f} (feature={best_res['best_model_info']['feature']})")
+                print(f"{n_genes} genes: best novel AUC = {best_res.get('novel_auc'):.4f} (feature={best_res['best_model_info']['feature']})")
             else:
                 gene_count_results[n_genes] = None
     else:
@@ -4820,8 +5346,6 @@ def run_comprehensive_within_dataset_evaluation(
     print("PART 4: GENERATING COMPREHENSIVE COMPARISON PLOTS")
     print("="*90)
 
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
 
     def _get_report_for_metrics(res):
         if res is None:
@@ -5035,7 +5559,7 @@ def run_comprehensive_within_dataset_evaluation(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"\n✅ Comprehensive comparison plot saved: {plot_path}")
+    print(f"\nComprehensive comparison plot saved: {plot_path}")
 
     # --- ROC curves for best feature (withheld vs novel) ---
     best_feature = None
@@ -5079,7 +5603,7 @@ def run_comprehensive_within_dataset_evaluation(
         plt.savefig(roc_plot_path, dpi=300, bbox_inches='tight')
         plt.close(fig_roc)
 
-        print(f"✅ ROC comparison plot saved: {roc_plot_path}")
+        print(f"ROC comparison plot saved: {roc_plot_path}")
 
     # --- Extra plots to support "all features work best" ---
     extra_plot_path = None
@@ -5109,9 +5633,9 @@ def run_comprehensive_within_dataset_evaluation(
 
         fig_extra, axes = plt.subplots(1, 2, figsize=(18, 6))
 
-        # Heatmap of novel AUC across features × K
+        # Heatmap of novel AUC across features x K
         im = axes[0].imshow(novel_matrix, aspect='auto', interpolation='nearest', vmin=0.5, vmax=1)
-        axes[0].set_title('Novel AUC Heatmap (Feature × K)', fontsize=12, fontweight='bold')
+        axes[0].set_title('Novel AUC Heatmap (Feature x K)', fontsize=12, fontweight='bold')
         axes[0].set_yticks(np.arange(len(feature_names_sorted)))
         axes[0].set_yticklabels(feature_names_sorted, fontsize=9)
         axes[0].set_xticks(np.arange(len(gene_counts_sorted)))
@@ -5126,7 +5650,7 @@ def run_comprehensive_within_dataset_evaluation(
         p75_by_k = np.nanpercentile(novel_matrix, 75, axis=0)
         axes[1].plot(gene_counts_sorted, best_by_k, marker='o', color='steelblue', label='Best across features')
         axes[1].plot(gene_counts_sorted, median_by_k, marker='s', color='gray', label='Median across features')
-        axes[1].fill_between(gene_counts_sorted, median_by_k, p75_by_k, color='gray', alpha=0.2, label='Median–75th')
+        axes[1].fill_between(gene_counts_sorted, median_by_k, p75_by_k, color='gray', alpha=0.2, label='Median-75th')
         axes[1].set_xscale('log')
         axes[1].set_ylim([0, 1])
         axes[1].set_xlabel('Number of Genes', fontsize=10, fontweight='bold')
@@ -5148,7 +5672,7 @@ def run_comprehensive_within_dataset_evaluation(
         plt.savefig(extra_plot_path, dpi=300, bbox_inches='tight')
         plt.close()
 
-        print(f"✅ Extra generalization plots saved: {extra_plot_path}")
+        print(f"Extra generalization plots saved: {extra_plot_path}")
     
     # Save summary results
     summary = {
@@ -5240,7 +5764,7 @@ def run_comprehensive_within_dataset_evaluation(
     with open(summary_path, 'wb') as f:
         pickle.dump(summary, f)
     
-    print(f"✅ Summary results saved: {summary_path}")
+    print(f"Summary results saved: {summary_path}")
     
     # Print comprehensive summary tables
     print("\n" + "="*90)
@@ -5284,9 +5808,9 @@ def run_comprehensive_within_dataset_evaluation(
     if non_empty_features:
         best_feat_novel = max(non_empty_features,
                              key=lambda x: x[1].get('novel_auc', 0) if x[1] else 0)
-        print(f"🏆 Best feature for novel cancer types: {best_feat_novel[0]} (Novel AUC: {best_feat_novel[1].get('novel_auc'):.4f})")
+        print(f"Best feature for novel cancer types: {best_feat_novel[0]} (Novel AUC: {best_feat_novel[1].get('novel_auc'):.4f})")
     else:
-        print("⚠️  No valid feature results available for novel cancer types")
+        print("No valid feature results available for novel cancer types")
     
     # Best gene count for novel cancer generalization
     if use_gene_counts:
@@ -5294,11 +5818,11 @@ def run_comprehensive_within_dataset_evaluation(
         if non_empty_gene_counts:
             best_genes_novel = max(non_empty_gene_counts,
                                    key=lambda x: x[1].get('novel_auc', 0) if x[1] else 0)
-            print(f"🏆 Best gene count for novel cancer types: {best_genes_novel[0]} genes (Novel AUC: {best_genes_novel[1].get('novel_auc'):.4f})")
+            print(f"Best gene count for novel cancer types: {best_genes_novel[0]} genes (Novel AUC: {best_genes_novel[1].get('novel_auc'):.4f})")
         else:
-            print("⚠️  No valid gene-count results available for novel cancer types")
+            print("No valid gene-count results available for novel cancer types")
     else:
-        print("ℹ️  Gene-count insights skipped (no gene selection)")
+        print("Gene-count insights skipped (no gene selection)")
     
     # Smallest generalization gap to novel cancers
     gap_metric_key = 'withheld_auc' if no_novel_cancers else 'novel_auc'
@@ -5306,7 +5830,7 @@ def run_comprehensive_within_dataset_evaluation(
                  for feat, res in feature_results.items() if res and res.get(gap_metric_key)]
     if gaps_novel:
         min_gap_feat = min(gaps_novel, key=lambda x: x[1])
-        print(f"📊 Smallest generalization gap to novel cancers: {min_gap_feat[0]} (gap: {min_gap_feat[1]:.4f})")
+        print(f"Smallest generalization gap to novel cancers: {min_gap_feat[0]} (gap: {min_gap_feat[1]:.4f})")
     
     # Overall averages
     train_aucs_all = [res['best_model_info']['cv_auc'] for res in feature_results.values() if res] + \
@@ -5320,7 +5844,7 @@ def run_comprehensive_within_dataset_evaluation(
     avg_withheld = np.mean(withheld_aucs_all) if withheld_aucs_all else 0
     avg_novel = np.mean(novel_aucs_all) if novel_aucs_all else 0
 
-    print(f"\n📈 Average Performance:")
+    print(f"\nAverage Performance:")
     print(f"   Training CV AUC:       {avg_train:.4f}")
     print(f"   Withheld AUC:          {avg_withheld:.4f} (gap: {avg_train - avg_withheld:+.4f})")
     print(f"   {metric_label}:      {avg_novel:.4f} (gap: {avg_train - avg_novel:+.4f})")
@@ -5361,16 +5885,16 @@ def run_within_dataset_generalization_compare(compare_dirs: list, args: argparse
     for entry in compare_dirs:
         summary_path = _resolve_summary_path(entry)
         if not summary_path.exists():
-            print(f"⚠️  Summary not found: {summary_path}")
+            print(f"Summary not found: {summary_path}")
             continue
         with open(summary_path, 'rb') as f:
             summary = pickle.load(f)
         label = _infer_label(str(summary_path))
         summaries[label] = summary
-        print(f"✓ Loaded {label} summary: {summary_path}")
+        print(f"Loaded {label} summary: {summary_path}")
 
     if len(summaries) == 0:
-        print("❌ No summaries loaded. Provide valid compare dirs.")
+        print("No summaries loaded. Provide valid compare dirs.")
         return
 
     output_dir = Path(args.output_dir) / "within_gen_comparison"
@@ -5397,7 +5921,6 @@ def run_within_dataset_generalization_compare(compare_dirs: list, args: argparse
             sens95 = feat_results[best_feat].get('novel_sens_at_95spec') or 0
         best_sens95.append(sens95)
 
-    import matplotlib.pyplot as plt
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
@@ -5449,7 +5972,7 @@ def run_within_dataset_generalization_compare(compare_dirs: list, args: argparse
     plt.savefig(out_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
-    print(f"✅ Comparison plot saved: {out_path}")
+    print(f"Comparison plot saved: {out_path}")
 
 
 def run_baseline_aggregate_study(
@@ -5485,7 +6008,7 @@ def run_baseline_aggregate_study(
     features_dir = args.features_dir
     top_genes_list = DATA_PARAM_GRIDS['top_genes']
     
-    print(f"\n📋 Study Configuration:")
+    print(f"\nStudy Configuration:")
     print(f"   Feature Type: {feature_name}")
     print(f"   Selection Method: {selection_type}")
     print(f"   Top Genes Values: {top_genes_list}")
@@ -5495,18 +6018,21 @@ def run_baseline_aggregate_study(
     # Get feature data
     X = all_feature_arrays.get(feature_name)
     if X is None:
-        print(f"❌ Error: Feature '{feature_name}' not found in feature arrays.")
+        print(f"Error: Feature '{feature_name}' not found in feature arrays.")
         return
     
     print(f"   Data Shape: {X.shape}")
     print(f"   Total Samples: {len(sample_ids)}")
-    
+
+    # main() passes sample_ids as a plain list; fold indexing below needs an array
+    sample_ids = np.asarray(sample_ids)
+
     # Setup cross-validation
     outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     all_results = []  # Store results for all n_genes configurations
     study_start_time = time.time()
     
-    print(f"\n🚀 Starting baseline aggregate study for {len(top_genes_list)} gene count configurations...")
+    print(f"\nStarting baseline aggregate study for {len(top_genes_list)} gene count configurations...")
     
     # Iterate through all top_genes values
     for n_top_genes in top_genes_list:
@@ -5540,7 +6066,7 @@ def run_baseline_aggregate_study(
             print(f"  Gene indices (first 10): {top_gene_indices[:10].tolist() if len(top_gene_indices) > 0 else []}")
             
             if len(top_gene_indices) == 0:
-                print(f"  ⚠️  No genes selected, skipping fold")
+                print(f"   No genes selected, skipping fold")
                 continue
             
             # Step 2: Aggregate selected genes from raw data files for TRAIN set
@@ -5579,9 +6105,9 @@ def run_baseline_aggregate_study(
             train_nan_count = np.sum(np.isnan(train_aggregated))
             test_nan_count = np.sum(np.isnan(test_aggregated))
             if train_nan_count > 0 or test_nan_count > 0:
-                print(f"  ⚠️  Warning: {train_nan_count} NaN in train, {test_nan_count} NaN in test")
+                print(f"   Warning: {train_nan_count} NaN in train, {test_nan_count} NaN in test")
             else:
-                print(f"  ✓ No NaN values in aggregated data")
+                print(f"  No NaN values in aggregated data")
             
             # Step 4: Use aggregated values directly as "prediction scores"
             # Higher aggregated value = more likely to be cancer (or vice versa, depending on feature)
@@ -5622,7 +6148,7 @@ def run_baseline_aggregate_study(
             y_pred_youden = (y_score >= threshold_youden).astype(int)
             print(f"  Youden optimal: threshold={threshold_youden:.4f} (train FPR={op_thr['train_fpr_at_youden']:.4f}, train TPR={op_thr['train_tpr_at_youden']:.4f})")
 
-            # At median (default) — median of TRAIN scores
+            # At median (default) - median of TRAIN scores
             threshold_median = op_thr['median']
             y_pred_median = (y_score >= threshold_median).astype(int)
             print(f"  Median threshold: {threshold_median:.4f} (from TRAIN fold)")
@@ -5783,9 +6309,9 @@ def run_baseline_aggregate_study(
         std_auc = np.std(aucs)
         min_auc = np.min(aucs)
         max_auc = np.max(aucs)
-        print(f"\n✅ Completed {n_top_genes} genes in {config_elapsed:.2f}s")
+        print(f"\nCompleted {n_top_genes} genes in {config_elapsed:.2f}s")
         print(f"   AUC statistics:")
-        print(f"     Mean: {mean_auc:.4f} ± {std_auc:.4f}")
+        print(f"     Mean: {mean_auc:.4f} +/- {std_auc:.4f}")
         print(f"     Range: [{min_auc:.4f}, {max_auc:.4f}]")
         print(f"     Per-fold AUCs: {[f'{auc:.3f}' for auc in aucs]}")
         print(f"   Saved to: {output_path}")
@@ -5804,7 +6330,7 @@ def run_baseline_aggregate_study(
     print("BASELINE AGGREGATE STUDY COMPLETE")
     print("="*90)
     print(f"Total time: {study_elapsed:.2f}s ({study_elapsed/60:.2f} min)")
-    print(f"\n📊 Summary Across All Gene Counts:")
+    print(f"\nSummary Across All Gene Counts:")
     print(f"{'N Genes':<12} {'Mean AUC':<12} {'Std AUC':<12} {'Output File'}")
     print("-" * 90)
     for result in all_results:
@@ -5812,219 +6338,182 @@ def run_baseline_aggregate_study(
     
     # Find best configuration
     best_config = max(all_results, key=lambda x: x['mean_auc'])
-    print(f"\n🏆 Best Configuration: {best_config['n_genes']} genes with AUC = {best_config['mean_auc']:.4f} ± {best_config['std_auc']:.4f}")
+    print(f"\nBest Configuration: {best_config['n_genes']} genes with AUC = {best_config['mean_auc']:.4f} +/- {best_config['std_auc']:.4f}")
     print(f"\n{'='*90}\n")
 
-def run_bootstrap_study(all_feature_arrays: dict, y_labels: np.ndarray, stratification_labels: np.ndarray,
-                        sample_ids: np.ndarray, CLASSIFIERS: dict, args: argparse.Namespace):
-    """
-    Runs a bootstrap study for sample classification robustness analysis.
-    
-    Executes a single model configuration multiple times (bootstrap iterations) to
-    track per-sample misclassification rates and prediction consistency.
-    
-    Outputs consistent with run_single_experiment() format.
-    """
-    
-    print("\n" + "="*90)
-    print("BOOTSTRAP ROBUSTNESS STUDY")
-    print("="*90)
-    
-    # Create output directory
-    bootstrap_output_dir = Path(args.output_dir) / f"bootstrap_{args.experiment_name}"
-    os.makedirs(bootstrap_output_dir, exist_ok=True)
-    print(f"Output directory: {bootstrap_output_dir}")
-    
-    # Extract configuration
-    feature_name = args.bootstrap_feature
-    clf_name = args.bootstrap_classifier
-    selection_type = args.bootstrap_selection
-    n_top_genes = args.bootstrap_n_genes
-    n_iterations = args.bootstrap_iterations
-    n_splits = args.bootstrap_n_splits
-    
-    print(f"\n📋 Study Configuration:")
-    print(f"   Feature: {feature_name}")
-    print(f"   Classifier: {clf_name}")
-    print(f"   Selection Method: {selection_type}")
-    print(f"   Number of Genes: {n_top_genes}")
-    print(f"   Bootstrap Iterations: {n_iterations}")
-    print(f"   CV Folds per Iteration: {n_splits}")
-    print(f"   Total Model Trainings: {n_iterations * n_splits}")
-    
-    # Get feature data
-    X = all_feature_arrays[feature_name]
-    if X is None:
-        print(f"❌ Error: Feature '{feature_name}' not found in feature arrays.")
-        return
-    
-    print(f"   Data Shape: {X.shape}")
-    print(f"   Total Samples: {len(sample_ids)}")
-    print(f"   Expected Test Appearances per Sample: ~{n_iterations * n_splits / n_splits}")
-    
-    # Get classifier instance
-    classifier = CLASSIFIERS[clf_name]
-    
-    # Parse hyperparameters if provided
-    if args.bootstrap_hyperparams:
-        import json
+
+# =================================================================================
+# --- Extended per-fold reporting (covariate-panel runs) ---
+# =================================================================================
+# The per-classifier nested-CV site below used to store one threshold-free number
+# per fold (AUROC) plus confusion matrices at four operating points. For the
+# covariate panels - and the RNA / ATAC comparators, which share this code path -
+# that is not enough to understand WHY a model is good, so every fold record now
+# also carries:
+#   test_metrics                threshold-free test-fold metrics: AUROC, AUPRC,
+#                               partial AUROC at FPR <= 0.05 / 0.10 (McClish
+#                               standardized), Brier score, log loss, sensitivity
+#                               at fixed TEST specificities (descriptive, read off
+#                               the test ROC - not an operating point), class-wise
+#                               score quartiles
+#   operating_point_metrics     sensitivity / specificity / PPV / NPV / F1 /
+#                               balanced accuracy / MCC implied by the stored
+#                               confusion matrices at the four operating points
+#   train_metrics               the same threshold-free block for (a) the selected
+#                               configuration's inner-CV scores on the training
+#                               partition (the scores its thresholds come from) and
+#                               (b) its resubstitution scores - their gap to the
+#                               test fold is the overfitting diagnostic
+#   y_train, inner_cv_train_scores, resubstitution_train_scores
+#                               per training sample (aligned with train_sample_ids)
+#   inner_cv_results            every hyperparameter candidate of the classifier's
+#                               grid with its mean / sd / rank / per-split inner
+#                               score: the landscape the winner was picked from
+#   fitted_model_summary        plain-type description of the fitted pipeline
+#                               (scaler statistics, coefficients, feature
+#                               importances, support-vector counts)
+#   feature_names               column names of the predefined matrix (None when
+#                               unknown or when the width does not match)
+# Every key is NEW; no previously stored key changed. Pickles written before this
+# carry none of them and the exporters treat their absence as "not available".
+# With --store_fitted_models the fitted pipelines of the ten folds are written to a
+# SEPARATE models_<classifier>_<feature>_all_features.pkl next to the results
+# pickle, so readers that cannot import a classifier's library are not affected.
+
+TEST_SPEC_GRID = (0.80, 0.90, 0.95, 0.98, 0.99)
+PARTIAL_AUC_FPR = (0.05, 0.10)
+
+
+def _safe_div(a, b):
+    return float(a) / float(b) if b else float('nan')
+
+
+def _confusion_metrics(cm, threshold):
+    """Metrics implied by a stored [[tn, fp], [fn, tp]] confusion matrix."""
+    (tn, fp), (fn, tp) = [[int(v) for v in row] for row in cm]
+    sens, spec = _safe_div(tp, tp + fn), _safe_div(tn, tn + fp)
+    denom = np.sqrt(float(tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    return {
+        'threshold': float(threshold) if threshold is not None else float('nan'),
+        'tn': tn, 'fp': fp, 'fn': fn, 'tp': tp, 'n_flagged': tp + fp,
+        'sensitivity': sens, 'specificity': spec,
+        'ppv': _safe_div(tp, tp + fp), 'npv': _safe_div(tn, tn + fn),
+        'f1': _safe_div(2 * tp, 2 * tp + fp + fn),
+        'accuracy': _safe_div(tp + tn, tp + tn + fp + fn),
+        'balanced_accuracy': (sens + spec) / 2 if np.isfinite(sens) and np.isfinite(spec) else float('nan'),
+        'mcc': float((tp * tn - fp * fn) / denom) if denom > 0 else float('nan'),
+    }
+
+
+def _threshold_free_metrics(y, scores):
+    """AUROC, AUPRC, partial AUROC, Brier, log loss, sensitivity at fixed
+    specificities and class-wise score quartiles of one set of scores (NaN
+    where a class is absent)."""
+    y = np.asarray(y, dtype=int)
+    s = np.asarray(scores, dtype=float)
+    both = len(np.unique(y)) == 2
+    out = {'n': int(len(y)), 'n_pos': int((y == 1).sum()), 'prevalence': _safe_div((y == 1).sum(), len(y)),
+           'auroc': float(roc_auc_score(y, s)) if both else float('nan'),
+           'auprc': float(average_precision_score(y, s)) if both else float('nan')}
+    for f in PARTIAL_AUC_FPR:
+        out[f'partial_auroc_fpr_{f:.2f}'] = float(roc_auc_score(y, s, max_fpr=f)) if both else float('nan')
+    pr = np.clip(s, 1e-15, 1 - 1e-15)
+    out['brier'] = float(np.mean((s - y) ** 2))
+    out['log_loss'] = float(-np.mean(y * np.log(pr) + (1 - y) * np.log(1 - pr)))
+    for spec in TEST_SPEC_GRID:
+        key = f'sens_at_spec_{spec:.2f}'
+        if both:
+            fpr, tpr, _ = roc_curve(y, s)
+            ok = fpr <= (1 - spec) + 1e-12
+            out[key] = float(tpr[ok].max()) if ok.any() else 0.0
+        else:
+            out[key] = float('nan')
+    for cls, name in ((0, 'healthy'), (1, 'cancer')):
+        v = s[y == cls]
+        for q, qn in ((25, 'q25'), (50, 'median'), (75, 'q75')):
+            out[f'score_{qn}_{name}'] = float(np.percentile(v, q)) if v.size else float('nan')
+    return out
+
+
+def _jsonable(v):
+    if isinstance(v, np.integer):
+        return int(v)
+    if isinstance(v, np.floating):
+        return float(v)
+    if isinstance(v, np.bool_):
+        return bool(v)
+    if v is None or isinstance(v, (str, int, float, bool)):
+        return v
+    return str(v)
+
+
+def _inner_cv_landscape(grid_search):
+    """Every hyperparameter candidate of the GridSearchCV with its inner-fold scores."""
+    cv = grid_search.cv_results_
+    split_keys = sorted(k for k in cv if k.startswith('split') and k.endswith('_test_score'))
+    return [{
+        'params': {k.replace('clf__', ''): _jsonable(v) for k, v in cv['params'][i].items()},
+        'mean_test_score': float(cv['mean_test_score'][i]),
+        'std_test_score': float(cv['std_test_score'][i]),
+        'rank_test_score': int(cv['rank_test_score'][i]),
+        'split_test_scores': [float(cv[k][i]) for k in split_keys],
+        'mean_fit_time': float(cv['mean_fit_time'][i]),
+        'is_best': bool(i == grid_search.best_index_),
+    } for i in range(len(cv['params']))]
+
+
+def _fitted_model_summary(pipeline, feature_names):
+    """Plain-type description of a fitted scaler + classifier pipeline."""
+    out = {'feature_names': list(feature_names) if feature_names is not None else None}
+    scaler = pipeline.named_steps.get('scaler') if hasattr(pipeline, 'named_steps') else None
+    if scaler is not None and hasattr(scaler, 'mean_'):
+        out['scaler_mean'] = [float(v) for v in scaler.mean_]
+        out['scaler_scale'] = [float(v) for v in scaler.scale_]
+    clf = pipeline.named_steps['clf'] if hasattr(pipeline, 'named_steps') else pipeline
+    out['classifier_class'] = type(clf).__name__
+    if hasattr(clf, 'coef_'):
+        out['coef'] = [float(v) for v in np.ravel(clf.coef_)]
+        out['intercept'] = [float(v) for v in np.ravel(getattr(clf, 'intercept_', []))]
+    if hasattr(clf, 'feature_importances_'):
+        out['feature_importances'] = [float(v) for v in np.ravel(clf.feature_importances_)]
+    if hasattr(clf, 'n_support_'):
+        out['n_support'] = [int(v) for v in clf.n_support_]
+    if hasattr(clf, 'n_iter_'):
         try:
-            fixed_hyperparams = json.loads(args.bootstrap_hyperparams)
-            print(f"   Fixed Hyperparameters: {fixed_hyperparams}")
-            classifier.set_params(**fixed_hyperparams)
-        except Exception as e:
-            print(f"⚠️  Warning: Could not parse hyperparameters: {e}")
-            print("   Using default classifier parameters")
-    else:
-        print("   Using default classifier parameters (no hyperparams specified)")
-    
-    # Initialize tracking dictionaries
-    sample_ids_array = np.array(sample_ids)
-    n_samples = len(sample_ids_array)
-    
-    # Track per-sample statistics
-    sample_stats = {
-        sid: {
-            'test_appearances': 0,
-            'misclassifications': 0,
-            'predicted_probas': [],
-            'true_label': None,
-            'cancer_type': None
-        }
-        for sid in sample_ids_array
+            out['n_iter'] = int(np.ravel(clf.n_iter_)[0])
+        except (TypeError, ValueError, IndexError):
+            pass
+    return out
+
+
+def _extended_fold_report(best_model, grid_search, X_train, y_train, y_test, test_scores,
+                          inner_cv_scores, op_thr, confusion_matrix_full, feature_names=None):
+    """The additive per-fold record documented above."""
+    resub = best_model.predict_proba(X_train)[:, 1]
+    # 'default_0.5' is the classifier's own predict() rule (0.5 on predict_proba for
+    # most classifiers, the decision function's sign for SVC) - no single threshold
+    thr_of = {'default_0.5': None,
+              '95_percent_specificity': op_thr.get('95_percent_specificity'),
+              '90_percent_specificity': op_thr.get('90_percent_specificity'),
+              'youden_optimal': op_thr.get('youden_optimal')}
+    names = list(feature_names) if feature_names is not None and len(feature_names) == X_train.shape[1] else None
+    return {
+        'test_metrics': _threshold_free_metrics(y_test, test_scores),
+        'operating_point_metrics': {key: _confusion_metrics(cm, thr_of.get(key))
+                                    for key, cm in confusion_matrix_full.items()},
+        'train_metrics': {
+            'inner_cv': _threshold_free_metrics(y_train, inner_cv_scores),
+            'resubstitution': _threshold_free_metrics(y_train, resub),
+            'inner_cv_best_score_mean_over_splits': float(grid_search.best_score_),
+        },
+        'y_train': [int(v) for v in np.asarray(y_train)],
+        'inner_cv_train_scores': [float(v) for v in inner_cv_scores],
+        'resubstitution_train_scores': [float(v) for v in resub],
+        'inner_cv_results': _inner_cv_landscape(grid_search),
+        'fitted_model_summary': _fitted_model_summary(best_model, names),
+        'feature_names': names,
     }
-    
-    # Initialize sample labels
-    for idx, sid in enumerate(sample_ids_array):
-        sample_stats[sid]['true_label'] = y_labels[idx]
-        sample_stats[sid]['cancer_type'] = stratification_labels[idx]
-    
-    print(f"\n🚀 Starting bootstrap iterations...")
-    start_time = time.time()
-    
-    # Run bootstrap iterations
-    for iteration in range(n_iterations):
-        print(f"\n{'='*80}")
-        print(f"Iteration {iteration + 1}/{n_iterations}")
-        print(f"{'='*80}")
-        
-        # Use different random state for each iteration
-        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42 + iteration)
-        
-        for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, stratification_labels)):
-            print(f"  Fold {fold_idx + 1}/{n_splits}: ", end="", flush=True)
-            
-            X_train, X_test = X[train_idx], X[test_idx]
-            y_train, y_test = y_labels[train_idx], y_labels[test_idx]
-            stratification_train = stratification_labels[train_idx]
-            test_sample_ids = sample_ids_array[test_idx]
-            
-            # Select top genes
-            top_gene_indices = select_top_genes(X_train, y_train, n_top_genes, selection_type=selection_type)
-            
-            if len(top_gene_indices) == 0:
-                print("⚠️  No genes selected, skipping fold")
-                continue
-            
-            X_train_selected = X_train[:, top_gene_indices]
-            X_test_selected = X_test[:, top_gene_indices]
-            
-            # Train model (no hyperparameter search - use fixed config)
-            pipeline = Pipeline([
-                ('scaler', StandardScaler()),
-                ('clf', classifier)
-            ])
-            
-            pipeline.fit(X_train_selected, y_train)
-            
-            # Make predictions
-            y_pred_proba = pipeline.predict_proba(X_test_selected)[:, 1]
-            y_pred = pipeline.predict(X_test_selected)
-            
-            # Update sample statistics
-            for idx, sid in enumerate(test_sample_ids):
-                sample_stats[sid]['test_appearances'] += 1
-                sample_stats[sid]['predicted_probas'].append(y_pred_proba[idx])
-                
-                if y_pred[idx] != y_test[idx]:
-                    sample_stats[sid]['misclassifications'] += 1
-            
-            # Calculate fold AUC
-            fold_auc = roc_auc_score(y_test, y_pred_proba)
-            n_correct = np.sum(y_pred == y_test)
-            print(f"AUC={fold_auc:.4f}, Accuracy={n_correct}/{len(y_test)}")
-    
-    elapsed = time.time() - start_time
-    print(f"\n✅ Bootstrap study completed in {elapsed:.2f}s ({elapsed/60:.2f} min)")
-    
-    # Compute final statistics and save in same format as nested CV
-    print(f"\n📊 Computing sample-level statistics...")
-    
-    sample_robustness = {}
-    for sid in sample_ids_array:
-        stats = sample_stats[sid]
-        if stats['test_appearances'] > 0:
-            sample_robustness[sid] = {
-                'test_appearances': stats['test_appearances'],
-                'misclassifications': stats['misclassifications'],
-                'misclassification_rate': stats['misclassifications'] / stats['test_appearances'],
-                'predicted_probas': stats['predicted_probas']
-            }
-    
-    # Save results in same format as nested CV
-    clf_name_safe = clf_name.replace(" ", "_").lower()
-    output_filename = f"bootstrap_{clf_name_safe}_{feature_name}_{n_top_genes}_genes_{selection_type}.pkl"
-    output_path = bootstrap_output_dir / output_filename
-    
-    results = {
-        'feature': feature_name,
-        'classifier': clf_name,
-        'selection_type': selection_type,
-        'n_genes': n_top_genes,
-        'n_iterations': n_iterations,
-        'n_splits': n_splits,
-        'total_trainings': n_iterations * n_splits,
-        'hyperparameters': args.bootstrap_hyperparams,
-        'sample_robustness': sample_robustness,
-        'execution_time_seconds': elapsed
-    }
-    
-    with open(output_path, 'wb') as f:
-        pickle.dump(results, f)
-    print(f"✅ Saved results to: {output_path}")
-    
-    # Print summary statistics
-    print(f"\n" + "="*90)
-    print("SUMMARY STATISTICS")
-    print("="*90)
-    
-    total_appearances = sum(s['test_appearances'] for s in sample_robustness.values())
-    total_misclass = sum(s['misclassifications'] for s in sample_robustness.values())
-    overall_rate = total_misclass / total_appearances if total_appearances > 0 else 0
-    
-    print(f"\nOverall:")
-    print(f"  Total test appearances: {total_appearances}")
-    print(f"  Total misclassifications: {total_misclass}")
-    print(f"  Misclassification rate: {overall_rate:.4f} ({overall_rate*100:.2f}%)")
-    print(f"  Accuracy: {1-overall_rate:.4f} ({(1-overall_rate)*100:.2f}%)")
-    
-    # Per cancer type
-    print(f"\nBy Cancer Type:")
-    type_stats = {}
-    for sid in sample_ids_array:
-        if sid in sample_robustness:
-            stats = sample_stats[sid]
-            ctype = stats['cancer_type']
-            if ctype not in type_stats:
-                type_stats[ctype] = {'appearances': 0, 'misclass': 0}
-            type_stats[ctype]['appearances'] += sample_robustness[sid]['test_appearances']
-            type_stats[ctype]['misclass'] += sample_robustness[sid]['misclassifications']
-    
-    for ctype in sorted(type_stats.keys()):
-        rate = type_stats[ctype]['misclass'] / type_stats[ctype]['appearances']
-        print(f"  {ctype}: {rate:.4f} ({rate*100:.2f}%)")
-    
-    print(f"\n{'='*90}\n")
+
 
 def run_single_experiment_no_selection(params: dict):
     """
@@ -6049,6 +6538,32 @@ def run_single_experiment_no_selection(params: dict):
     clf_name_safe = clf_name.replace(" ", "_").lower()
     output_filename = f"results_{clf_name_safe}_{feature_name}_all_features.pkl"
     output_path = os.path.join(output_dir, output_filename)
+    models_path = os.path.join(output_dir, f"models_{clf_name_safe}_{feature_name}_all_features.pkl")
+
+    def _panel_done():
+        """A complete result for this cohort (10 folds covering exactly these samples)."""
+        try:
+            with open(output_path, 'rb') as fh:
+                df = pickle.load(fh)
+            held_out = set(str(s) for ids in df['test_sample_ids'] for s in ids)
+            ok = len(df) == 10 and held_out == set(str(s) for s in sample_ids)
+            if ok and params.get('store_fitted_models'):
+                with open(models_path, 'rb') as fh:
+                    pickle.load(fh)
+            return bool(ok)
+        except Exception:
+            return False
+
+    # Resume / cross-cluster claim: a complete result is not recomputed
+    # (delete it to force), and a result another worker is computing is waited for.
+    if _panel_done():
+        print(f"--- {output_filename} already complete for this cohort - skipping ---")
+        return output_path
+    claim = _WorkClaim(output_path, output_filename)
+    if not claim.try_acquire():
+        print(f"--- {output_filename}: claimed by {claim.holder()} - waiting ---")
+        if claim.wait(_panel_done) == 'done':
+            return output_path
 
     print(f"\n======================================================================================")
     print(f"STARTING (NO SELECTION): {clf_name_safe} | Feature: '{feature_name}' | All {X.shape[1]} features")
@@ -6056,6 +6571,8 @@ def run_single_experiment_no_selection(params: dict):
 
     outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     fold_results = []
+    fitted_models = {}
+    report_feature_names = params.get('feature_names')
     start_time = time.time()
 
     for fold_idx, (train_idx, test_idx) in enumerate(outer_cv.split(X, stratification_labels)):
@@ -6098,145 +6615,35 @@ def run_single_experiment_no_selection(params: dict):
         auc_full = auc(fpr_full, tpr_full)
         precision_full, recall_full, _ = precision_recall_curve(y_test, y_pred_proba_full)
 
-        # Operating-point thresholds chosen on the TRAIN fold (from out-of-fold scores,
-        # not resubstitution), applied to the TEST fold
-        oof_proba_train = oof_train_scores(best_model, X_train, y_train)
-        op_thr = derive_operating_point_thresholds(y_train, oof_proba_train)
+        # Operating-point thresholds chosen on the TRAIN fold (from the selected
+        # configuration's scores on the inner validation folds, not resubstitution),
+        # applied to the TEST fold
+        op_thr, inner_cv_scores = inner_cv_operating_thresholds(
+            best_model, X_train, y_train, inner_splits,
+            expected_mean_auc=grid_search.best_score_, label=f"fold {fold_idx + 1}")
 
-        # Calculate predictions at multiple operating points for full model
-        y_pred_default = y_pred_binary_full  # Uses sklearn's default (typically 0.5)
+        # Reports / confusion matrices / misclassified IDs at the four operating
+        # points. Thresholds were derived from the TRAIN fold only (op_thr above).
+        y_pred_default = y_pred_binary_full  # sklearn's default decision rule
+        (report_full, confusion_matrix_full, misclassified_sample_ids,
+         full_model_thresholds) = _operating_point_reports(
+            y_test, y_pred_proba_full, y_pred_default, op_thr, sample_ids_test)
 
-        # At 95% specificity (threshold from TRAIN fold)
-        threshold_95spec = op_thr['95_percent_specificity']
-        y_pred_95spec = (y_pred_proba_full >= threshold_95spec).astype(int)
-
-        # At 90% specificity (threshold from TRAIN fold)
-        threshold_90spec = op_thr['90_percent_specificity']
-        y_pred_90spec = (y_pred_proba_full >= threshold_90spec).astype(int)
-
-        # At Youden's optimal (threshold from TRAIN fold)
-        threshold_youden = op_thr['youden_optimal']
-        y_pred_youden = (y_pred_proba_full >= threshold_youden).astype(int)
-
-        # Generate reports and confusion matrices for each threshold
-        report_full = {
-            'default_0.5': classification_report(y_test, y_pred_default, output_dict=True, zero_division=0),
-            '95_percent_specificity': classification_report(y_test, y_pred_95spec, output_dict=True, zero_division=0),
-            '90_percent_specificity': classification_report(y_test, y_pred_90spec, output_dict=True, zero_division=0),
-            'youden_optimal': classification_report(y_test, y_pred_youden, output_dict=True, zero_division=0),
-        }
-
-        confusion_matrix_full = {
-            'default_0.5': confusion_matrix(y_test, y_pred_default).tolist(),
-            '95_percent_specificity': confusion_matrix(y_test, y_pred_95spec).tolist(),
-            '90_percent_specificity': confusion_matrix(y_test, y_pred_90spec).tolist(),
-            'youden_optimal': confusion_matrix(y_test, y_pred_youden).tolist(),
-        }
-
-        # Track misclassified samples at each operating point
-        misclassified_sample_ids = {
-            'default_0.5': sample_ids_test[y_test != y_pred_default].tolist(),
-            '95_percent_specificity': sample_ids_test[y_test != y_pred_95spec].tolist(),
-            '90_percent_specificity': sample_ids_test[y_test != y_pred_90spec].tolist(),
-            'youden_optimal': sample_ids_test[y_test != y_pred_youden].tolist(),
-        }
-
-        # Store thresholds (operating points chosen on the TRAIN fold).
-        # train_*_at_* record where each threshold landed on the TRAIN-fold ROC.
-        full_model_thresholds = {
-            'default': 0.5,
-            '95_percent_specificity': float(threshold_95spec),
-            '90_percent_specificity': float(threshold_90spec),
-            'youden_optimal': float(threshold_youden),
-            'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
-            'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
-            'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
-            'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
-        }
-
-        # --- PER-CANCER-TYPE EVALUATION ---
-        auc_per_type, roc_per_type, pr_per_type = {}, {}, {}
-        confusion_matrix_per_type = {}
-        classification_report_per_type = {}
-        sample_classification_per_type = {}  # Track correct/incorrect samples per threshold
-        healthy_labels_in_test = np.unique(stratification_test[y_test == 0])
+        # --- Per-cancer-type evaluation (same train-derived thresholds) ---
         unique_cancer_types_in_test = np.unique(stratification_test[y_test == 1])
-        
         print(f"  [Outer Loop] Fold {fold_idx + 1}/{outer_cv.get_n_splits()}: Overall AUC = {auc_full:.3f}. Evaluating on {len(unique_cancer_types_in_test)} cancer types.")
-        
-        for cancer_type in unique_cancer_types_in_test:
-            mask = np.isin(stratification_test, healthy_labels_in_test) | (stratification_test == cancer_type)
-            y_test_subset = (stratification_test[mask] == cancer_type).astype(int)
-            y_pred_proba_subset = y_pred_proba_full[mask]
-            sample_ids_subset = sample_ids_test[mask]
-            
-            fpr, tpr, thresholds = roc_curve(y_test_subset, y_pred_proba_subset)
-            precision, recall, _ = precision_recall_curve(y_test_subset, y_pred_proba_subset)
+        (auc_per_type, roc_per_type, pr_per_type, confusion_matrix_per_type,
+         classification_report_per_type, sample_classification_per_type) = \
+            _per_cancer_type_train_threshold_eval(
+                y_test, y_pred_proba_full, stratification_test, sample_ids_test, op_thr)
 
-            auc_per_type[cancer_type] = auc(fpr, tpr)
-            roc_per_type[cancer_type] = {'fpr': fpr, 'tpr': tpr}
-            pr_per_type[cancer_type] = {'precision': precision, 'recall': recall}
+        # Extended reporting (additive keys; see _extended_fold_report above)
+        extended = _extended_fold_report(
+            best_model, grid_search, X_train, y_train, y_test, y_pred_proba_full,
+            inner_cv_scores, op_thr, confusion_matrix_full, feature_names=report_feature_names)
+        if params.get('store_fitted_models'):
+            fitted_models[fold_idx + 1] = best_model
 
-            # Operating points use the SAME train-derived thresholds as the overall fold
-            # (op_thr above). This reflects single-threshold deployment and avoids tuning
-            # the threshold on the per-cancer-type test subset.
-            # 1. Default: 0.5 threshold
-            y_pred_default = (y_pred_proba_subset >= 0.5).astype(int)
-            # 2. At 95% specificity (threshold from TRAIN fold)
-            threshold_95spec = op_thr['95_percent_specificity']
-            y_pred_95spec = (y_pred_proba_subset >= threshold_95spec).astype(int)
-            # 3. At 90% specificity (threshold from TRAIN fold)
-            threshold_90spec = op_thr['90_percent_specificity']
-            y_pred_90spec = (y_pred_proba_subset >= threshold_90spec).astype(int)
-            # 4. At Youden's optimal (threshold from TRAIN fold)
-            threshold_youden = op_thr['youden_optimal']
-            y_pred_youden = (y_pred_proba_subset >= threshold_youden).astype(int)
-
-            confusion_matrix_per_type[cancer_type] = {
-                'default_0.5': confusion_matrix(y_test_subset, y_pred_default).tolist(),
-                '95_percent_specificity': confusion_matrix(y_test_subset, y_pred_95spec).tolist(),
-                '90_percent_specificity': confusion_matrix(y_test_subset, y_pred_90spec).tolist(),
-                'youden_optimal': confusion_matrix(y_test_subset, y_pred_youden).tolist(),
-            }
-
-            classification_report_per_type[cancer_type] = {
-                'default_0.5': classification_report(y_test_subset, y_pred_default, output_dict=True, zero_division=0),
-                '95_percent_specificity': classification_report(y_test_subset, y_pred_95spec, output_dict=True, zero_division=0),
-                '90_percent_specificity': classification_report(y_test_subset, y_pred_90spec, output_dict=True, zero_division=0),
-                'youden_optimal': classification_report(y_test_subset, y_pred_youden, output_dict=True, zero_division=0),
-            }
-
-            roc_per_type[cancer_type]['thresholds'] = {
-                'default': 0.5,
-                '95_percent_specificity': float(threshold_95spec),
-                '90_percent_specificity': float(threshold_90spec),
-                'youden_optimal': float(threshold_youden),
-                'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
-                'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
-                'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
-                'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
-            }
-            
-            # Track which samples are correctly/incorrectly classified at each threshold
-            sample_classification_per_type[cancer_type] = {
-                'default_0.5': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_default].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_default].tolist(),
-                },
-                '95_percent_specificity': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_95spec].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_95spec].tolist(),
-                },
-                '90_percent_specificity': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_90spec].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_90spec].tolist(),
-                },
-                'youden_optimal': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_youden].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_youden].tolist(),
-                },
-            }
-        
         fold_results.append({
             'feature': feature_name,
             'top_genes': 'all',
@@ -6244,6 +6651,9 @@ def run_single_experiment_no_selection(params: dict):
             'fold': fold_idx + 1,
             'classifier': clf_name,
             'best_params': grid_search.best_params_,
+            # Mean inner-CV AUC of the winning hyperparameters: the ONLY score that may be
+            # used to compare classifiers/configs per fold without touching the test fold
+            'inner_cv_best_score': float(grid_search.best_score_),
             'num_genes_used': X.shape[1],
             
             # Sample and gene tracking for coverage aggregation experiments
@@ -6272,14 +6682,22 @@ def run_single_experiment_no_selection(params: dict):
             'confusion_matrix_per_cancer_type': confusion_matrix_per_type,
             'classification_report_per_cancer_type': classification_report_per_type,
             'sample_classification_per_type': sample_classification_per_type,
+
+            # Extended per-fold reporting: new keys only
+            **extended,
         })
 
     elapsed = time.time() - start_time
     results_df = pd.DataFrame(fold_results)
     
-    with open(output_path, 'wb') as f:
-        pickle.dump(results_df, f)
-        
+    _atomic_pickle(output_path, results_df)
+
+    if fitted_models:
+        _atomic_pickle(models_path, {'classifier': clf_name, 'feature': feature_name,
+                                     'feature_names': report_feature_names, 'models': fitted_models})
+        print(f"--- Fitted fold models saved to {models_path} ---")
+    claim.release()
+
     print(f"--- Finished and saved to {output_path} in {elapsed:.2f}s ---")
     return output_path
 
@@ -6327,10 +6745,6 @@ def run_single_experiment(params: dict):
     output_filename = f"results_{clf_name_safe}_{feature_name}_{n_top_genes}_genes_{selection_type}.pkl"
     output_path = os.path.join(output_dir, output_filename)
 
-    # if os.path.exists(output_path):
-    #    print(f"Skipping existing results file: {output_path}")
-    #    return output_path
-
     print(f"\n======================================================================================")
     print(f"STARTING: {clf_name_safe} | Feature: '{feature_name}' | Top Genes: {n_top_genes}")
     print(f"======================================================================================")
@@ -6354,19 +6768,21 @@ def run_single_experiment(params: dict):
         print(f"  Num of 0's (Healthy) in train: {np.sum(y_train == 0)}, Num of 1's (Cancer) in train: {np.sum(y_train == 1)}")
         print(f"  Num of 0's (Healthy) in test: {np.sum(y_test == 0)}, Num of 1's (Cancer) in test: {np.sum(y_test == 1)}")
 
-        top_gene_indices = select_top_genes(X_train, y_train, n_top_genes, selection_type=selection_type)
-        
-        if len(top_gene_indices) == 0:
-            print(f"  Fold {fold_idx + 1}/5: No genes selected. Skipping.")
-            continue
-            
-        X_train_selected = X_train[:, top_gene_indices]
-        X_test_selected = X_test[:, top_gene_indices]
+        # TSS ranking + top-k selection is fitted INSIDE every training partition it
+        # serves (selector as the first pipeline step, exactly as in
+        # run_nested_experiment_full): the inner hyperparameter search refits it on
+        # each inner-training split (for the search and for the threshold scores of
+        # the winner alike), and the winning refit on its own training data. The outer test fold never
+        # influences gene selection, and inner validation scores no longer see genes
+        # ranked with their own samples.
+        pipeline = Pipeline([
+            ('selector', TopGeneSelector(n_top_genes=n_top_genes, selection_type=selection_type)),
+            ('scaler', StandardScaler()),
+            ('clf', classifier),
+        ])
 
-        pipeline = Pipeline([('scaler', StandardScaler()), ('clf', classifier)])
-        
-        inner_cv=StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-        inner_splits = list(inner_cv.split(X_train_selected, stratification_train))
+        inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+        inner_splits = list(inner_cv.split(X_train, stratification_train))
 
         # --- Track Inner Loop Sample IDs for Coverage Aggregation ---
         inner_fold_tracking = []
@@ -6375,17 +6791,8 @@ def run_single_experiment(params: dict):
                 'inner_fold': inner_fold_idx + 1,
                 'inner_train_sample_ids': sample_ids_train[inner_train_idx].tolist(),
                 'inner_test_sample_ids': sample_ids_train[inner_test_idx].tolist(),
-                # Note: gene selection already done at outer level, so same genes for all inner folds
+                # Gene selection is refit on each inner-training split by the selector.
             })
-
-        # --- Print Inner Loop Distributions ---
-        # print("  [Inner CV Splits for GridSearchCV]:")
-        # for inner_fold_idx, (inner_train_idx, inner_test_idx) in enumerate(inner_splits):
-        #     strat_inner_train = stratification_train[inner_train_idx]
-        #     strat_inner_test = stratification_train[inner_test_idx]
-            # print(f"    - Inner Fold {inner_fold_idx + 1}/{inner_cv.get_n_splits()}:")
-            # print(f"        Train ({len(strat_inner_train)} samples): {format_distribution(strat_inner_train)}")
-            # print(f"        Test  ({len(strat_inner_test)} samples): {format_distribution(strat_inner_test)}")
 
         grid_search = GridSearchCV(
             estimator=pipeline,
@@ -6394,158 +6801,51 @@ def run_single_experiment(params: dict):
             cv=inner_splits,
             n_jobs=1
         )
-        
-        grid_search.fit(X_train_selected, y_train)
+
+        grid_search.fit(X_train, y_train)
         best_model = grid_search.best_estimator_
-        
-        y_pred_proba_full = best_model.predict_proba(X_test_selected)[:, 1]
-        y_pred_binary_full = best_model.predict(X_test_selected)
+
+        # Genes chosen by the final refit on the whole outer-training partition
+        # (same computation as the previous outer-level select_top_genes call).
+        top_gene_indices = np.asarray(best_model.named_steps['selector'].indices_)
+        if len(top_gene_indices) == 0:
+            # TopGeneSelector.transform falls back to a single zero column here,
+            # which silently yields constant predictions. Fail loudly instead.
+            raise RuntimeError(
+                f"Fold {fold_idx + 1}: selector chose 0 genes for feature '{feature_name}' "
+                f"(k={n_top_genes}, selection_type={selection_type}).")
+
+        y_pred_proba_full = best_model.predict_proba(X_test)[:, 1]
+        y_pred_binary_full = best_model.predict(X_test)
 
         # Calculate overall metrics on the TEST fold (AUC is threshold-independent)
         fpr_full, tpr_full, thresholds_full = roc_curve(y_test, y_pred_proba_full)
         auc_full = auc(fpr_full, tpr_full)
         precision_full, recall_full, _ = precision_recall_curve(y_test, y_pred_proba_full)
 
-        # Operating-point thresholds chosen on the TRAIN fold (from out-of-fold scores,
-        # not resubstitution), applied to the TEST fold
-        oof_proba_train = oof_train_scores(best_model, X_train_selected, y_train)
-        op_thr = derive_operating_point_thresholds(y_train, oof_proba_train)
+        # Operating-point thresholds chosen on the TRAIN fold (from the selected
+        # configuration's scores on the inner validation folds, not resubstitution),
+        # applied to the TEST fold. best_model is the full pipeline, so gene selection
+        # is refit inside each inner-training split here as in the search.
+        op_thr, _ = inner_cv_operating_thresholds(
+            best_model, X_train, y_train, inner_splits,
+            expected_mean_auc=grid_search.best_score_, label=f"fold {fold_idx + 1}")
 
-        # Calculate predictions at multiple operating points for full model
-        y_pred_default = y_pred_binary_full  # Uses sklearn's default (typically 0.5)
+        # Reports / confusion matrices / misclassified IDs at the four operating
+        # points. Thresholds were derived from the TRAIN fold only (op_thr above).
+        y_pred_default = y_pred_binary_full  # sklearn's default decision rule
+        (report_full, confusion_matrix_full, misclassified_sample_ids,
+         full_model_thresholds) = _operating_point_reports(
+            y_test, y_pred_proba_full, y_pred_default, op_thr, sample_ids_test)
 
-        # At 95% specificity (threshold from TRAIN fold)
-        threshold_95spec = op_thr['95_percent_specificity']
-        y_pred_95spec = (y_pred_proba_full >= threshold_95spec).astype(int)
-
-        # At 90% specificity (threshold from TRAIN fold)
-        threshold_90spec = op_thr['90_percent_specificity']
-        y_pred_90spec = (y_pred_proba_full >= threshold_90spec).astype(int)
-
-        # At Youden's optimal (threshold from TRAIN fold)
-        threshold_youden = op_thr['youden_optimal']
-        y_pred_youden = (y_pred_proba_full >= threshold_youden).astype(int)
-
-        # Generate reports and confusion matrices for each threshold
-        report_full = {
-            'default_0.5': classification_report(y_test, y_pred_default, output_dict=True, zero_division=0),
-            '95_percent_specificity': classification_report(y_test, y_pred_95spec, output_dict=True, zero_division=0),
-            '90_percent_specificity': classification_report(y_test, y_pred_90spec, output_dict=True, zero_division=0),
-            'youden_optimal': classification_report(y_test, y_pred_youden, output_dict=True, zero_division=0),
-        }
-
-        confusion_matrix_full = {
-            'default_0.5': confusion_matrix(y_test, y_pred_default).tolist(),
-            '95_percent_specificity': confusion_matrix(y_test, y_pred_95spec).tolist(),
-            '90_percent_specificity': confusion_matrix(y_test, y_pred_90spec).tolist(),
-            'youden_optimal': confusion_matrix(y_test, y_pred_youden).tolist(),
-        }
-
-        # Track misclassified samples at each operating point
-        misclassified_sample_ids = {
-            'default_0.5': sample_ids_test[y_test != y_pred_default].tolist(),
-            '95_percent_specificity': sample_ids_test[y_test != y_pred_95spec].tolist(),
-            '90_percent_specificity': sample_ids_test[y_test != y_pred_90spec].tolist(),
-            'youden_optimal': sample_ids_test[y_test != y_pred_youden].tolist(),
-        }
-
-        # Store thresholds (operating points chosen on the TRAIN fold).
-        # train_*_at_* record where each threshold landed on the TRAIN-fold ROC.
-        full_model_thresholds = {
-            'default': 0.5,
-            '95_percent_specificity': float(threshold_95spec),
-            '90_percent_specificity': float(threshold_90spec),
-            'youden_optimal': float(threshold_youden),
-            'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
-            'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
-            'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
-            'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
-        }
-
-        # --- PER-CANCER-TYPE EVALUATION ---
-        auc_per_type, roc_per_type, pr_per_type = {}, {}, {}
-        confusion_matrix_per_type = {}
-        classification_report_per_type = {}
-        sample_classification_per_type = {}  # Track correct/incorrect samples per threshold
-        healthy_labels_in_test = np.unique(stratification_test[y_test == 0])
+        # --- Per-cancer-type evaluation (same train-derived thresholds) ---
         unique_cancer_types_in_test = np.unique(stratification_test[y_test == 1])
-        
         print(f"  [Outer Loop] Fold {fold_idx + 1}/{outer_cv.get_n_splits()}: Overall AUC = {auc_full:.3f}. Evaluating on {len(unique_cancer_types_in_test)} cancer types.")
-        
-        for cancer_type in unique_cancer_types_in_test:
-            mask = np.isin(stratification_test, healthy_labels_in_test) | (stratification_test == cancer_type)
-            y_test_subset = (stratification_test[mask] == cancer_type).astype(int)
-            y_pred_proba_subset = y_pred_proba_full[mask]
-            sample_ids_subset = sample_ids_test[mask]
-            
-            fpr, tpr, thresholds = roc_curve(y_test_subset, y_pred_proba_subset)
-            precision, recall, _ = precision_recall_curve(y_test_subset, y_pred_proba_subset)
+        (auc_per_type, roc_per_type, pr_per_type, confusion_matrix_per_type,
+         classification_report_per_type, sample_classification_per_type) = \
+            _per_cancer_type_train_threshold_eval(
+                y_test, y_pred_proba_full, stratification_test, sample_ids_test, op_thr)
 
-            auc_per_type[cancer_type] = auc(fpr, tpr)
-            roc_per_type[cancer_type] = {'fpr': fpr, 'tpr': tpr}
-            pr_per_type[cancer_type] = {'precision': precision, 'recall': recall}
-
-            # Operating points use the SAME train-derived thresholds as the overall fold
-            # (op_thr above). This reflects single-threshold deployment and avoids tuning
-            # the threshold on the per-cancer-type test subset.
-            # 1. Default: 0.5 threshold
-            y_pred_default = (y_pred_proba_subset >= 0.5).astype(int)
-            # 2. At 95% specificity (threshold from TRAIN fold)
-            threshold_95spec = op_thr['95_percent_specificity']
-            y_pred_95spec = (y_pred_proba_subset >= threshold_95spec).astype(int)
-            # 3. At 90% specificity (threshold from TRAIN fold)
-            threshold_90spec = op_thr['90_percent_specificity']
-            y_pred_90spec = (y_pred_proba_subset >= threshold_90spec).astype(int)
-            # 4. At Youden's optimal (threshold from TRAIN fold)
-            threshold_youden = op_thr['youden_optimal']
-            y_pred_youden = (y_pred_proba_subset >= threshold_youden).astype(int)
-
-            confusion_matrix_per_type[cancer_type] = {
-                'default_0.5': confusion_matrix(y_test_subset, y_pred_default).tolist(),
-                '95_percent_specificity': confusion_matrix(y_test_subset, y_pred_95spec).tolist(),
-                '90_percent_specificity': confusion_matrix(y_test_subset, y_pred_90spec).tolist(),
-                'youden_optimal': confusion_matrix(y_test_subset, y_pred_youden).tolist(),
-            }
-
-            classification_report_per_type[cancer_type] = {
-                'default_0.5': classification_report(y_test_subset, y_pred_default, output_dict=True, zero_division=0),
-                '95_percent_specificity': classification_report(y_test_subset, y_pred_95spec, output_dict=True, zero_division=0),
-                '90_percent_specificity': classification_report(y_test_subset, y_pred_90spec, output_dict=True, zero_division=0),
-                'youden_optimal': classification_report(y_test_subset, y_pred_youden, output_dict=True, zero_division=0),
-            }
-
-            roc_per_type[cancer_type]['thresholds'] = {
-                'default': 0.5,
-                '95_percent_specificity': float(threshold_95spec),
-                '90_percent_specificity': float(threshold_90spec),
-                'youden_optimal': float(threshold_youden),
-                'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
-                'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
-                'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
-                'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
-            }
-            
-            # Track which samples are correctly/incorrectly classified at each threshold
-            sample_classification_per_type[cancer_type] = {
-                'default_0.5': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_default].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_default].tolist(),
-                },
-                '95_percent_specificity': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_95spec].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_95spec].tolist(),
-                },
-                '90_percent_specificity': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_90spec].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_90spec].tolist(),
-                },
-                'youden_optimal': {
-                    'correct': sample_ids_subset[y_test_subset == y_pred_youden].tolist(),
-                    'incorrect': sample_ids_subset[y_test_subset != y_pred_youden].tolist(),
-                },
-            }
-        
-    
         fold_results.append({
             'feature': feature_name,
             'top_genes': n_top_genes,
@@ -6553,6 +6853,9 @@ def run_single_experiment(params: dict):
             'fold': fold_idx + 1,
             'classifier': clf_name,
             'best_params': grid_search.best_params_,
+            # Mean inner-CV AUC of the winning hyperparameters: the ONLY score that may be
+            # used to compare classifiers/configs per fold without touching the test fold
+            'inner_cv_best_score': float(grid_search.best_score_),
             'num_genes_used': len(top_gene_indices),
             
             # Sample and gene tracking for coverage aggregation experiments
@@ -6633,11 +6936,11 @@ def _nested_full_grid_sizes(CLASSIFIERS, CLF_PARAM_GRIDS, classifier_names,
         'fits_per_feature_per_outer_fold': fits_per_feature_fold,
         'fits_per_outer_fold': fits_per_outer_fold,
         'inner_fits_total': inner_fits,
-        # One refit of the winning config per outer fold, plus the out-of-fold refits
-        # used to place the operating point (oof_train_scores uses up to 5 folds).
+        # One refit of the winning config per outer fold, plus its inner-fold models
+        # fitted once more to place the operating point (inner_cv_train_scores).
         'final_refits': n_outer,
-        'oof_fits': n_outer * 5,
-        'total_fits': inner_fits + n_outer + n_outer * 5,
+        'oof_fits': n_outer * n_inner,
+        'total_fits': inner_fits + n_outer + n_outer * n_inner,
     }
 
 
@@ -6661,13 +6964,42 @@ def print_nested_full_cost_estimate(sizes, seconds_per_fit=None):
     print(f"  x 10 outer folds                      : {sizes['inner_fits_total']:>12,}  INNER FITS")
     print()
     print(f"  + final refit of winner (1/outer fold): {sizes['final_refits']:>12,}")
-    print(f"  + out-of-fold fits for operating point: {sizes['oof_fits']:>12,}")
+    print(f"  + winner's inner-fold fits (op. point): {sizes['oof_fits']:>12,}")
     print(f"  = TOTAL MODEL FITS                    : {sizes['total_fits']:>12,}")
     if seconds_per_fit:
         core_hours = sizes['total_fits'] * seconds_per_fit / 3600.0
         print(f"\n  At {seconds_per_fit:.3f} s/fit -> {core_hours:,.1f} core-hours "
               f"({core_hours / 32:,.1f} h on 32 cores at perfect scaling)")
     print("=" * 90 + "\n")
+
+
+def _nested_full_inner_splits(strat_train, y_train, fold_idx):
+    """
+    Inner CV splits of one outer-training partition (local indices), shared by the
+    inner search, the operating-point thresholds and --nested_full_refresh_thresholds
+    so that all three see the same folds.
+
+    Inner stratification: fine-grained labels when every class is large enough for
+    3 folds, else fall back to the binary labels (and, if even a binary class has
+    fewer than 3 members, shrink the inner fold count). Only small-subset runs
+    (--nested_full_sizesweep) ever take the fallbacks; full-cohort runs are unchanged.
+    """
+    inner_strat = strat_train
+    min_class = np.unique(inner_strat, return_counts=True)[1].min()
+    if min_class < 3:
+        print(f"  NOTE: smallest stratification class in the training partition has "
+              f"{min_class} member(s); inner CV stratifies on the binary label instead.")
+        inner_strat = y_train
+        min_class = np.unique(inner_strat, return_counts=True)[1].min()
+    n_inner = int(min(3, min_class))
+    if n_inner < 2:
+        raise RuntimeError(
+            f"Fold {fold_idx + 1}: cannot build an inner CV - a class has only "
+            f"{min_class} training sample(s).")
+    if n_inner < 3:
+        print(f"  NOTE: inner CV reduced to {n_inner} folds (smallest class: {min_class}).")
+    inner_cv = StratifiedKFold(n_splits=n_inner, shuffle=True, random_state=42)
+    return list(inner_cv.split(np.zeros((len(y_train), 1)), inner_strat))
 
 
 def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_labels,
@@ -6693,8 +7025,14 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
     print(f"{'=' * 90}")
 
     def _make_pipeline():
-        steps = [
-            ('selector', TopGeneSelector()),
+        # covariate block (COVARIATE_BLOCK, set in main): 'augment' keeps the last n
+        # columns past the ranking; 'residualize' regresses them out of the TSSs first
+        cov_mode, n_cov = COVARIATE_BLOCK['mode'], int(COVARIATE_BLOCK['n'])
+        steps = []
+        if cov_mode == 'residualize':
+            steps.append(('residualizer', CovariateResidualizer(n_covariates=n_cov)))
+        steps += [
+            ('selector', TopGeneSelector(n_passthrough=n_cov if cov_mode == 'augment' else 0)),
             ('scaler', StandardScaler()),
             ('clf', CLASSIFIERS[classifier_names[0]]),  # placeholder, set by the grid
         ]
@@ -6721,8 +7059,7 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
                 return name
         return type(clf_obj).__name__
 
-    inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-    inner_splits = list(inner_cv.split(np.zeros((len(train_idx), 1)), strat_train))
+    inner_splits = _nested_full_inner_splits(strat_train, y_train, fold_idx)
 
     # --- Inner search, once per feature, on this fold's training partition only ---
     per_feature = {}
@@ -6781,27 +7118,15 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
     auc_full = auc(fpr_full, tpr_full)
     precision_full, recall_full, _ = precision_recall_curve(y_test, y_pred_proba)
 
-    # --- Operating point from TRAINING data only (unchanged approach) ---
-    oof_proba_train = oof_train_scores(best_model, X_train_best, y_train)
-    op_thr = derive_operating_point_thresholds(y_train, oof_proba_train)
+    # --- Operating point from TRAINING data only: the winning configuration's
+    # held-out scores on the inner validation folds it was selected on ---
+    op_thr, _ = inner_cv_operating_thresholds(
+        best_model, X_train_best, y_train, inner_splits,
+        expected_mean_auc=inner_best_score, label=f"fold {fold_idx + 1}")
 
     y_pred_default = (y_pred_proba >= 0.5).astype(int)
-    y_pred_95spec = (y_pred_proba >= op_thr['95_percent_specificity']).astype(int)
-    y_pred_90spec = (y_pred_proba >= op_thr['90_percent_specificity']).astype(int)
-    y_pred_youden = (y_pred_proba >= op_thr['youden_optimal']).astype(int)
-
-    report_full = {
-        'default_0.5': classification_report(y_test, y_pred_default, output_dict=True, zero_division=0),
-        '95_percent_specificity': classification_report(y_test, y_pred_95spec, output_dict=True, zero_division=0),
-        '90_percent_specificity': classification_report(y_test, y_pred_90spec, output_dict=True, zero_division=0),
-        'youden_optimal': classification_report(y_test, y_pred_youden, output_dict=True, zero_division=0),
-    }
-    confusion_full = {
-        'default_0.5': confusion_matrix(y_test, y_pred_default).tolist(),
-        '95_percent_specificity': confusion_matrix(y_test, y_pred_95spec).tolist(),
-        '90_percent_specificity': confusion_matrix(y_test, y_pred_90spec).tolist(),
-        'youden_optimal': confusion_matrix(y_test, y_pred_youden).tolist(),
-    }
+    report_full, confusion_full, _, full_model_thresholds = _operating_point_reports(
+        y_test, y_pred_proba, y_pred_default, op_thr, sample_ids_test)
 
     fold_elapsed = time.time() - fold_start
     print(f"  -> held-out AUC = {auc_full:.4f}   (fold took {fold_elapsed:.1f}s)")
@@ -6818,6 +7143,10 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
         'selected_gene_indices': selected_indices,
         'num_genes_used': len(selected_indices),
         'inner_best_score_per_feature': {f: per_feature[f]['best_score'] for f in feature_names},
+        # Width of every candidate matrix: how many regions k was selected from.
+        # Lets the comparator region sweep (RNA regions, ATAC TFs) report "k of N"
+        # without re-loading the features.
+        'n_features_available': {f: int(all_feature_arrays[f].shape[1]) for f in feature_names},
         'train_sample_ids': sample_ids[train_idx].tolist(),
         'test_sample_ids': sample_ids_test.tolist(),
         'y_test': y_test.tolist(),
@@ -6828,18 +7157,17 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
         'recall_full_model': recall_full,
         'classification_report_full_model': report_full,
         'confusion_matrix_full_model': confusion_full,
-        'full_model_thresholds': {
-            'default': 0.5,
-            '95_percent_specificity': float(op_thr['95_percent_specificity']),
-            '90_percent_specificity': float(op_thr['90_percent_specificity']),
-            'youden_optimal': float(op_thr['youden_optimal']),
-            'train_fpr_at_95spec': op_thr['train_fpr_at_95spec'],
-            'train_tpr_at_95spec': op_thr['train_tpr_at_95spec'],
-            'train_fpr_at_90spec': op_thr['train_fpr_at_90spec'],
-            'train_tpr_at_90spec': op_thr['train_tpr_at_90spec'],
-        },
+        'full_model_thresholds': full_model_thresholds,
         'fold_elapsed_seconds': fold_elapsed,
     }
+    if COVARIATE_BLOCK['mode']:
+        fold_record['covariate_block'] = _covariate_block_report(
+            best_model, X_train_best, X_test_best, y_test, y_pred_proba, label=f"fold {fold_idx + 1}")
+        cb = fold_record['covariate_block']
+        print(f"  -> covariate block ({cb['mode']}, {cb['n_covariates']} covariates): "
+              + (f"perm drop covariates {cb['perm_drop_covariates_mean']:+.3f} / TSS {cb['perm_drop_tss_mean']:+.3f}, "
+                 f"TSS selected {cb['n_tss_selected']}" if cb['mode'] == 'augment'
+                 else f"median R2 of TSS on covariates {cb['residual_r2_median']:.3f}"))
 
     oof_rows = [
         {
@@ -6859,7 +7187,6 @@ def _nested_full_one_fold(fold_idx, train_idx, test_idx, all_feature_arrays, y_l
 
 def _nested_full_finalize(output_dir, fold_records, oof_rows, sizes, meta, elapsed, n_samples):
     """Assemble the three requested outputs, write them to disk and print the table."""
-    import json
 
     fold_records = sorted(fold_records, key=lambda r: r['fold'])
     per_fold_df = pd.DataFrame(fold_records)
@@ -6936,11 +7263,19 @@ def _nested_full_finalize(output_dir, fold_records, oof_rows, sizes, meta, elaps
             'summary': summary, 'output_dir': output_dir}
 
 
-def _nested_full_aggregate_dir(out_dir, n_samples, fallback_sizes=None, fallback_meta=None):
+def _nested_full_aggregate_dir(out_dir, n_samples, fallback_sizes=None, fallback_meta=None,
+                               expected_folds=10):
     """
     Combine the per-fold partials written by only_fold in one directory into the final
-    outputs. Used both for a plain run and for each k of a --nested_full_ksweep.
+    outputs. Used for a plain run, for each k of a --nested_full_ksweep, and for each
+    fraction of a --nested_full_sizesweep (where expected_folds may be below 10 because
+    small subsets cannot sustain a 10-fold stratified outer partition).
     """
+    def _search_space_key(meta):
+        # 'label_permutation_seed' is absent in older folds; a fold without the key and a fold
+        # with None ran the same search (no permutation)
+        return {k: v for k, v in (meta or {}).items() if not (k == 'label_permutation_seed' and v is None)}
+
     out_dir = Path(out_dir)
     partials = sorted(out_dir.glob("nested_full_fold_*.pkl"))
     if not partials:
@@ -6957,19 +7292,399 @@ def _nested_full_aggregate_dir(out_dir, n_samples, fallback_sizes=None, fallback
         # happened to be given on the command line.
         if part_meta is None:
             part_sizes, part_meta = part.get('sizes'), part.get('meta')
-        elif part.get('meta') != part_meta:
+        elif _search_space_key(part.get('meta')) != _search_space_key(part_meta):
             raise RuntimeError(
                 f"{p.name} was produced with a different search space than "
                 f"{partials[0].name}:\n  {part.get('meta')}\n  vs\n  {part_meta}"
             )
     found = sorted(r['fold'] for r in fold_records)
-    missing = [f for f in range(1, 11) if f not in found]
+    missing = [f for f in range(1, int(expected_folds) + 1) if f not in found]
     if missing:
         raise RuntimeError(f"Missing outer fold partial(s): {missing} (found {found})")
     print(f"Aggregating {len(fold_records)} fold partials from {out_dir}")
     return _nested_full_finalize(out_dir, fold_records, oof_rows,
                                  part_sizes or fallback_sizes, part_meta or fallback_meta,
                                  elapsed, n_samples)
+
+
+def _ksweep_derive_tuned_arm(output_dir, per_k_results, sizes, meta, n_samples):
+    """
+    The "k tuned as a hyperparameter" arm, derived from a completed k-sweep.
+
+    Every ksweep_k<k>/ point is a complete nested selection at fixed k on the same
+    outer folds and the same seeded inner splits, so per outer fold the k with the
+    highest inner-CV best score is precisely what one fully nested run over the whole
+    k grid would have selected (GridSearchCV's argmax over the joint grid equals the
+    argmax over the per-k argmaxes; the winning configuration's refit and prediction
+    are deterministic). The derived arm therefore IS the fully nested result for the
+    k grid, at no extra compute - verified on the brca_crc data-driven pair (10/10
+    folds identical to the standalone run: k, scores, thresholds).
+
+    Ties between k values (identical inner scores) go to the smallest k. Writes the
+    standard result files into <output_dir>/ksweep_tuned/ so downstream code treats
+    it like any other nested_full directory; the summary carries
+    derived_from_ksweep=True and the per-fold inner scores of every k.
+    """
+    tuned_dir = Path(output_dir) / "ksweep_tuned"
+    os.makedirs(tuned_dir, exist_ok=True)
+    ks = sorted(per_k_results)
+    folds = sorted(per_k_results[ks[0]]['per_fold']['fold'].astype(int))
+    fold_records, oof_rows, elapsed = [], [], 0.0
+    print("=" * 110)
+    print("k TUNED AS A HYPERPARAMETER - per outer fold, the k with the best inner-CV score")
+    print("=" * 110)
+    for fold in folds:
+        inner_by_k = {}
+        for k in ks:
+            pf = per_k_results[k]['per_fold']
+            row = pf[pf['fold'].astype(int) == fold]
+            if len(row) != 1:
+                raise RuntimeError(f"ksweep_k{k:05d}: fold {fold} appears {len(row)} times.")
+            inner_by_k[k] = float(row.iloc[0]['inner_best_score'])
+            elapsed += float(row.iloc[0].get('fold_elapsed_seconds', 0.0))
+        best_k = max(ks, key=lambda k: (inner_by_k[k], -k))   # ties -> smallest k
+        pf = per_k_results[best_k]['per_fold']
+        rec = pf[pf['fold'].astype(int) == fold].iloc[0].to_dict()
+        rec['ksweep_inner_scores'] = inner_by_k
+        rec['ksweep_k_selected'] = int(best_k)
+        fold_records.append(rec)
+        oof = per_k_results[best_k]['oof_predictions']
+        oof_rows.extend(oof[oof['outer_fold'].astype(int) == fold].to_dict('records'))
+        runners = sorted(ks, key=lambda k: -inner_by_k[k])[1:3]
+        print(f"  fold {fold:>2}: k = {best_k:>6} (inner {inner_by_k[best_k]:.4f}, "
+              f"test AUC {rec['test_auc']:.4f}; runner-up "
+              + ", ".join(f"k={k} {inner_by_k[k]:.4f}" for k in runners) + ")")
+    tuned_meta = dict(meta, top_genes_searched=[int(k) for k in ks],
+                      derived_from_ksweep=True,
+                      tie_break="smallest k on equal inner score")
+    print(f"\nWriting the derived arm to {tuned_dir} (same layout as a plain nested_full run)")
+    return _nested_full_finalize(tuned_dir, fold_records, oof_rows, sizes, tuned_meta,
+                                 elapsed, n_samples)
+
+
+def _sizesweep_subsets(fractions, stratification_labels, seed):
+    """
+    Deterministic, nested, stratified sample subsets for --nested_full_sizesweep.
+
+    Per stratum (fine-grained disease label, so healthy fraction AND cancer-type
+    composition are preserved) the sample indices are shuffled ONCE with `seed`;
+    fraction f keeps the first max(1, round(f * n_stratum)) of that fixed order.
+    Because every subset is a prefix of the same shuffle:
+      - subsets nest: subset(0.8) is a strict subset of subset(0.9), so the curve
+        reflects removing samples, not redrawing cohorts;
+      - each subset depends only on (seed, cohort), NOT on which fractions a given
+        submission runs - fractions can be submitted in chunks and still agree.
+    The max(1, ...) floor keeps every stratum represented (a rare cancer type is
+    never silently dropped from the task at small fractions).
+
+    Returns {fraction: sorted global index array}.
+    """
+    rng = np.random.default_rng(seed)
+    stratification_labels = np.asarray(stratification_labels)
+    perms = []
+    for s in pd.unique(stratification_labels):  # first-appearance order: stable
+        idx = np.flatnonzero(stratification_labels == s)
+        perms.append(rng.permutation(idx))
+    out = {}
+    for f in fractions:
+        if not 0.0 < f <= 1.0:
+            raise ValueError(f"sizesweep fractions must be in (0, 1], got {f}")
+        keep = np.concatenate([p[:max(1, int(round(f * len(p))))] for p in perms])
+        out[f] = np.sort(keep)
+    return out
+
+
+def _sizesweep_dir_name(fraction):
+    """'sizesweep_f090' for 0.9 - fixed width, sorts with the sweep."""
+    return f"sizesweep_f{int(round(fraction * 100)):03d}"
+
+
+def _refresh_thresholds_one_partial(partial_path, all_feature_arrays, y_labels,
+                                    stratification_labels, sample_ids, CLASSIFIERS):
+    """
+    Worker of --nested_full_refresh_thresholds: re-derive the operating-point
+    thresholds of ONE stored fold partial from the winning configuration's scores on
+    the inner validation folds, without repeating the inner search.
+
+    The stored winner (feature, ranking function, k, classifier, hyperparameters) is
+    refitted on the stored training partition in the stored sample order and must
+    reproduce the stored test-fold predictions before anything is rewritten - that
+    proves the loaded cohort and features are those of the original run. The stored
+    predictions and AUROC are left untouched; only the thresholds and the reports /
+    confusion matrices that depend on them change. The thresholds being replaced are
+    kept in the record as 'full_model_thresholds_previous'.
+    """
+    partial_path = Path(partial_path)
+    tag = f"{partial_path.parent.name}/{partial_path.name}"
+    with open(partial_path, 'rb') as fh:
+        part = pickle.load(fh)
+    rec = part['fold_record']
+    prev = dict(rec['full_model_thresholds'])
+    out = {'partial': tag, 'fold': int(rec['fold']), 'classifier': rec['classifier'],
+           'threshold_95spec_previous': float(prev['95_percent_specificity']),
+           'threshold_95spec': float(prev['95_percent_specificity']), 'status': 'unchanged'}
+    if prev.get('threshold_source') == THRESHOLD_SOURCE_INNER_CV:
+        out['status'] = 'already inner-CV'
+        return out
+
+    id_to_idx = {sid: i for i, sid in enumerate(np.asarray(sample_ids))}
+    train_ids, test_ids = list(rec['train_sample_ids']), list(rec['test_sample_ids'])
+    missing = [sid for sid in train_ids + test_ids if sid not in id_to_idx]
+    if missing:
+        raise KeyError(
+            f"{tag}: {len(missing)} stored sample ID(s) are absent from the loaded cohort "
+            f"(e.g. {missing[:3]}). Use the data arguments of the original run.")
+    if rec['feature'] not in all_feature_arrays or rec['classifier'] not in CLASSIFIERS:
+        raise KeyError(f"{tag}: feature '{rec['feature']}' or classifier "
+                       f"'{rec['classifier']}' is not available in this invocation.")
+    train_idx = np.array([id_to_idx[sid] for sid in train_ids])
+    test_idx = np.array([id_to_idx[sid] for sid in test_ids])
+    y_train, y_test = y_labels[train_idx], y_labels[test_idx]
+    if not np.array_equal(y_test, np.asarray(rec['y_test'])):
+        raise ValueError(f"{tag}: stored y_test does not match the current labels of the "
+                         f"stored test samples - cohort/labels differ from the original run.")
+
+    X = all_feature_arrays[rec['feature']]
+    pipe = Pipeline([('selector', TopGeneSelector()),
+                     ('scaler', StandardScaler()),
+                     ('clf', CLASSIFIERS[rec['classifier']])])
+    pipe = clone(pipe).set_params(
+        selector__n_top_genes=int(rec['n_top_genes']),
+        selector__selection_type=rec['selection_type'],
+        **dict(rec['clf_hyperparams']))
+    pipe.fit(X[train_idx], y_train)
+    stored_proba = np.asarray(rec['y_pred_proba'], dtype=float)
+    proba = pipe.predict_proba(X[test_idx])[:, 1]
+    if not np.allclose(proba, stored_proba, atol=1e-6):
+        raise RuntimeError(
+            f"{tag}: refit test predictions deviate from the stored ones (max diff "
+            f"{np.abs(proba - stored_proba).max():.3e}) - the refit does not reproduce "
+            f"the stored fold model, thresholds NOT rewritten.")
+
+    inner_splits = _nested_full_inner_splits(
+        stratification_labels[train_idx], y_train, int(rec['fold']) - 1)
+    op_thr, _ = inner_cv_operating_thresholds(
+        pipe, X[train_idx], y_train, inner_splits,
+        expected_mean_auc=rec.get('inner_best_score'), label=tag)
+    report_full, confusion_full, _, full_model_thresholds = _operating_point_reports(
+        y_test, stored_proba, (stored_proba >= 0.5).astype(int), op_thr,
+        np.asarray(test_ids))
+
+    rec['full_model_thresholds_previous'] = prev
+    rec['classification_report_full_model'] = report_full
+    rec['confusion_matrix_full_model'] = confusion_full
+    rec['full_model_thresholds'] = full_model_thresholds
+    tmp_path = partial_path.with_name(partial_path.name + '.tmp')
+    with open(tmp_path, 'wb') as fh:
+        pickle.dump(part, fh)
+    os.replace(tmp_path, partial_path)
+    out.update(threshold_95spec=float(full_model_thresholds['95_percent_specificity']),
+               status='refreshed')
+    return out
+
+
+def _nested_full_refresh_thresholds(output_dir, all_feature_arrays, y_labels,
+                                    stratification_labels, sample_ids, CLASSIFIERS,
+                                    n_jobs=1):
+    """
+    Re-derive the operating-point thresholds of every stored fold partial of one fully
+    nested experiment (the plain run and any ksweep_k* / sizesweep_f* subdirectories)
+    with inner_cv_operating_thresholds(), i.e. from the winner's scores on the inner
+    validation folds. Costs 1 + n_inner fits per fold instead of a new inner search.
+    Aggregate afterwards (same call with --nested_full_aggregate) to rebuild the tables.
+    """
+    output_dir = Path(output_dir)
+    dirs = [output_dir] + sorted(output_dir.glob("ksweep_k*")) + sorted(output_dir.glob("sizesweep_f*"))
+    partials = [p for d in dirs for p in sorted(d.glob("nested_full_fold_*.pkl"))]
+    if not partials:
+        raise FileNotFoundError(f"No nested_full_fold_*.pkl partials under {output_dir}")
+    print(f"Refreshing operating-point thresholds of {len(partials)} fold partial(s) "
+          f"under {output_dir} (inner-CV scores of the stored winning configuration)")
+    rows = Parallel(n_jobs=max(1, min(int(n_jobs), len(partials))), verbose=5)(
+        delayed(_refresh_thresholds_one_partial)(
+            p, all_feature_arrays, y_labels, stratification_labels, sample_ids, CLASSIFIERS)
+        for p in partials)
+    table = pd.DataFrame(rows)
+    table.to_csv(output_dir / "threshold_refresh_log.csv", index=False)
+    print(table.to_string(index=False))
+    print(f"{int((table['status'] == 'refreshed').sum())} partial(s) rewritten, "
+          f"{int((table['status'] != 'refreshed').sum())} already current. "
+          f"Log: {output_dir / 'threshold_refresh_log.csv'}")
+    return table
+
+
+# ---------------------------------------------------------------------------
+# Cross-cluster work claims. The same experiment may be submitted on two
+# clusters that mount the same storage. Every unit
+# of work that writes one file - a fold partial, a per-k / per-fraction partial, a
+# covariate-panel result pickle, an aggregate - is claimed through a lock file next
+# to its output (<output>.lock: atomic O_EXCL creation, holder written inside,
+# touched by a heartbeat thread every minute). A worker that meets a live claim
+# moves on to its next unit and comes back at the end to wait for the result; a
+# claim without heartbeat for NESTED_FULL_LOCK_STALE_SECONDS (default 20 min: the
+# holder was killed) is taken over. Outputs are written to a temporary name and
+# renamed into place, so a reader never sees a half-written file.
+# ---------------------------------------------------------------------------
+WORK_CLAIM_STALE_S = float(os.environ.get('NESTED_FULL_LOCK_STALE_SECONDS', 20 * 60))
+WORK_CLAIM_HEARTBEAT_S = float(os.environ.get('NESTED_FULL_LOCK_HEARTBEAT_SECONDS', 60))
+WORK_CLAIM_POLL_S = float(os.environ.get('NESTED_FULL_LOCK_POLL_SECONDS', 60))
+WORK_CLAIM_VERIFY_S = float(os.environ.get('NESTED_FULL_LOCK_VERIFY_SECONDS', 2))
+WORK_CLAIM_MAX_WAIT_S = float(os.environ.get('NESTED_FULL_LOCK_MAX_WAIT_SECONDS', 12 * 3600))
+
+
+def _atomic_pickle(path, obj):
+    """Write `obj` to `path` through a temporary file and an atomic rename."""
+    path = Path(path)
+    tmp = path.with_name(f"{path.name}.{socket.gethostname()}.{os.getpid()}.tmp")
+    with open(tmp, 'wb') as fh:
+        pickle.dump(obj, fh)
+    os.replace(tmp, path)
+
+
+class _WorkClaim:
+    """Claim on one unit of work whose output file is `target` (lock: <target>.lock)."""
+
+    def __init__(self, target, label=None):
+        self.target = Path(target)
+        self.lock = self.target.with_name(self.target.name + '.lock')
+        self.label = label or self.target.name
+        self.token = (f"{socket.gethostname()} job={os.environ.get('SLURM_JOB_ID', '-')} "
+                      f"pid={os.getpid()} since={time.strftime('%Y-%m-%d %H:%M:%S')}")
+        self.held = False
+        self._stop = None
+        self._thread = None
+
+    def holder(self):
+        try:
+            return self.lock.read_text().strip()
+        except OSError:
+            return None
+
+    def age_s(self):
+        try:
+            return time.time() - self.lock.stat().st_mtime
+        except OSError:
+            return None
+
+    def try_acquire(self):
+        """True when this worker now holds the claim (heartbeat running)."""
+        for _ in range(3):
+            try:
+                fd = os.open(self.lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                age = self.age_s()
+                if age is None:                 # vanished between the two calls: retry
+                    continue
+                if age > WORK_CLAIM_STALE_S:
+                    print(f"  claim on {self.label}: stale lock ({age / 60:.0f} min without "
+                          f"heartbeat, holder: {self.holder()}) - taking over")
+                    try:
+                        os.remove(self.lock)
+                    except OSError:
+                        pass
+                    continue
+                return False
+            with os.fdopen(fd, 'w') as fh:
+                fh.write(self.token)
+            time.sleep(WORK_CLAIM_VERIFY_S)     # a simultaneous takeover may have replaced the file
+            if self.holder() != self.token:
+                return False
+            self.held = True
+            self._stop = threading.Event()
+            self._thread = threading.Thread(target=self._heartbeat, daemon=True)
+            self._thread.start()
+            return True
+        return False
+
+    def _heartbeat(self):
+        while not self._stop.wait(WORK_CLAIM_HEARTBEAT_S):
+            try:
+                os.utime(self.lock, None)
+            except OSError:
+                pass
+
+    def release(self):
+        if self._stop is not None:
+            self._stop.set()
+            self._thread.join(timeout=5)
+            self._stop = None
+        if self.held:
+            try:
+                if self.holder() == self.token:
+                    os.remove(self.lock)
+            except OSError:
+                pass
+            self.held = False
+
+    def wait(self, is_done):
+        """Block until `is_done()` (another worker delivered the output) or until this
+        worker acquires the claim (the holder released it without output, or died).
+        Returns 'done' or 'acquired'."""
+        t0, last = time.time(), None
+        while True:
+            if is_done():
+                return 'done'
+            if self.try_acquire():
+                return 'acquired'
+            waited = time.time() - t0
+            if waited > WORK_CLAIM_MAX_WAIT_S:
+                raise RuntimeError(f"{self.label}: waited {waited / 3600:.1f} h for "
+                                   f"{self.holder()} - giving up")
+            if last is None or waited - last >= 600:
+                age = self.age_s()
+                print(f"  waiting for {self.label}: held by {self.holder()} "
+                      f"(heartbeat {age / 60:.0f} min ago; {waited / 60:.0f} min waited)"
+                      if age is not None else f"  waiting for {self.label}")
+                last = waited
+            time.sleep(WORK_CLAIM_POLL_S)
+
+
+def _sizesweep_partial_ok(path, frac, subsample_seed):
+    try:
+        with open(path, 'rb') as fh:
+            prev = pickle.load(fh)
+        return bool(np.isclose(prev['meta']['sample_fraction'], frac)
+                    and prev['meta']['subsample_seed'] == int(subsample_seed))
+    except Exception:
+        return False
+
+
+def _nested_full_existing_partial(path, fold_number, meta_expected, expected_test_ids):
+    """Resume support for the per-fold steps of run_nested_experiment_full.
+
+    Returns the stored partial when `path` holds a readable pickle written for this
+    outer fold (identical held-out sample IDs, so the cohort and the split are the
+    same) with the same search grid (features, ranking functions, k values,
+    classifiers) and the same covariate block; returns None otherwise, so the fold
+    is (re)computed. A truncated pickle (task killed mid-write) fails to load and
+    is recomputed. Delete a partial to force recomputation.
+    """
+    path = Path(path)
+    if not path.exists():
+        return None
+    try:
+        with open(path, 'rb') as fh:
+            prev = pickle.load(fh)
+        rec, pmeta = prev['fold_record'], prev['meta']
+    except Exception as e:
+        print(f"\nExisting partial {path} unreadable ({e!r}) - recomputing.")
+        return None
+    same_fold = (int(rec.get('fold', -1)) == int(fold_number)
+                 and list(rec.get('test_sample_ids', [])) == [str(x) for x in expected_test_ids])
+    grid_keys = ('features_searched', 'selection_types_searched',
+                 'top_genes_searched', 'classifiers_searched')
+    same_grid = all(list(pmeta.get(k, [])) == list(meta_expected[k]) for k in grid_keys)
+    cb = rec.get('covariate_block') or {}          # absent in partials written before the block existed = no block
+    same_cov = (cb.get('mode') == COVARIATE_BLOCK['mode']
+                and list(cb.get('names') or []) == list(COVARIATE_BLOCK['names']))
+    if same_fold and same_grid and same_cov:
+        print(f"\nPartial for outer fold {fold_number} already exists ({path}) - skipping. "
+              f"Delete it to force recomputation.")
+        return prev
+    why = ("different fold / cohort (held-out IDs differ)" if not same_fold
+           else "different search grid" if not same_grid else "different covariate block")
+    print(f"\nExisting partial {path}: {why} - recomputing.")
+    return None
 
 
 def run_nested_experiment_full(all_feature_arrays: dict,
@@ -6988,7 +7703,11 @@ def run_nested_experiment_full(all_feature_arrays: dict,
                                estimate_only=False,
                                only_fold=None,
                                aggregate=False,
-                               ksweep=False):
+                               ksweep=False,
+                               sizesweep=False,
+                               sizesweep_fractions=None,
+                               subsample_seed=42,
+                               refresh_thresholds=False):
     """
     Fully nested model selection in a single pipeline.
 
@@ -7018,9 +7737,11 @@ def run_nested_experiment_full(all_feature_arrays: dict,
                   best_score_. Selection therefore uses inner scores only.
     Refit       : the winning full configuration is refitted on the entire outer-training
                   partition and predicts once on the untouched outer test partition.
-    Operating pt: thresholds come from out-of-fold training scores via oof_train_scores()
-                  and derive_operating_point_thresholds(), then are applied unchanged to
-                  the test fold. No threshold is computed from test labels.
+    Operating pt: thresholds come from the winning configuration's held-out scores on
+                  the inner validation folds (inner_cv_operating_thresholds(): the
+                  nested cross-validated training predictions, same inner splits as
+                  the selection), then are applied unchanged to the test fold. No
+                  threshold is computed from test labels.
 
     run_single_experiment() is left untouched; both remain runnable for comparison.
 
@@ -7055,13 +7776,54 @@ def run_nested_experiment_full(all_feature_arrays: dict,
         k loop runs inside one task, so the feature matrices are loaded once) and then
         with aggregate to produce nested_full_ksweep.csv.
 
+        The aggregate additionally derives the "k tuned as a hyperparameter" arm from
+        the sweep (ksweep_tuned/, same files as a plain run): per outer fold it keeps
+        the k whose inner-CV best score is highest. Because every k was searched on
+        the same seeded inner splits, this is exactly what a single fully nested run
+        over the whole k grid selects (GridSearchCV's argmax over the joint grid is
+        the argmax over the per-k argmaxes); verified on the brca_crc data-driven
+        pair, where all ten folds reproduce the standalone run's k, predictions and
+        thresholds bit for bit. A separate full run is therefore not needed to
+        obtain the tuned arm - only to cross-check it.
+
+    Comparator region sweep (reviewer: "the number of TSSs was tuned as a
+    hyperparameter while the comparator methods use fixed numbers of regions")
+        The procedure is agnostic to what the columns are, so the same fully nested
+        selection - k included - runs on the comparators' own region sets:
+          RNA  : --no_gene_selection --features_dir extracted_features/zhu_all_after_lift
+                 --nested_full_features rcov (the 792 Zhu et al. regions, feature
+                 locked to the manuscript's rcov), k grid up to 792;
+          ATAC : --predefined_feature_matrix extracted_features/ulz_atac_tfbs_features.npy
+                 (504 Ulz TF-level features, each already the aggregate over that
+                 TF's top-1000 sites), k grid up to 504.
+        k values beyond a region set's width collapse onto a single "all regions"
+        point (see the k-grid note in the body). slurm/nested_full.sh FEATURE_SET=rna|atac
+        assembles these arguments; src/figures/export/export_figS13.py collects the
+        sweeps, the tuned arms and the fixed-region manuscript arms.
+    sizesweep
+        Sample-size robustness sweep (reviewer request): run one COMPLETE fully nested
+        selection per sample fraction, on a deterministic nested stratified subset of
+        the cohort (see _sizesweep_subsets), writing each fraction into its own
+        sizesweep_f<pct>/ subdirectory. Every point of the resulting learning curve is
+        leakage-free: nothing outside the fraction's subset is ever touched, and all
+        selection still happens inside each outer fold. Small subsets cannot sustain a
+        10-fold outer partition, so the fold count per fraction is min(10, smaller
+        binary class count), stratified on the disease labels while every stratum can
+        appear in every fold (binary labels otherwise); array tasks whose fold index
+        exceeds it skip that fraction. Combine with only_fold (the fraction loop runs
+        inside one task) and then with aggregate to produce nested_full_sizesweep.csv.
+    sizesweep_fractions
+        Fractions to run (default 0.9 .. 0.1). Because subsets are prefixes of one
+        seeded shuffle, fractions may be split across submissions and still agree.
+    subsample_seed
+        Seed for the per-stratum shuffle that defines the subsets (default 42).
+
     Returns
     -------
     dict with 'per_fold' (DataFrame), 'oof_predictions' (DataFrame), 'summary' (dict) and
     'output_dir'; the estimate dict when estimate_only=True; the partial path when
     only_fold is set.
     """
-    import json
 
     # The four ranking functions. 'random' is the negative control used elsewhere in this
     # script, not a ranking function, so it is not in the selection grid by default; pass
@@ -7089,6 +7851,31 @@ def run_nested_experiment_full(all_feature_arrays: dict,
     if unknown:
         raise ValueError(f"Unknown classifier(s) {unknown}. Available: {list(CLASSIFIERS)}")
 
+    if sizesweep and ksweep:
+        raise ValueError("--nested_full_sizesweep and --nested_full_ksweep are mutually exclusive.")
+
+    # k grid vs region-set width. TopGeneSelector caps k at the matrix width, so
+    # every k >= width is the same "all regions" candidate: searching several of
+    # them wastes fits and, in a ksweep, draws duplicate points. Keep the smallest
+    # such k (its label is preserved - the data-driven grid's 15000 still means
+    # "all 14,224 TSSs") and drop the larger ones. For the data-driven TSS set
+    # this is a no-op; it matters for the comparator region sets (792 Zhu
+    # regions, 504 Ulz TFs) run through the same procedure.
+    widths = {f: int(all_feature_arrays[f].shape[1]) for f in feature_names}
+    max_width = max(widths.values())
+    top_genes_list = sorted({int(k) for k in top_genes_list})
+    beyond = [k for k in top_genes_list if k >= max_width]
+    if len(beyond) > 1:
+        print(f"NOTE: k values {beyond[1:]} exceed the widest region set "
+              f"({max_width} columns) and would duplicate k={beyond[0]} "
+              f"(= all regions); dropped from the grid.")
+        top_genes_list = [k for k in top_genes_list if k < max_width] + [beyond[0]]
+    print("Region-set width per feature (k is selected from these): "
+          + ", ".join(f"{f}={w:,}" for f, w in widths.items()))
+    if sizesweep_fractions is None:
+        sizesweep_fractions = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    sizesweep_fractions = sorted({round(float(f), 4) for f in sizesweep_fractions}, reverse=True)
+
     sizes = _nested_full_grid_sizes(
         CLASSIFIERS, CLF_PARAM_GRIDS, classifier_names,
         top_genes_list, selection_types, feature_names,
@@ -7106,10 +7893,121 @@ def run_nested_experiment_full(all_feature_arrays: dict,
         'selection_types_searched': list(selection_types),
         'top_genes_searched': [int(k) for k in top_genes_list],
         'classifiers_searched': list(classifier_names),
+        'label_permutation_seed': getattr(args, 'nested_full_permute_labels', None),
     }
 
+    # ---------------------------------------------------------------- threshold refresh
+    # Stored fold partials whose thresholds predate inner_cv_operating_thresholds():
+    # re-derive them from the stored winning configuration (no new inner search), then
+    # fall through to the aggregate mode if that was requested as well.
+    if refresh_thresholds:
+        refresh_table = _nested_full_refresh_thresholds(
+            output_dir, all_feature_arrays, y_labels, stratification_labels, sample_ids,
+            CLASSIFIERS, n_jobs=args.cores)
+        if not aggregate:
+            return {'threshold_refresh': refresh_table}
+
     # ---------------------------------------------------------------- aggregate mode
-    if aggregate:
+    def _run_aggregate():
+        if sizesweep:
+            subdirs = sorted(output_dir.glob("sizesweep_f*"), reverse=True)
+            if not subdirs:
+                raise FileNotFoundError(f"No sizesweep_f* subdirectories in {output_dir}")
+            # Fractions aggregate independently, so an incomplete fraction (array
+            # tasks timed out / still queued) is SKIPPED with a warning instead of
+            # failing the whole sweep: complete fractions become inspectable while
+            # the rest still runs. Rerunning the array resumes the missing folds
+            # (existing partials are skipped) and a later aggregate fills the gaps.
+            sweep_rows, skipped = [], []
+            for sub_dir in subdirs:
+                partials = sorted(sub_dir.glob("nested_full_fold_*.pkl"))
+                sub_meta, present = None, set()
+                for p in partials:
+                    try:
+                        with open(p, 'rb') as fh:
+                            part = pickle.load(fh)
+                    except Exception as e:
+                        print(f"WARNING: {p} unreadable ({e!r}) - treated as missing "
+                              f"(a rerun of that array task recomputes it).")
+                        continue
+                    present.add(int(part['fold_record']['fold']))
+                    if sub_meta is None:
+                        sub_meta = part['meta']
+                if sub_meta is None:
+                    print(f"WARNING: no readable fold partials in {sub_dir.name} - "
+                          f"fraction skipped.")
+                    skipped.append((sub_dir.name, "no readable partials"))
+                    continue
+                missing = sorted(set(range(1, int(sub_meta['n_outer_folds']) + 1))
+                                 - present)
+                if missing:
+                    print(f"WARNING: {sub_dir.name} (fraction "
+                          f"{sub_meta['sample_fraction']:g}): missing outer fold(s) "
+                          f"{missing} of {sub_meta['n_outer_folds']} - fraction "
+                          f"skipped. Resubmit the array to fill them in.")
+                    skipped.append((sub_dir.name, f"missing folds {missing}"))
+                    continue
+                frac = sub_meta['sample_fraction']
+                print(f"\n{'#' * 90}\n#  sample fraction = {frac:g} "
+                      f"(n = {sub_meta['n_samples_subset']}, "
+                      f"{sub_meta['n_outer_folds']} outer folds)\n{'#' * 90}")
+                res = _nested_full_aggregate_dir(
+                    sub_dir, sub_meta['n_samples_subset'],
+                    expected_folds=sub_meta['n_outer_folds'])
+                pf = res['per_fold']
+                distinct = pf[['feature', 'selection_type', 'classifier']].drop_duplicates()
+                sweep_rows.append({
+                    'sample_fraction': frac,
+                    'n_samples': sub_meta['n_samples_subset'],
+                    'n_outer_folds': sub_meta['n_outer_folds'],
+                    'subsample_seed': sub_meta['subsample_seed'],
+                    'mean_test_auc': res['summary']['mean_test_auc'],
+                    'std_test_auc': res['summary']['std_test_auc'],
+                    'oof_auc_pooled': res['summary']['oof_auc_pooled'],
+                    'mean_inner_score': float(pf['inner_best_score'].mean()),
+                    'n_distinct_configs': len(distinct),
+                    'modal_feature': pf['feature'].mode().iloc[0],
+                    'feature_votes': "; ".join(f"{k_}={v}" for k_, v in
+                                               pf['feature'].value_counts().items()),
+                    'modal_selection_type': pf['selection_type'].mode().iloc[0],
+                    'modal_classifier': pf['classifier'].mode().iloc[0],
+                    'mean_num_genes_used': float(pf['num_genes_used'].mean()),
+                })
+
+            if not sweep_rows:
+                raise RuntimeError(
+                    f"No complete fraction in {output_dir}: every sizesweep_f* "
+                    f"subdirectory is missing fold partials. Resubmit the array and "
+                    f"aggregate again once at least one fraction has all its folds.")
+
+            sweep_df = (pd.DataFrame(sweep_rows)
+                        .sort_values('sample_fraction', ascending=False)
+                        .reset_index(drop=True))
+            sweep_path = output_dir / "nested_full_sizesweep.csv"
+            sweep_df.to_csv(sweep_path, index=False)
+
+            print("\n" + "=" * 110)
+            print("FULLY NESTED SAMPLE-SIZE SWEEP - every point is a complete nested "
+                  "selection on a nested stratified subset")
+            print("=" * 110)
+            show = ['sample_fraction', 'n_samples', 'n_outer_folds', 'mean_test_auc',
+                    'std_test_auc', 'oof_auc_pooled', 'n_distinct_configs',
+                    'modal_feature', 'modal_classifier']
+            print(sweep_df[show].to_string(index=False))
+            print(f"\nSaved -> {sweep_path}")
+            if skipped:
+                print("\n" + "!" * 110)
+                print(f"INCOMPLETE SWEEP: {len(skipped)} fraction(s) skipped - the CSV "
+                      f"above covers only the complete ones.")
+                for name, why in skipped:
+                    print(f"  {name}: {why}")
+                print("Resubmit the sweep array (existing partials are kept) and "
+                      "aggregate again for the full curve.")
+                print("!" * 110)
+            print("=" * 110 + "\n")
+            return {'sizesweep': sweep_df, 'output_dir': output_dir,
+                    'skipped_fractions': skipped}
+
         if not ksweep:
             return _nested_full_aggregate_dir(output_dir, n_samples, sizes, meta)
 
@@ -7117,10 +8015,12 @@ def run_nested_experiment_full(all_feature_arrays: dict,
         if not subdirs:
             raise FileNotFoundError(f"No ksweep_k* subdirectories in {output_dir}")
         sweep_rows = []
+        per_k_results = {}
         for sub_dir in subdirs:
             k_val = int(sub_dir.name.replace("ksweep_k", ""))
             print(f"\n{'#' * 90}\n#  k = {k_val}\n{'#' * 90}")
             res = _nested_full_aggregate_dir(sub_dir, n_samples, sizes, meta)
+            per_k_results[k_val] = res
             pf = res['per_fold']
             distinct = pf[['feature', 'selection_type', 'classifier']].drop_duplicates()
             sweep_rows.append({
@@ -7149,7 +8049,19 @@ def run_nested_experiment_full(all_feature_arrays: dict,
         print(sweep_df[show].to_string(index=False))
         print(f"\nSaved -> {sweep_path}")
         print("=" * 110 + "\n")
-        return {'ksweep': sweep_df, 'output_dir': output_dir}
+
+        tuned = _ksweep_derive_tuned_arm(output_dir, per_k_results, sizes, meta, n_samples)
+        return {'ksweep': sweep_df, 'ksweep_tuned': tuned, 'output_dir': output_dir}
+
+    if aggregate:
+        # Cross-cluster: the aggregates of the same run (one per cluster) run one after
+        # the other instead of writing the same files at the same time.
+        claim = _WorkClaim(output_dir / "nested_full_aggregate", f"aggregate of {output_dir.name}")
+        claim.wait(lambda: False)
+        try:
+            return _run_aggregate()
+        finally:
+            claim.release()
 
     # ---------------------------------------------------------------- cache guard
     # Pipeline(memory=...) makes joblib hash the transformer on every fit. When
@@ -7162,8 +8074,9 @@ def run_nested_experiment_full(all_feature_arrays: dict,
         print("NOTE: pipeline caching disabled. TopGeneSelector is defined in '__main__' "
               "(model_hpc.py run as a script), which joblib cannot hash inside the "
               f"n_jobs={args.cores} workers; every fit would fail. The TSS ranking will be "
-              "recomputed per candidate instead. To use the cache, import model_hpc as a "
-              "module or set --cores 1.")
+              "recomputed per candidate instead (the slow p_value / weighted rankings are "
+              "memoised in-process, see select_top_genes). To use the cache, import model_hpc "
+              "as a module or set --cores 1.")
         cache_dir = None
 
     # ---------------------------------------------------------------- input guards
@@ -7192,14 +8105,118 @@ def run_nested_experiment_full(all_feature_arrays: dict,
 
     # The outer partition depends only on n_samples and stratification_labels, so it is
     # identical for every feature (and matches run_single_experiment's outer folds).
-    outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-    outer_splits = list(outer_cv.split(np.zeros((n_samples, 1)), stratification_labels))
+    # The sizesweep builds its own per-fraction partitions instead (a full-cohort
+    # 10-fold split may not even be constructible for every task).
+    if not sizesweep:
+        outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+        outer_splits = list(outer_cv.split(np.zeros((n_samples, 1)), stratification_labels))
 
     # ---------------------------------------------------------------- single-fold mode
     if only_fold is not None:
         if not 1 <= int(only_fold) <= 10:
             raise ValueError(f"only_fold must be in 1..10, got {only_fold}")
         fold_idx = int(only_fold) - 1
+
+        if sizesweep:
+            # One complete nested selection per sample fraction. The fraction loop runs
+            # inside this one task (the feature matrices are loaded once); subsets are
+            # nested prefixes of a single seeded per-stratum shuffle, so every array
+            # task derives the identical subsets independently.
+            subsets = _sizesweep_subsets(sizesweep_fractions, stratification_labels,
+                                         subsample_seed)
+            written = []
+            for frac in sizesweep_fractions:
+                sub_idx = subsets[frac]
+                sub_strat = stratification_labels[sub_idx]
+                sub_y = y_labels[sub_idx]
+                # Outer fold count from the BINARY class counts (each outer fold needs
+                # both classes); stratify on the fine-grained disease labels only while
+                # every stratum can appear in every fold, else on the binary label
+                # (mirrors the inner-CV fallback in _nested_full_one_fold).
+                y_counts = np.unique(sub_y, return_counts=True)[1]
+                n_folds_f = int(min(10, y_counts.min()))
+                if n_folds_f < 2:
+                    raise ValueError(
+                        f"sizesweep fraction {frac:g}: smallest class has "
+                        f"{y_counts.min()} sample(s); no outer CV possible.")
+                if fold_idx + 1 > n_folds_f:
+                    print(f"\nfraction {frac:g}: only {n_folds_f} outer folds possible "
+                          f"(smallest class has {y_counts.min()} samples) - "
+                          f"outer fold {fold_idx + 1} does not exist, skipping.")
+                    continue
+                # Resume support: fractions are deterministic given (seed, cohort), so a
+                # partial written by an earlier (timed-out or chunked) submission is
+                # still valid - skip it instead of recomputing. A truncated pickle
+                # (task killed mid-write) fails to load and is recomputed.
+                sub_dir = output_dir / _sizesweep_dir_name(frac)
+                existing = sub_dir / f"nested_full_fold_{fold_idx + 1:02d}.pkl"
+                if existing.exists():
+                    try:
+                        with open(existing, 'rb') as fh:
+                            prev = pickle.load(fh)
+                        if np.isclose(prev['meta']['sample_fraction'], frac) and \
+                                prev['meta']['subsample_seed'] == int(subsample_seed):
+                            print(f"\nfraction {frac:g}: partial for outer fold "
+                                  f"{fold_idx + 1} already exists ({existing}) - skipping. "
+                                  f"Delete it to force recomputation.")
+                            written.append(existing)
+                            continue
+                        print(f"\nfraction {frac:g}: existing partial has different "
+                              f"meta ({prev['meta'].get('subsample_seed')}) - recomputing.")
+                    except Exception as e:
+                        print(f"\nfraction {frac:g}: existing partial unreadable "
+                              f"({e!r}) - recomputing.")
+                # Cross-cluster claim: another worker on this fraction / fold -> wait for it.
+                os.makedirs(sub_dir, exist_ok=True)
+                claim = _WorkClaim(existing, f"fraction {frac:g} fold {fold_idx + 1}")
+                if not claim.try_acquire():
+                    print(f"  fraction {frac:g} fold {fold_idx + 1}: claimed by {claim.holder()} - waiting")
+                    if claim.wait(lambda e=existing: _sizesweep_partial_ok(e, frac, subsample_seed)) == 'done':
+                        written.append(existing)
+                        continue
+                strat_counts = np.unique(sub_strat, return_counts=True)[1]
+                if strat_counts.min() >= n_folds_f:
+                    outer_strat, outer_strat_kind = sub_strat, "disease"
+                else:
+                    outer_strat, outer_strat_kind = sub_y, "binary"
+                    print(f"fraction {frac:g}: smallest stratum has {strat_counts.min()} "
+                          f"sample(s) < {n_folds_f} folds - outer CV stratifies on the "
+                          f"binary label.")
+                sub_splits = list(StratifiedKFold(
+                    n_splits=n_folds_f, shuffle=True, random_state=42
+                ).split(np.zeros((len(sub_idx), 1)), outer_strat))
+                tr_local, te_local = sub_splits[fold_idx]
+                print(f"\n{'#' * 90}\n#  sample fraction = {frac:g}   "
+                      f"(n = {len(sub_idx)}, {n_folds_f} outer folds, "
+                      f"outer fold {fold_idx + 1})\n{'#' * 90}")
+                rec, rows = _nested_full_one_fold(
+                    fold_idx, sub_idx[tr_local], sub_idx[te_local],
+                    all_feature_arrays, y_labels, stratification_labels, sample_ids,
+                    CLASSIFIERS, CLF_PARAM_GRIDS,
+                    feature_names, top_genes_list, selection_types, classifier_names,
+                    args.cores, cache_dir,
+                )
+                f_meta = dict(
+                    meta,
+                    sample_fraction=float(frac),
+                    n_samples_subset=int(len(sub_idx)),
+                    n_outer_folds=n_folds_f,
+                    outer_stratification=outer_strat_kind,
+                    subsample_seed=int(subsample_seed),
+                    subset_class_counts={str(s): int(c) for s, c in
+                                         zip(*np.unique(sub_strat, return_counts=True))},
+                )
+                p = sub_dir / f"nested_full_fold_{fold_idx + 1:02d}.pkl"
+                _atomic_pickle(p, {'fold_record': rec, 'oof_rows': rows,
+                                   'sizes': sizes, 'meta': f_meta})
+                claim.release()
+                written.append(p)
+            print(f"\nWrote {len(written)} per-fraction partials for outer fold "
+                  f"{fold_idx + 1} under {output_dir}")
+            print("Run with --nested_full_sizesweep --nested_full_aggregate once all "
+                  "array tasks are done.")
+            return {'partial_paths': written}
+
         train_idx, test_idx = outer_splits[fold_idx]
 
         if ksweep:
@@ -7207,12 +8224,22 @@ def run_nested_experiment_full(all_feature_arrays: dict,
             # hyperparameters are still chosen inside this fold's inner CV; only k is held
             # fixed, so each point of the resulting trend is leakage-free. The k loop runs
             # inside this one task so the feature matrices are loaded once, not once per k.
-            written = []
-            for k_val in top_genes_list:
+            written, deferred = [], []
+
+            def _k_partial(k_val):
+                sub_dir = output_dir / f"ksweep_k{int(k_val):05d}"
+                return (sub_dir / f"nested_full_fold_{fold_idx + 1:02d}.pkl",
+                        dict(meta, top_genes_searched=[int(k_val)]))
+
+            def _k_done(k_val):
+                p, k_meta = _k_partial(k_val)
+                return _nested_full_existing_partial(p, fold_idx + 1, k_meta, sample_ids[test_idx]) is not None
+
+            def _k_compute(k_val):
+                p, k_meta = _k_partial(k_val)
                 k_sizes = _nested_full_grid_sizes(
                     CLASSIFIERS, CLF_PARAM_GRIDS, classifier_names,
                     [k_val], selection_types, feature_names)
-                k_meta = dict(meta, top_genes_searched=[int(k_val)])
                 print(f"\n{'#' * 90}\n#  k = {k_val}   (outer fold {fold_idx + 1})\n{'#' * 90}")
                 rec, rows = _nested_full_one_fold(
                     fold_idx, train_idx, test_idx, all_feature_arrays, y_labels,
@@ -7220,12 +8247,36 @@ def run_nested_experiment_full(all_feature_arrays: dict,
                     feature_names, [k_val], selection_types, classifier_names,
                     args.cores, cache_dir,
                 )
-                sub_dir = output_dir / f"ksweep_k{int(k_val):05d}"
-                os.makedirs(sub_dir, exist_ok=True)
-                p = sub_dir / f"nested_full_fold_{fold_idx + 1:02d}.pkl"
-                with open(p, 'wb') as fh:
-                    pickle.dump({'fold_record': rec, 'oof_rows': rows,
-                                 'sizes': k_sizes, 'meta': k_meta}, fh)
+                _atomic_pickle(p, {'fold_record': rec, 'oof_rows': rows,
+                                   'sizes': k_sizes, 'meta': k_meta})
+                return p
+
+            for k_val in top_genes_list:
+                p, _ = _k_partial(k_val)
+                # Resume: a k whose partial was written by an earlier submission of this
+                # array task (killed, timed out, credential expired) is not recomputed.
+                if _k_done(k_val):
+                    written.append(p)
+                    continue
+                os.makedirs(p.parent, exist_ok=True)
+                # Cross-cluster claim: a k another worker is computing is deferred.
+                claim = _WorkClaim(p, f"fold {fold_idx + 1} k={k_val}")
+                if not claim.try_acquire():
+                    print(f"  fold {fold_idx + 1} k={k_val}: claimed by {claim.holder()} - deferred")
+                    deferred.append(k_val)
+                    continue
+                try:
+                    written.append(_k_compute(k_val))
+                finally:
+                    claim.release()
+            for k_val in deferred:          # come back for the units another worker claimed
+                p, _ = _k_partial(k_val)
+                claim = _WorkClaim(p, f"fold {fold_idx + 1} k={k_val}")
+                if claim.wait(lambda k=k_val: _k_done(k)) == 'acquired':
+                    try:
+                        _k_compute(k_val)
+                    finally:
+                        claim.release()
                 written.append(p)
             print(f"\nWrote {len(written)} per-k partials for outer fold {fold_idx + 1} "
                   f"under {output_dir}")
@@ -7233,21 +8284,45 @@ def run_nested_experiment_full(all_feature_arrays: dict,
                   "10 folds are done.")
             return {'partial_paths': written}
 
-        fold_record, oof_rows = _nested_full_one_fold(
-            fold_idx, train_idx, test_idx, all_feature_arrays, y_labels,
-            stratification_labels, sample_ids, CLASSIFIERS, CLF_PARAM_GRIDS,
-            feature_names, top_genes_list, selection_types, classifier_names,
-            args.cores, cache_dir,
-        )
         part_path = output_dir / f"nested_full_fold_{fold_idx + 1:02d}.pkl"
-        with open(part_path, 'wb') as fh:
-            pickle.dump({'fold_record': fold_record, 'oof_rows': oof_rows,
-                         'sizes': sizes, 'meta': meta}, fh)
+        # Resume: rerunning the array after a kill / time-out / credential expiry
+        # only recomputes the folds without a valid partial.
+        prev = _nested_full_existing_partial(part_path, fold_idx + 1, meta, sample_ids[test_idx])
+        if prev is not None:
+            return {'fold_record': prev['fold_record'], 'partial_path': part_path}
+        # Cross-cluster claim: if another worker (other cluster) is on this fold, wait
+        # for its partial instead of computing it twice.
+        claim = _WorkClaim(part_path, f"fold {fold_idx + 1}")
+        if not claim.try_acquire():
+            print(f"  fold {fold_idx + 1}: claimed by {claim.holder()} - waiting for its partial")
+            done = claim.wait(lambda: _nested_full_existing_partial(
+                part_path, fold_idx + 1, meta, sample_ids[test_idx]) is not None)
+            if done == 'done':
+                with open(part_path, 'rb') as fh:
+                    prev = pickle.load(fh)
+                return {'fold_record': prev['fold_record'], 'partial_path': part_path}
+        try:
+            fold_record, oof_rows = _nested_full_one_fold(
+                fold_idx, train_idx, test_idx, all_feature_arrays, y_labels,
+                stratification_labels, sample_ids, CLASSIFIERS, CLF_PARAM_GRIDS,
+                feature_names, top_genes_list, selection_types, classifier_names,
+                args.cores, cache_dir,
+            )
+            _atomic_pickle(part_path, {'fold_record': fold_record, 'oof_rows': oof_rows,
+                                       'sizes': sizes, 'meta': meta})
+        finally:
+            claim.release()
         print(f"\nWrote partial result for outer fold {fold_idx + 1} -> {part_path}")
         print("Run with --nested_full_aggregate once all 10 folds are done.")
         return {'fold_record': fold_record, 'partial_path': part_path}
 
     # ---------------------------------------------------------------- all folds serially
+    if sizesweep or ksweep:
+        raise ValueError(
+            "The sizesweep/ksweep modes run per outer fold: submit with "
+            "--nested_full_only_fold N (the slurm wrapper's array does this) and combine "
+            "with --nested_full_aggregate afterwards. A serial all-folds sweep is not "
+            "implemented.")
     start_time = time.time()
     fold_records, oof_rows = [], []
     for fold_idx, (train_idx, test_idx) in enumerate(outer_splits):
@@ -7264,9 +8339,448 @@ def run_nested_experiment_full(all_feature_arrays: dict,
                                  time.time() - start_time, n_samples)
 
 
+def run_cross_depth_eval(all_feature_arrays: dict,
+                         kept_columns_per_feature: dict,
+                         original_n_features: int,
+                         blacklist_file_used,
+                         y_labels: np.ndarray,
+                         stratification_labels: np.ndarray,
+                         sample_ids,
+                         CLASSIFIERS: dict,
+                         args: argparse.Namespace):
+    """
+    Cross-depth evaluation of a completed fully nested run (reviewer arm: do
+    FUTURE samples need to be sequenced deep, or can a model trained on the
+    deep cohort score shallow samples?).
+
+    For every outer fold of the source run (--cross_depth_source_dir), the
+    stored winning configuration (feature, ranking function, k, classifier,
+    hyperparameters) is refitted on the stored full-depth training partition -
+    the fitted pipelines are not pickled by the nested run, but every
+    classifier is seeded, so the refit is deterministic and CHEAP (one fit per
+    fold). Reproduction is then PROVEN, not assumed: the refit must reproduce
+    the stored selected TSS indices and the stored test-fold predictions
+    before any cross-depth number is produced. Finally the SAME model scores
+    the SAME test samples loaded from each downsampled feature directory
+    (--cross_depth_eval_dirs name=dir ...), and the stored train-derived
+    95%-specificity threshold is applied unchanged. Everything is paired:
+    same folds, same models, same test samples - only the test depth changes.
+
+    Test-depth matrices are rebuilt through the exact preprocessing order of
+    main() (blacklist removal -> per-sample row z-score -> duplicate-column
+    selection), and the rebuild path is self-checked by reconstructing the
+    full-depth matrices from --features_dir and requiring them to equal the
+    in-memory training matrices.
+
+    Writes to <output_dir>/cross_depth_<experiment_name>/:
+      cross_depth_predictions.csv  one row per (depth, fold, sample) - depth
+                                   'full' is the reproduced source prediction
+      cross_depth_per_fold.csv     AUC + operating point per (depth, fold)
+      cross_depth_summary.json     per-depth summaries + provenance + checks
+    """
+    source_dir = Path(args.cross_depth_source_dir)
+    with open(source_dir / "nested_full_per_fold.pkl", 'rb') as fh:
+        per_fold = pickle.load(fh)
+    print(f"Cross-depth evaluation of {source_dir} ({len(per_fold)} folds)")
+
+    eval_dirs = {}
+    for spec in args.cross_depth_eval_dirs:
+        name, _, d = spec.partition('=')
+        if not name or not d:
+            raise ValueError(f"--cross_depth_eval_dirs expects name=dir, got {spec!r}")
+        eval_dirs[name] = d
+    if not eval_dirs:
+        raise ValueError("--cross_depth_eval_dirs: at least one name=dir required")
+
+    sample_ids = np.asarray(sample_ids)
+    y_labels = np.asarray(y_labels)
+    stratification_labels = np.asarray(stratification_labels)
+    id_to_idx = {sid: i for i, sid in enumerate(sample_ids)}
+    for _, r in per_fold.iterrows():
+        missing = [s for s in list(r['train_sample_ids']) + list(r['test_sample_ids'])
+                   if s not in id_to_idx]
+        if missing:
+            raise ValueError(
+                f"fold {r['fold']}: {len(missing)} source-run sample(s) not in the "
+                f"current cohort (e.g. {missing[:5]}) - run with the same metadata/"
+                f"cancer-type selection as the source run.")
+
+    features_needed = sorted(set(per_fold['feature']))
+    print(f"features used by the source run: {features_needed}")
+
+    # Post-blacklist original-index set: replicates main()'s preprocessing ORDER
+    # (blacklist removal happens BEFORE the per-sample row z-score, so the z-score
+    # statistics depend on it; duplicate-column selection comes after).
+    if blacklist_file_used:
+        removed = np.load(blacklist_file_used)
+        post_blacklist = np.delete(np.arange(original_n_features), removed)
+    else:
+        post_blacklist = np.arange(original_n_features)
+
+    def load_depth_matrix(feature, folder):
+        raw = load_feature_in_parallel(folder, feature, file_filter=list(sample_ids),
+                                       num_cores=args.cores, exact=True)
+        if raw is None:
+            raise RuntimeError(f"could not load feature '{feature}' from {folder}")
+        if raw.shape[1] != original_n_features:
+            raise ValueError(f"{folder}/{feature}: {raw.shape[1]} columns, "
+                             f"expected {original_n_features}")
+        arr = raw[:, post_blacklist]
+        mu = np.nanmean(arr, axis=1, keepdims=True)
+        sd = np.nanstd(arr, axis=1, keepdims=True)
+        sd[sd == 0] = 1.0
+        arr = np.nan_to_num((arr - mu) / sd)
+        pos = np.searchsorted(post_blacklist, np.asarray(kept_columns_per_feature[feature]))
+        return arr[:, pos]
+
+    # ---- self-check: the rebuild path must reproduce the training matrices ----
+    for f in features_needed:
+        rebuilt = load_depth_matrix(f, args.features_dir)
+        if not np.allclose(rebuilt, all_feature_arrays[f], atol=1e-6):
+            raise RuntimeError(
+                f"self-check failed: '{f}' rebuilt from {args.features_dir} does not "
+                f"reproduce the in-memory training matrix (max diff "
+                f"{np.abs(rebuilt - all_feature_arrays[f]).max():.3e}). The eval-dir "
+                f"preprocessing would not be aligned - aborting.")
+    print("self-check passed: full-depth matrices reconstruct exactly; "
+          "eval-dir preprocessing is aligned")
+
+    eval_arrays = {name: {f: load_depth_matrix(f, d) for f in features_needed}
+                   for name, d in eval_dirs.items()}
+    for name in eval_dirs:
+        print(f"loaded eval depth '{name}': {eval_dirs[name]}")
+
+    out_dir = Path(args.output_dir) / f"cross_depth_{args.experiment_name}"
+    os.makedirs(out_dir, exist_ok=True)
+
+    pred_rows, fold_rows, selection_from_store = [], [], []
+    for _, r in per_fold.sort_values('fold').iterrows():
+        fold = int(r['fold'])
+        train_idx = np.array([id_to_idx[s] for s in r['train_sample_ids']])
+        test_idx = np.array([id_to_idx[s] for s in r['test_sample_ids']])
+        feat = r['feature']
+        X = all_feature_arrays[feat]
+        y_tr, y_te = y_labels[train_idx], y_labels[test_idx]
+
+        pipe = Pipeline([('selector', TopGeneSelector()),
+                         ('scaler', StandardScaler()),
+                         ('clf', CLASSIFIERS[r['classifier']])])
+        pipe = clone(pipe).set_params(
+            selector__n_top_genes=int(r['n_top_genes']),
+            selector__selection_type=r['selection_type'],
+            **dict(r['clf_hyperparams']))
+        pipe.fit(X[train_idx], y_tr)
+
+        # ---- reproduction checks: refit must equal the stored source model ----
+        sel = np.sort(np.asarray(pipe.named_steps['selector'].indices_))
+        stored_order = np.asarray(r['selected_gene_indices'], dtype=int)
+        stored_sel = np.sort(stored_order)
+        if not np.array_equal(sel, stored_sel):
+            # On the no_deep ksweep_tuned sources one TSS at the k = 10,000
+            # boundary differed (BRCA/CRC fold 2, PANCAN fold 9) - a near-tie in the
+            # ranking score, not a different model. The stored selection IS the source
+            # model's, so refit on it (stored column order, which seeded tree models
+            # depend on); the prediction check below still has to pass.
+            new, lost = np.setdiff1d(sel, stored_sel), np.setdiff1d(stored_sel, sel)
+            print(f"  fold {fold}: refit ranking differs from the stored selection "
+                  f"({new.size} new {new[:5].tolist()}, {lost.size} missing {lost[:5].tolist()}); "
+                  f"refitting on the stored selection")
+            pipe = clone(pipe)
+            pipe.steps[0] = ('selector', _StoredIndexSelector(stored_order))
+            pipe.fit(X[train_idx], y_tr)
+            selection_from_store.append({'fold': fold, 'n_new': int(new.size), 'n_missing': int(lost.size),
+                                         'new': new.tolist(), 'missing': lost.tolist()})
+        proba_full = pipe.predict_proba(X[test_idx])[:, 1]
+        stored_proba = np.asarray(r['y_pred_proba'], dtype=float)
+        if not np.allclose(proba_full, stored_proba, atol=1e-6):
+            raise RuntimeError(
+                f"fold {fold}: refit test predictions deviate from the stored ones "
+                f"(max diff {np.abs(proba_full - stored_proba).max():.3e}) - "
+                f"refit does not reproduce the source model, aborting.")
+
+        thr = float(r['full_model_thresholds']['95_percent_specificity'])
+
+        def emit(depth, scores):
+            auc_d = float(roc_auc_score(y_te, scores))
+            yhat = (scores >= thr).astype(int)
+            tp = int(np.sum((y_te == 1) & (yhat == 1)))
+            fn = int(np.sum((y_te == 1) & (yhat == 0)))
+            tn = int(np.sum((y_te == 0) & (yhat == 0)))
+            fp = int(np.sum((y_te == 0) & (yhat == 1)))
+            fold_rows.append({
+                'fold': fold, 'depth': depth, 'auc': auc_d,
+                'sensitivity_95spec': tp / (tp + fn) if tp + fn else np.nan,
+                'specificity_95spec': tn / (tn + fp) if tn + fp else np.nan,
+                'feature': feat, 'classifier': r['classifier'],
+            })
+            for sid, yt, st, s in zip(r['test_sample_ids'], y_te,
+                                      stratification_labels[test_idx], scores):
+                pred_rows.append({'fold': fold, 'sample_id': sid, 'y_true': int(yt),
+                                  'stratification_label': st, 'depth': depth,
+                                  'score': float(s), 'threshold_95spec': thr})
+            return auc_d
+
+        auc_full = emit('full', proba_full)
+        msg = f"  fold {fold:>2} ({feat}, {r['classifier']}): full={auc_full:.4f}"
+        for name in eval_dirs:
+            scores = pipe.predict_proba(eval_arrays[name][feat][test_idx])[:, 1]
+            msg += f"  {name}={emit(name, scores):.4f}"
+        print(msg)
+
+    pred_df = pd.DataFrame(pred_rows)
+    fold_df = pd.DataFrame(fold_rows)
+    pred_df.to_csv(out_dir / "cross_depth_predictions.csv", index=False)
+    fold_df.to_csv(out_dir / "cross_depth_per_fold.csv", index=False)
+
+    summary = {'source_dir': str(source_dir), 'eval_dirs': eval_dirs,
+               'features_dir_full': args.features_dir,
+               'features_used': features_needed, 'n_folds': int(len(per_fold)),
+               'reproduction_checks': 'passed (selected indices + test predictions)' if not selection_from_store
+                                      else 'passed (test predictions; stored selection used where the refit ranking differed)',
+               'selection_from_store': selection_from_store,
+               'per_depth': {}}
+    print("\n" + "=" * 90)
+    print("CROSS-DEPTH EVALUATION - full-depth-trained models on downsampled test folds")
+    print("=" * 90)
+    for depth in ['full'] + list(eval_dirs):
+        sub = fold_df[fold_df['depth'] == depth]
+        summary['per_depth'][depth] = {
+            'mean_auc': float(sub['auc'].mean()),
+            'std_auc': float(sub['auc'].std(ddof=0)),
+            'mean_sensitivity_95spec': float(sub['sensitivity_95spec'].mean()),
+            'mean_specificity_95spec': float(sub['specificity_95spec'].mean()),
+        }
+        s = summary['per_depth'][depth]
+        print(f"  {depth:>10}: AUC {s['mean_auc']:.4f} ± {s['std_auc']:.4f}   "
+              f"sens@95 {s['mean_sensitivity_95spec']:.3f}   "
+              f"spec {s['mean_specificity_95spec']:.3f}")
+    with open(out_dir / "cross_depth_summary.json", 'w') as fh:
+        json.dump(summary, fh, indent=2, default=str)
+    print(f"\nSaved -> {out_dir}")
+    print("=" * 90 + "\n")
+    return {'predictions': pred_df, 'per_fold': fold_df, 'summary': summary,
+            'output_dir': out_dir}
+
+
 # =================================================================================
 # --- Main Execution Function ---
 # =================================================================================
+
+def _recompute_inner_scores_for_pkl(pkl_path, all_feature_arrays, y_labels,
+                                    stratification_labels, id_to_idx, CLASSIFIERS):
+    """
+    Worker: reconstruct the mean inner-CV AUC (== GridSearchCV.best_score_) for every
+    outer fold stored in one nested-CV results pickle.
+
+    Older pickles saved best_params but not best_score_. Because every split is seeded
+    (outer StratifiedKFold(10, shuffle, rs=42); inner StratifiedKFold(3, shuffle, rs=42))
+    and train_sample_ids/selected_gene_indices are stored per fold, the inner score of the
+    winning config can be reproduced exactly with 3 fits per fold - no grid rerun needed.
+    Pickles that already carry 'inner_cv_best_score' are read out without refitting.
+    """
+    with open(pkl_path, 'rb') as f:
+        results_df = pickle.load(f)
+
+    rows = []
+    for _, fold_row in results_df.iterrows():
+        clf_name = fold_row['classifier']
+        feature_name = fold_row['feature']
+        record = {
+            'source_pkl': pkl_path.name,
+            'classifier': clf_name,
+            'feature': feature_name,
+            'top_genes': fold_row.get('top_genes', 'all'),
+            'selection_type': fold_row.get('selection_type', 'none'),
+            'fold': int(fold_row['fold']),
+            'test_auc': float(fold_row['auc_full_model']),
+            'inner_cv_auc': np.nan,
+            'recomputed': False,
+        }
+
+        stored = fold_row.get('inner_cv_best_score', None)
+        if stored is not None and np.isfinite(stored):
+            record['inner_cv_auc'] = float(stored)
+            rows.append(record)
+            continue
+
+        if clf_name not in CLASSIFIERS:
+            print(f"{pkl_path.name} fold {record['fold']}: classifier '{clf_name}' not "
+                  f"available in this environment - skipping recompute.")
+            rows.append(record)
+            continue
+        if feature_name not in all_feature_arrays:
+            raise KeyError(
+                f"{pkl_path.name}: feature '{feature_name}' not in the loaded feature arrays "
+                f"({sorted(all_feature_arrays.keys())}). Invoke --recompute_inner_scores with "
+                f"the same data arguments as the original nested-CV run."
+            )
+
+        train_ids = fold_row['train_sample_ids']
+        test_ids = fold_row['test_sample_ids']
+        missing = [s for s in train_ids + test_ids if s not in id_to_idx]
+        if missing:
+            raise KeyError(
+                f"{pkl_path.name} fold {record['fold']}: {len(missing)} sample IDs from the "
+                f"stored fold are absent from the loaded cohort (e.g. {missing[:3]}). The data "
+                f"arguments must match the original run (same manifest/cohort filters)."
+            )
+        train_idx = np.array([id_to_idx[s] for s in train_ids])
+        test_idx = np.array([id_to_idx[s] for s in test_ids])
+
+        # Guard against silently recomputing on different data than the original run
+        if not np.array_equal(y_labels[test_idx], np.asarray(fold_row['y_test'])):
+            raise ValueError(
+                f"{pkl_path.name} fold {record['fold']}: stored y_test does not match current "
+                f"labels for the stored test sample IDs - cohort/labels differ from the "
+                f"original run. Refusing to recompute inner scores on mismatched data."
+            )
+
+        gene_idx = np.asarray(fold_row['selected_gene_indices'], dtype=int)
+        X_train = all_feature_arrays[feature_name][train_idx][:, gene_idx]
+        y_train = y_labels[train_idx]
+        strat_train = stratification_labels[train_idx]
+
+        pipeline = Pipeline([('scaler', StandardScaler()),
+                             ('clf', clone(CLASSIFIERS[clf_name]))])
+        pipeline.set_params(**fold_row['best_params'])
+
+        # Identical splits to the original GridSearchCV call
+        inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+        inner_splits = list(inner_cv.split(X_train, strat_train))
+        scores = cross_val_score(pipeline, X_train, y_train, scoring='roc_auc',
+                                 cv=inner_splits, n_jobs=1, error_score=np.nan)
+        record['inner_cv_auc'] = float(np.nanmean(scores))
+        record['recomputed'] = True
+        rows.append(record)
+
+    return rows
+
+
+def run_nested_classifier_selection(results_dir, all_feature_arrays, y_labels,
+                                    stratification_labels, sample_ids, CLASSIFIERS,
+                                    n_jobs=1):
+    """
+    Post-hoc, leakage-free classifier selection over an existing nested-CV results
+    directory (one results_*.pkl per classifier/feature combination).
+
+    Step 1 recovers each fold's mean inner-CV AUC for the stored winning hyperparameters
+    (see _recompute_inner_scores_for_pkl) and writes inner_cv_scores.csv.
+    Step 2 then selects per OUTER fold on INNER scores only, at two scopes:
+      - within_feature: classifier chosen per fold, feature held fixed
+      - global (ALL_FEATURES): feature AND classifier chosen jointly per fold -
+        the fully nested protocol of run_nested_experiment_full, applied post-hoc
+    and stitches the winners' stored test-fold predictions into OOF prediction files,
+    so no choice ever sees the outer test fold.
+
+    Writes into results_dir:
+      - inner_cv_scores.csv                            (all configs, all folds)
+      - nested_selection_summary.csv                   (per-fold winners, both scopes)
+      - nested_selection_predictions_<feature>.csv     (per-feature OOF predictions)
+      - nested_selection_predictions_ALL_FEATURES.csv  (joint feature+classifier OOF)
+
+    Caveat: gene-selection-variant pickles from older runs fitted the TSS
+    ranking on the full outer-train fold, so their inner scores are slightly optimistic
+    relative to the selector-inside-pipeline protocol; comparisons among such pickles
+    are still like-for-like. run_single_experiment now nests the selector in the
+    pipeline (like nested_full), so newer pickles carry fully nested inner scores.
+    The recompute fallback below reconstructs the OLD protocol (stored gene indices,
+    scaler+clf pipeline) and is only reached for old pickles, which never store
+    'inner_cv_best_score'.
+    """
+    results_dir = Path(results_dir)
+    pkl_files = sorted(results_dir.glob("results_*.pkl"))
+    if not pkl_files:
+        raise FileNotFoundError(f"No results_*.pkl files found in {results_dir}")
+
+    id_to_idx = {s: i for i, s in enumerate(sample_ids)}
+    print(f"--- Recomputing inner-CV scores for {len(pkl_files)} result files "
+          f"in {results_dir} (n_jobs={n_jobs}) ---")
+    per_file_rows = Parallel(n_jobs=n_jobs, verbose=5)(
+        delayed(_recompute_inner_scores_for_pkl)(
+            p, all_feature_arrays, y_labels, stratification_labels, id_to_idx, CLASSIFIERS)
+        for p in pkl_files
+    )
+    scores_df = pd.DataFrame([r for rows in per_file_rows for r in rows])
+    scores_path = results_dir / "inner_cv_scores.csv"
+    scores_df.to_csv(scores_path, index=False)
+    print(f"Inner-CV scores written to {scores_path} "
+          f"({int(scores_df['recomputed'].sum())} folds refitted, "
+          f"{int((~scores_df['recomputed'] & scores_df['inner_cv_auc'].notna()).sum())} read from pickles)")
+
+    # --- Per-fold selection on inner scores only ---
+    pkl_cache = {}
+
+    def _fold_row(source_pkl, fold):
+        if source_pkl not in pkl_cache:
+            with open(results_dir / source_pkl, 'rb') as f:
+                pkl_cache[source_pkl] = pickle.load(f)
+        df = pkl_cache[source_pkl]
+        return df[df['fold'] == fold].iloc[0]
+
+    summary_rows = []
+
+    def _select_and_stitch(candidates, tag, scope):
+        """Per OUTER fold, pick the candidate config with the highest INNER score and
+        stitch that config's stored test-fold predictions into an OOF prediction file.
+        `candidates` spans whatever axes are in it - classifier only (within-feature
+        scope) or classifier x feature x k x ranking jointly (global scope)."""
+        pred_rows, local_summary = [], []
+        for fold, fold_group in candidates.groupby('fold'):
+            winner = fold_group.loc[fold_group['inner_cv_auc'].idxmax()]
+            src = _fold_row(winner['source_pkl'], fold)
+            thr95 = src['full_model_thresholds'].get('95_percent_specificity', np.nan)
+            for sid, y_t, score in zip(src['test_sample_ids'], src['y_test'], src['y_pred_proba']):
+                pred_rows.append({'sample_id': sid, 'fold': fold, 'y_true': y_t,
+                                  'score': score, 'threshold_95spec': thr95,
+                                  'feature': winner['feature'],
+                                  'classifier': winner['classifier']})
+            local_summary.append({
+                'scope': scope, 'group': tag, 'fold': fold,
+                'chosen_feature': winner['feature'],
+                'chosen_top_genes': winner['top_genes'],
+                'chosen_selection_type': winner['selection_type'],
+                'chosen_classifier': winner['classifier'],
+                'inner_cv_auc': winner['inner_cv_auc'],
+                'test_auc': winner['test_auc'],
+                'n_candidates': len(fold_group),
+            })
+        pred_df = pd.DataFrame(pred_rows)
+        pooled_auc = roc_auc_score(pred_df['y_true'], pred_df['score'])
+        pred_path = results_dir / f"nested_selection_predictions_{tag}.csv"
+        pred_df.to_csv(pred_path, index=False)
+        mean_fold_auc = float(np.mean([r['test_auc'] for r in local_summary]))
+        chosen = pd.Series([f"{r['chosen_feature']}|{r['chosen_classifier']}"
+                            for r in local_summary]).value_counts().to_dict()
+        print(f"  [{tag}] nested selection over {len(local_summary)} folds: "
+              f"pooled OOF AUC = {pooled_auc:.4f}, mean fold AUC = {mean_fold_auc:.4f}, "
+              f"chosen = {chosen} -> {pred_path.name}")
+        return local_summary
+
+    valid = scores_df[scores_df['inner_cv_auc'].notna()]
+    if valid.empty:
+        raise RuntimeError(f"No usable inner scores in {results_dir} - nothing to select.")
+    group_keys = ['feature', 'top_genes', 'selection_type']
+
+    # Within-feature scope: classifier chosen per fold, feature held fixed
+    for (feature_name, top_genes, sel_type), group in valid.groupby(group_keys):
+        tag = feature_name if (str(top_genes) == 'all' and sel_type == 'none') \
+            else f"{feature_name}_{top_genes}_{sel_type}"
+        summary_rows += _select_and_stitch(group, tag, scope='within_feature')
+
+    # Global scope: feature AND classifier (and k / ranking where present) chosen
+    # jointly per fold on inner scores - the fully nested protocol of
+    # run_nested_experiment_full, applied post-hoc. Identical to in-run selection:
+    # same inner scores, same argmax, and the winner's outer-test predictions were
+    # already computed without ever informing the choice.
+    if valid.groupby(group_keys).ngroups > 1:
+        summary_rows += _select_and_stitch(valid, 'ALL_FEATURES', scope='global')
+
+    summary_df = pd.DataFrame(summary_rows)
+    summary_path = results_dir / "nested_selection_summary.csv"
+    summary_df.to_csv(summary_path, index=False)
+    print(f"Per-fold selection summary written to {summary_path}")
+    return summary_df
+
 
 def main(args):
     """
@@ -7280,26 +8794,51 @@ def main(args):
         "Logistic Regression": LogisticRegression(random_state=42, max_iter=10000),
         "Multi-Layer Perceptron": MLPClassifier(random_state=42, early_stopping=True, validation_fraction=0.1)
     }
+    if XGBOOST_AVAILABLE:
+        # n_jobs=1: parallelism belongs to GridSearchCV / joblib (matches RF, which also
+        # runs single-threaded per fit); tree_method="hist" for speed on wide matrices
+        CLASSIFIERS["XGBoost"] = XGBClassifier(random_state=42, n_jobs=1, tree_method="hist", eval_metric="logloss")
+    else:
+        print("xgboost is not installed in this environment - 'XGBoost' will be skipped. "
+              "Rebuild comp.sif after `pixi lock` picks up the xgboost dependency in pyproject.toml.")
 
     CLF_PARAM_GRIDS = {
-        # SVM: 6 C × 2 kernels × 2 gamma (for rbf only) = ~20 combinations
+        # SVM: 6 C x 2 kernels x 2 gamma = 24 fits, of which 6 are duplicates
+        # (gamma is ignored by the linear kernel), i.e. 18 distinct models
         # Lower C = stronger regularization (wider margin, more misclassifications allowed)
         "Support Vector Machine": {
             "clf__C": np.logspace(-3, 2, 6),  # 0.001 to 100 (favoring lower C)
             "clf__kernel": ["linear", "rbf"],
             "clf__gamma": ["scale", "auto"]  # Only used for RBF
         },
-        
-        # RF: 4 n_estimators × 5 max_depth × 2 min_samples = 40 combinations
+
+        # RF: 2 n_estimators x 3 max_depth x 2 min_samples_leaf x 2 max_features = 24 combinations
+        # n_estimators is a stability knob, not a complexity knob (performance plateaus with
+        # more trees), so two values spanning the range suffice; max_depth 15/20 were dropped
+        # because with min_samples_leaf >= 5 and n ~ 300 samples trees rarely grow past depth
+        # ~10, making 10/15/20/None nearly identical models
         # More regularization via: deeper min_samples_leaf, limited depth
         "Random Forest": {
-            "clf__n_estimators": [100, 200, 300, 500],
-            "clf__max_depth": [5, 10, 15, 20, None],
+            "clf__n_estimators": [200, 500],
+            "clf__max_depth": [5, 10, None],
             "clf__min_samples_leaf": [5, 10],  # Higher = more regularization
             "clf__max_features": ["sqrt", "log2"]  # Feature subsampling = regularization
         },
-        
-        # KNN: 5 neighbors × 2 weights × 2 metrics = 20 combinations
+
+        # XGB: 2 n_estimators x 2 learning_rate x 3 max_depth x 2 colsample_bytree = 24 combinations
+        # Sized to match the other grids. Regularization suited to n ~ 300-400: shallow trees
+        # (depth 2-4), shrinkage coupled to ensemble size, and column subsampling (0.3 helps when
+        # many selected genes are correlated/noisy); subsample fixed at 0.8 (standard row bagging,
+        # rarely worth tuning at this n). reg_lambda stays at its default (1.0).
+        "XGBoost": {
+            "clf__n_estimators": [100, 300],
+            "clf__learning_rate": [0.05, 0.1],
+            "clf__max_depth": [2, 3, 4],
+            "clf__colsample_bytree": [0.3, 1.0],
+            "clf__subsample": [0.8]
+        },
+
+        # KNN: 5 neighbors x 2 weights x 2 metrics = 20 combinations
         # Higher K = more regularization (smoother decision boundaries)
         "K-Nearest Neighbors": {
             "clf__n_neighbors": [5, 7, 11, 15, 21],  # Higher values for noisy data
@@ -7307,7 +8846,7 @@ def main(args):
             "clf__metric": ["euclidean", "manhattan"]
         },
         
-        # LR: 5 C × 3 l1_ratio = 15 combinations
+        # LR: 5 C x 3 l1_ratio = 15 combinations
         # Lower C = stronger regularization; higher L1 = more feature selection
         "Logistic Regression": {
             "clf__C": np.logspace(-3, 1, 5),  # 0.001 to 10 (stronger regularization)
@@ -7316,7 +8855,7 @@ def main(args):
             "clf__l1_ratio": [0.1, 0.5, 0.9] 
         },
         
-        # MLP: 6 architectures × 4 alpha × 2 learning_rate = 48 combinations
+        # MLP: 6 architectures x 4 alpha x 2 learning_rate = 48 combinations
         # Higher alpha = stronger L2 regularization; early_stopping also helps
         "Multi-Layer Perceptron": {
             "clf__hidden_layer_sizes": [
@@ -7344,17 +8883,20 @@ def main(args):
     # --- Load and Preprocess Data ---
     print("--- Loading and preprocessing data ---")
     
+    # ------------------------------------------------------------------ STAGE 1
+    # Cohort selection: pick the metadata file that drives this run and derive
+    # the healthy / cancer disease filters for the dataset it belongs to.
     # Determine which metadata file to use based on mode
     if args.validate_external:
         if args.external_metadata_file is None:
-            print("❌ Error: --validate_external requires --external_metadata_file")
+            print("Error: --validate_external requires --external_metadata_file")
             print("   Example: --external_metadata_file accessory_files/jiang_metadata.csv")
             return
         active_metadata_file = args.external_metadata_file
-        print(f"📊 External validation mode: Using external dataset metadata from {active_metadata_file}")
+        print(f"External validation mode: Using external dataset metadata from {active_metadata_file}")
     else:
         active_metadata_file = args.metadata_file
-        print(f"📊 Training/nested CV mode: Using metadata from {active_metadata_file}")
+        print(f"Training/nested CV mode: Using metadata from {active_metadata_file}")
     
     if 'cris' in active_metadata_file.lower():
         metadata = pd.read_csv(active_metadata_file)
@@ -7388,21 +8930,73 @@ def main(args):
         cancer_types_to_filter = ['cancer']
     
     else:
-        print(f"❌ Error: Unknown metadata file '{active_metadata_file}'")
+        print(f"Error: Unknown metadata file '{active_metadata_file}'")
         print(f"   Expected one of: cris, jiang, lucas, mathios")
         print(f"   Please check your metadata file path or add support for this dataset.")
         return
-        
-    print(f"Filtering out healthy samples with conditions: {', '.join(healthy_to_filter)}")
-    if 'cris' in active_metadata_file.lower():  # Special handling for CRIS healthy samples since we use the first 50 for Panel-of-Normals
-        healthy_files_df = metadata[metadata['disease'] == 'Healthy'].iloc[args.pon_n:]
+
+    # Optional narrowing of class 0 (e.g. Jiang HCC vs healthy-only instead of
+    # HCC vs all 135 non-HCC comparators). Only a subset of the dataset's own
+    # control labels is accepted, so a typo cannot silently relabel cancers.
+    if args.control_groups:
+        unknown = [g for g in args.control_groups if g not in healthy_to_filter]
+        if unknown:
+            print(f"Error: --control_groups {unknown} are not control labels of this dataset "
+                  f"(allowed: {healthy_to_filter})")
+            return
+        healthy_to_filter = list(args.control_groups)
+        print(f"Class 0 restricted to control group(s): {', '.join(healthy_to_filter)}")
+
+    # Optional explicit exclusion list (--exclude_samples): IDs dropped from
+    # the metadata before any class split, so they are absent from both classes,
+    # from the fold generator and from predefined-matrix rows (applied again
+    # there, since those matrices carry their own sample lists). The panel of
+    # normals is untouched. Sensitivity runs without the 30 deep-sequenced
+    # healthy samples use accessory_files/cris_exclude_deep_healthy.txt.
+    excluded_sample_ids = []
+    if getattr(args, 'exclude_samples', None):
+        with open(args.exclude_samples) as fh:
+            excluded_sample_ids = [ln.split('#', 1)[0].strip() for ln in fh]
+        excluded_sample_ids = sorted({s for s in excluded_sample_ids if s})
+        present = metadata['ID'].isin(excluded_sample_ids)
+        print(f"\n--exclude_samples {args.exclude_samples}: {len(excluded_sample_ids)} IDs listed, "
+              f"{int(present.sum())} present in the metadata and EXCLUDED from this run:")
+        for _, r in metadata[present].iterrows():
+            print(f"     {r['ID']} ({r.get('sample_name', '?')}, {r['disease']})")
+        metadata = metadata[~present].reset_index(drop=True)
+
+    # Manifest-driven selection: when the metadata file carries a 'role'
+    # column (accessory_files/cris_manifest.csv, built by
+    # src/comp/build_cris_manifest.py), the manifest is the single source of
+    # truth - role == 'model' selects samples, the panel of normals is
+    # role == 'panel_of_normals', excluded records never enter, and feature
+    # files are resolved by exact sample ID (no substring fallback).
+    manifest_mode = 'role' in metadata.columns
+    if manifest_mode:
+        print("Manifest metadata detected ('role' column): role-based selection, exact-ID file matching")
+        pending_mask = (metadata['role'] == 'model') & metadata.get(
+            'gcfix_pending', pd.Series(False, index=metadata.index)).fillna(False).astype(bool)
+        if int(pending_mask.sum()):
+            print(f"{int(pending_mask.sum())} model-role sample(s) pending GC-correction recovery are EXCLUDED from this run:")
+            for _, r in metadata[pending_mask].iterrows():
+                print(f"     {r['ID']} ({r.get('sample_name', '?')}, {r['disease']})")
+            print("   (regenerate the manifest after recovery to include them)")
+        model_df = metadata[(metadata['role'] == 'model') & ~pending_mask]
+        healthy_files_df = model_df[model_df['disease'].isin(healthy_to_filter)]
     else:
-        healthy_files_df = metadata[metadata['disease'].isin(healthy_to_filter)]
+        print(f"Filtering out healthy samples with conditions: {', '.join(healthy_to_filter)}")
+        if 'cris' in active_metadata_file.lower():  # Special handling for CRIS healthy samples since we use the first 50 for Panel-of-Normals
+            healthy_files_df = metadata[metadata['disease'] == 'Healthy'].iloc[args.pon_n:]
+        else:
+            healthy_files_df = metadata[metadata['disease'].isin(healthy_to_filter)]
     healthy_files_df = healthy_files_df.drop_duplicates(subset='ID')
 
     healthy_file_names = healthy_files_df['ID'].tolist()
     print(f"Filtering for cancer types: {', '.join(cancer_types_to_filter)}")
-    cancer_files_df = metadata[metadata['disease'].isin(cancer_types_to_filter)]
+    if manifest_mode:
+        cancer_files_df = model_df[model_df['disease'].isin(cancer_types_to_filter)]
+    else:
+        cancer_files_df = metadata[metadata['disease'].isin(cancer_types_to_filter)]
     cancer_files_df = cancer_files_df.drop_duplicates(subset='ID')
     cancer_file_names = cancer_files_df['ID'].tolist()
     print(f"Found {len(cancer_file_names)} cancer samples.")
@@ -7422,32 +9016,35 @@ def main(args):
     feature_arrays_healthy = {}
     feature_arrays_cancer = {}
     
+    # ------------------------------------------------------------------ STAGE 2
+    # External-validation setup: load the training run's preprocessing metadata
+    # so the external cohort can be filtered/standardized exactly like training.
     # Load training preprocessing metadata EARLY if doing external validation
     training_preprocessing_metadata = None
     required_feature_only = None  # For external validation optimization
     
     if args.validate_external:
         if args.external_model_dir is None:
-            print("❌ Error: --validate_external requires --external_model_dir")
+            print("Error: --validate_external requires --external_model_dir")
             return
         
         training_metadata_file = Path(args.external_model_dir) / "preprocessing_metadata.pkl"
         if training_metadata_file.exists():
             with open(training_metadata_file, 'rb') as f:
                 training_preprocessing_metadata = pickle.load(f)
-            print(f"\n📂 Loaded training preprocessing metadata")
+            print(f"\nLoaded training preprocessing metadata")
             print(f"   Dataset: {training_preprocessing_metadata.get('dataset', 'N/A')}")
             print(f"   Blacklist: {training_preprocessing_metadata.get('blacklist_file_used', 'None')}")
             
             # Debug: Show what indices are being loaded
             kept_cols = training_preprocessing_metadata.get('kept_columns_per_feature', {})
-            print(f"\n   📊 Loaded column indices from training:")
+            print(f"\n   Loaded column indices from training:")
             for feat, indices in kept_cols.items():
                 print(f"      {feat}: {len(indices)} column indices (will select these from external data)")
             
-            print(f"   → External data will use training's exact column filtering\n")
+            print(f"   -> External data will use training's exact column filtering\n")
         else:
-            print(f"\n⚠️  WARNING: No preprocessing metadata at {training_metadata_file}")
+            print(f"\n WARNING: No preprocessing metadata at {training_metadata_file}")
             print(f"   External validation may fail due to feature misalignment!\n")
         
         # OPTIMIZATION: Identify which feature is needed BEFORE loading all data
@@ -7457,24 +9054,27 @@ def main(args):
             if filter_feat:
                 # Comprehensive but filtered to one feature: only load that feature
                 required_feature_only = filter_feat
-                print(f"📊 Comprehensive validation mode with filter: Loading only '{filter_feat}' feature\n")
+                print(f"Comprehensive validation mode with filter: Loading only '{filter_feat}' feature\n")
             else:
-                print(f"📊 Comprehensive validation mode: Loading ALL features for multi-feature analysis\n")
+                print(f"Comprehensive validation mode: Loading ALL features for multi-feature analysis\n")
                 required_feature_only = None
         else:
             if filter_feat:
                 required_feature_only = filter_feat
-                print(f"🎯 Using --filter_feature: Only loading '{filter_feat}' feature for external validation\n")
+                print(f"Using --filter_feature: Only loading '{filter_feat}' feature for external validation\n")
             else:
                 try:
                     required_feature_only = get_best_model_feature_name(args.external_model_dir)
-                    print(f"🎯 OPTIMIZATION: Only loading '{required_feature_only}' feature for external validation")
+                    print(f"OPTIMIZATION: Only loading '{required_feature_only}' feature for external validation")
                     print(f"   (Skipping other features to save time and memory)\n")
                 except Exception as e:
-                    print(f"⚠️  Could not identify required feature: {e}")
+                    print(f"Could not identify required feature: {e}")
                     print(f"   Falling back to loading all features\n")
                     required_feature_only = None
 
+    # ------------------------------------------------------------------ STAGE 3
+    # Feature loading: either one predefined sample x feature .npy matrix (ATAC),
+    # or one column per feature type out of the per-sample *_BIN.csv files.
     # If a predefined feature matrix is provided, load it and build healthy/cancer splits
     if args.predefined_feature_matrix:
         print("\n" + "="*90)
@@ -7493,7 +9093,7 @@ def main(args):
                 args.comprehensive_within_dataset_generalization
             )
             if use_pancan:
-                print("🔄 Detected ATAC pancan matrix for within-gen; switching to pancan files")
+                print("Detected ATAC pancan matrix for within-gen; switching to pancan files")
                 print(f"   Pancan matrix: {pancan_matrix}")
                 print(f"   Pancan metadata: {pancan_meta}")
                 matrix_path = pancan_matrix
@@ -7502,13 +9102,13 @@ def main(args):
         print(f"Matrix file: {matrix_path}")
         
         if metadata_path is None:
-            print("❌ Error: When using --predefined_feature_matrix you must also provide --predefined_metadata_csv")
+            print("Error: When using --predefined_feature_matrix you must also provide --predefined_metadata_csv")
             return
 
         print(f"Metadata CSV: {metadata_path}")
         
         pre_matrix = np.load(matrix_path)
-        print(f"✓ Loaded matrix with shape: {pre_matrix.shape} (samples × features)")
+        print(f"Loaded matrix with shape: {pre_matrix.shape} (samples x features)")
         print(f"  Matrix data type: {pre_matrix.dtype}")
         print(f"  Matrix value range: [{np.nanmin(pre_matrix):.4f}, {np.nanmax(pre_matrix):.4f}]")
         print(f"  Matrix mean: {np.nanmean(pre_matrix):.4f}, std: {np.nanstd(pre_matrix):.4f}")
@@ -7519,7 +9119,7 @@ def main(args):
         if args.validate_external and training_preprocessing_metadata is not None:
             training_n_features = training_preprocessing_metadata.get('original_n_features')
             if training_n_features is not None and pre_matrix.shape[1] != training_n_features:
-                print(f"\n🔧 ATAC column alignment needed: external has {pre_matrix.shape[1]} cols, training had {training_n_features}")
+                print(f"\nATAC column alignment needed: external has {pre_matrix.shape[1]} cols, training had {training_n_features}")
                 
                 # Load external TF names (alongside external matrix)
                 external_tf_path = matrix_path.with_suffix('.tf_names.csv')
@@ -7549,14 +9149,14 @@ def main(args):
                         if candidate.exists():
                             train_tf_df = pd.read_csv(candidate)
                             training_tf_names = train_tf_df.iloc[:, 0].tolist()
-                            print(f"  ✓ Auto-detected training TF names from: {candidate}")
+                            print(f"  Auto-detected training TF names from: {candidate}")
                             print(f"    ({len(training_tf_names)} TFs)")
                             break
                 
                 if external_tf_path.exists() and training_tf_names is not None:
                     ext_tf_df = pd.read_csv(external_tf_path)
                     external_tf_names = ext_tf_df.iloc[:, 0].tolist()
-                    print(f"  ✓ Loaded external TF names from: {external_tf_path}")
+                    print(f"  Loaded external TF names from: {external_tf_path}")
                     print(f"    External: {len(external_tf_names)} TFs, Training: {len(training_tf_names)} TFs")
                     
                     # Verify dimensions match
@@ -7577,19 +9177,19 @@ def main(args):
                         if ext_idx is not None:
                             padded[:, train_idx] = pre_matrix[:, ext_idx]
                     
-                    print(f"  ✓ Padded matrix: {pre_matrix.shape} → {padded.shape}")
+                    print(f"  Padded matrix: {pre_matrix.shape} -> {padded.shape}")
                     print(f"    {overlap_count} columns filled from external data, "
                           f"{training_n_features - overlap_count} columns zero-padded")
                     pre_matrix = padded
                 elif not external_tf_path.exists():
-                    print(f"  ⚠️  External TF names file not found at {external_tf_path}")
-                    print(f"     Cannot align columns — validation may fail!")
+                    print(f"   External TF names file not found at {external_tf_path}")
+                    print(f"     Cannot align columns - validation may fail!")
                 elif training_tf_names is None:
-                    print(f"  ⚠️  Training TF names not found in preprocessing metadata or auto-detect")
-                    print(f"     Cannot align columns — validation may fail!")
+                    print(f"   Training TF names not found in preprocessing metadata or auto-detect")
+                    print(f"     Cannot align columns - validation may fail!")
 
         meta_df = pd.read_csv(metadata_path)
-        print(f"✓ Loaded metadata CSV with {len(meta_df)} rows and columns: {list(meta_df.columns)}")
+        print(f"Loaded metadata CSV with {len(meta_df)} rows and columns: {list(meta_df.columns)}")
 
         # Normalize column name for sample ID
         if 'sample_id' in meta_df.columns:
@@ -7597,15 +9197,15 @@ def main(args):
         elif 'ID' in meta_df.columns:
             id_col = 'ID'
         else:
-            print("❌ Error: predefined metadata CSV must contain a 'sample_id' or 'ID' column")
+            print("Error: predefined metadata CSV must contain a 'sample_id' or 'ID' column")
             return
 
         sample_order = meta_df[id_col].astype(str).tolist()
-        print(f"✓ Using '{id_col}' column for sample IDs ({len(sample_order)} samples)")
+        print(f"Using '{id_col}' column for sample IDs ({len(sample_order)} samples)")
         print(f"  First 5 sample IDs: {sample_order[:5]}")
         
         if pre_matrix.shape[0] != len(sample_order):
-            print(f"❌ Error: Number of rows in predefined matrix ({pre_matrix.shape[0]}) does not match number of sample IDs in metadata ({len(sample_order)})")
+            print(f"Error: Number of rows in predefined matrix ({pre_matrix.shape[0]}) does not match number of sample IDs in metadata ({len(sample_order)})")
             return
 
         # Resolve disease labels (prefer predefined metadata if present)
@@ -7618,15 +9218,15 @@ def main(args):
 
         if disease_col is not None:
             merged_meta['disease'] = meta_df[disease_col].astype(str)
-            print(f"\n✓ Using disease labels from predefined metadata column '{disease_col}'")
+            print(f"\nUsing disease labels from predefined metadata column '{disease_col}'")
         else:
             merged_meta = merged_meta.merge(metadata[['ID', 'disease']], on='ID', how='left')
-            print(f"\n✓ Merged with main metadata to recover disease labels")
+            print(f"\nMerged with main metadata to recover disease labels")
 
         if merged_meta['disease'].isna().any():
             missing = merged_meta['disease'].isna().sum()
             missing_ids = merged_meta.loc[merged_meta['disease'].isna(), 'ID'].tolist()
-            print(f"⚠️  Missing disease labels for {missing} sample(s)")
+            print(f"Missing disease labels for {missing} sample(s)")
             print(f"   Missing IDs (first 10): {missing_ids[:10]}")
 
         disease_counts = merged_meta['disease'].value_counts()
@@ -7636,20 +9236,25 @@ def main(args):
 
         # Debug: show training types present for within-gen
         if (args.run_within_dataset_generalization_train or args.run_within_dataset_generalization_eval or args.comprehensive_within_dataset_generalization) and args.generalization_training_types:
-            print("\n🔍 Within-gen debug: training types in predefined matrix")
+            print("\nWithin-gen debug: training types in predefined matrix")
             for ct in args.generalization_training_types:
                 ct_count = int((merged_meta['disease'] == ct).sum())
                 print(f"   {ct}: {ct_count} sample(s)")
             healthy_count = int((merged_meta['disease'].fillna('') == 'Healthy').sum())
             print(f"   Healthy: {healthy_count} sample(s)")
 
-        # Optionally remove first N healthy samples (Panel-of-Normals) for CRIS datasets
+        # Optionally remove Panel-of-Normal samples for CRIS datasets
         pon_removed_count = 0
         if 'cris' in active_metadata_file.lower():
-            print(f"\n🔍 CRIS dataset detected - checking for Panel-of-Normal samples to remove")
-            print(f"  PoN configuration: First {args.pon_n} healthy samples from main metadata")
-            pon_ids = metadata[metadata['disease'] == 'Healthy'].iloc[:args.pon_n]['ID'].tolist()
-            print(f"  PoN sample ID range: {pon_ids[0]} to {pon_ids[-1]}")
+            print(f"\nCRIS dataset detected - checking for Panel-of-Normal samples to remove")
+            if manifest_mode:
+                print("  PoN configuration: role == 'panel_of_normals' from the manifest")
+                pon_ids = metadata[metadata['role'] == 'panel_of_normals']['ID'].tolist()
+            else:
+                print(f"  PoN configuration: First {args.pon_n} healthy samples from main metadata")
+                pon_ids = metadata[metadata['disease'] == 'Healthy'].iloc[:args.pon_n]['ID'].tolist()
+            if pon_ids:
+                print(f"  PoN sample ID range: {pon_ids[0]} to {pon_ids[-1]}")
             
             pon_present = [s for s in sample_order if s in pon_ids]
             if pon_present:
@@ -7661,29 +9266,54 @@ def main(args):
                 merged_meta = merged_meta.loc[keep_mask].reset_index(drop=True)
                 sample_order = merged_meta['ID'].tolist()
                 pon_removed_count = len(pon_present)
-                print(f"  ✓ Removed {pon_removed_count} PoN samples")
+                print(f"  Removed {pon_removed_count} PoN samples")
                 print(f"  Matrix shape after PoN removal: {pre_matrix.shape}")
             else:
-                print(f"  ℹ No PoN samples found in predefined matrix (already excluded or not present)")
+                print(f"  No PoN samples found in predefined matrix (already excluded or not present)")
         else:
-            print(f"\nℹ Non-CRIS dataset - skipping Panel-of-Normal removal")
+            print(f"\nNon-CRIS dataset - skipping Panel-of-Normal removal")
 
-        # Apply row-standardization
-        print(f"\n📊 Applying row-wise z-score standardization to predefined matrix")
-        print(f"  Before standardization - mean: {np.nanmean(pre_matrix):.4f}, std: {np.nanstd(pre_matrix):.4f}")
-        mat = pre_matrix.astype(float).copy()
-        row_means = np.nanmean(mat, axis=1, keepdims=True)
-        row_stds = np.nanstd(mat, axis=1, keepdims=True)
-        row_stds[row_stds == 0] = 1.0
-        pre_matrix = (mat - row_means) / row_stds
-        pre_matrix = np.nan_to_num(pre_matrix)  # Replace NaN with 0, inf with large finite numbers
-        print(f"  After standardization  - mean: {np.nanmean(pre_matrix):.4f}, std: {np.nanstd(pre_matrix):.4f}")
-        print(f"  NaN values remaining: {np.sum(np.isnan(pre_matrix))}")
-        print(f"  ✓ Row standardization complete")
+        # --exclude_samples: the predefined matrix carries its own sample list, so
+        # the exclusion is applied to its rows as well (same mechanics as the PoN removal)
+        if excluded_sample_ids:
+            excl_present = [s for s in sample_order if s in set(excluded_sample_ids)]
+            if excl_present:
+                keep_mask = [s not in set(excl_present) for s in sample_order]
+                pre_matrix = pre_matrix[np.array(keep_mask), :]
+                merged_meta = merged_meta.loc[keep_mask].reset_index(drop=True)
+                sample_order = merged_meta['ID'].tolist()
+                print(f"\n--exclude_samples: removed {len(excl_present)} row(s) from the predefined matrix "
+                      f"-> shape {pre_matrix.shape}")
+            else:
+                print(f"\n--exclude_samples: none of the listed IDs are rows of the predefined matrix")
+
+        # Apply row-standardization (skipped for heterogeneous scalar panels, where a
+        # per-sample z-score across features mixes units; the pipeline's StandardScaler
+        # still column-standardizes on training folds)
+        if args.predefined_no_row_standardize:
+            print(f"\nSkipping row-wise standardization (--predefined_no_row_standardize)")
+            pre_matrix = pre_matrix.astype(float)
+            n_nan = int(np.sum(np.isnan(pre_matrix)))
+            if n_nan:
+                raise ValueError(
+                    f"Predefined matrix contains {n_nan} NaN value(s). Without row "
+                    "standardization there is no nan_to_num step; impute when building the matrix.")
+        else:
+            print(f"\nApplying row-wise z-score standardization to predefined matrix")
+            print(f"  Before standardization - mean: {np.nanmean(pre_matrix):.4f}, std: {np.nanstd(pre_matrix):.4f}")
+            mat = pre_matrix.astype(float).copy()
+            row_means = np.nanmean(mat, axis=1, keepdims=True)
+            row_stds = np.nanstd(mat, axis=1, keepdims=True)
+            row_stds[row_stds == 0] = 1.0
+            pre_matrix = (mat - row_means) / row_stds
+            pre_matrix = np.nan_to_num(pre_matrix)  # Replace NaN with 0, inf with large finite numbers
+            print(f"  After standardization  - mean: {np.nanmean(pre_matrix):.4f}, std: {np.nanstd(pre_matrix):.4f}")
+            print(f"  NaN values remaining: {np.sum(np.isnan(pre_matrix))}")
+            print(f"  Row standardization complete")
 
 
         # Build healthy / cancer splits using the merged_meta diseases and previously selected cancer_types_to_filter
-        print(f"\n🔬 Splitting predefined matrix into healthy and cancer subsets")
+        print(f"\nSplitting predefined matrix into healthy and cancer subsets")
         print(f"  Healthy filter criteria: {healthy_to_filter}")
         print(f"  Cancer filter criteria: {cancer_types_to_filter}")
         
@@ -7694,8 +9324,8 @@ def main(args):
         healthy_mat = pre_matrix[np.where(healthy_mask)[0], :] if healthy_mask.any() else np.empty((0, pre_matrix.shape[1]))
         cancer_mat = pre_matrix[np.where(cancer_mask)[0], :] if cancer_mask.any() else np.empty((0, pre_matrix.shape[1]))
 
-        print(f"  ✓ Healthy subset: {healthy_mat.shape[0]} samples × {healthy_mat.shape[1]} features")
-        print(f"  ✓ Cancer subset:  {cancer_mat.shape[0]} samples × {cancer_mat.shape[1]} features")
+        print(f"  Healthy subset: {healthy_mat.shape[0]} samples x {healthy_mat.shape[1]} features")
+        print(f"  Cancer subset:  {cancer_mat.shape[0]} samples x {cancer_mat.shape[1]} features")
         
         # Get sample IDs for each subset for logging
         healthy_sample_ids = merged_meta.loc[healthy_mask, 'ID'].tolist() if healthy_mask.any() else []
@@ -7736,27 +9366,32 @@ def main(args):
             requested = set(args.feature_subset)
             tss_features = [feat for feat in tss_features if feat in requested]
             if len(tss_features) == 0:
-                print(f"❌ Error: --feature_subset {args.feature_subset} does not match any available features")
+                print(f"Error: --feature_subset {args.feature_subset} does not match any available features")
                 print(f"   Available features: {DATA_PARAM_GRIDS['feature']}")
                 return
-        print(f"\n📂 Loading features from: {features_dir}")
+        print(f"\nLoading features from: {features_dir}")
         print(f"   Features: {tss_features}")
 
         for feature_to_load in tss_features:
-            print(f"  → Loading '{feature_to_load}'")
+            print(f"  -> Loading '{feature_to_load}'")
             feature_arrays_healthy[feature_to_load] = load_feature_in_parallel(
                 features_dir,
                 feature_to_load,
                 file_filter=healthy_file_names,
-                num_cores=args.cores
+                num_cores=args.cores,
+                exact=manifest_mode
             )
             feature_arrays_cancer[feature_to_load] = load_feature_in_parallel(
                 features_dir,
                 feature_to_load,
                 file_filter=cancer_file_names,
-                num_cores=args.cores
+                num_cores=args.cores,
+                exact=manifest_mode
             )
 
+    # ------------------------------------------------------------------ STAGE 4
+    # Column filtering: blacklist removal for internal runs, or the training
+    # run's exact kept-column indices for external validation.
     # Track which columns are kept after preprocessing (for external validation)
     kept_columns_per_feature = {}  # Will store which columns survive preprocessing
     original_n_features = None  # Track original feature count before any filtering
@@ -7764,10 +9399,10 @@ def main(args):
     
     # For external validation: apply training's column filtering directly (skip blacklist/duplicate removal)
     if args.validate_external and training_preprocessing_metadata is not None:
-        print("\n🔧 Applying training's preprocessing to external data (skipping blacklist/duplicate steps)")
+        print("\nApplying training's preprocessing to external data (skipping blacklist/duplicate steps)")
         training_kept_cols = training_preprocessing_metadata.get('kept_columns_per_feature', {})
         
-        print(f"   📋 Training metadata contains {len(training_kept_cols)} features")
+        print(f"   Training metadata contains {len(training_kept_cols)} features")
         for feat_name, indices_list in training_kept_cols.items():
             print(f"      {feat_name}: {len(indices_list)} column indices")
         
@@ -7775,17 +9410,17 @@ def main(args):
             if feature in training_kept_cols:
                 kept_indices = np.array(training_kept_cols[feature])
                 
-                print(f"\n   🔍 Applying {len(kept_indices)} training indices to '{feature}'")
+                print(f"\n   Applying {len(kept_indices)} training indices to '{feature}'")
                 
                 if feature_arrays_healthy.get(feature) is not None:
                     original_shape = feature_arrays_healthy[feature].shape
                     feature_arrays_healthy[feature] = feature_arrays_healthy[feature][:, kept_indices]
-                    print(f"      Healthy: {original_shape[1]} → {feature_arrays_healthy[feature].shape[1]} columns")
+                    print(f"      Healthy: {original_shape[1]} -> {feature_arrays_healthy[feature].shape[1]} columns")
                 
                 if feature_arrays_cancer.get(feature) is not None:
                     original_shape = feature_arrays_cancer[feature].shape
                     feature_arrays_cancer[feature] = feature_arrays_cancer[feature][:, kept_indices]
-                    print(f"      Cancer: {original_shape[1]} → {feature_arrays_cancer[feature].shape[1]} columns")
+                    print(f"      Cancer: {original_shape[1]} -> {feature_arrays_cancer[feature].shape[1]} columns")
                 
                 # Store the same indices as training
                 kept_columns_per_feature[feature] = kept_indices
@@ -7797,16 +9432,21 @@ def main(args):
         # Check if training had final feature counts recorded
         training_final_counts = training_preprocessing_metadata.get('final_n_features_per_feature', {})
         if training_final_counts:
-            print(f"\n   ✓ Training's final feature counts:")
+            print(f"\n   Training's final feature counts:")
             for feat, count in training_final_counts.items():
                 print(f"      {feat}: {count} columns")
         
-        print("   ✓ Training's preprocessing applied to external data")
+        print("   Training's preprocessing applied to external data")
     
     # Remove blacklisted regions (only when NOT in no_gene_selection mode, not using predefined matrix, and NOT external validation)
     elif (not args.no_gene_selection) and (not args.predefined_feature_matrix):
         to_be_removed = None
-        if 'cris' in active_metadata_file.lower() or 'jiang' in active_metadata_file.lower():
+        _bl_default = "accessory_files/final_tss_indices_to_remove_hg38.npy"
+        if getattr(args, 'blacklist_indices', None) and args.blacklist_indices != _bl_default:
+            # an explicit exclusion file for another region set with the same layout
+            to_be_removed = np.load(args.blacklist_indices)
+            blacklist_file_used = args.blacklist_indices
+        elif 'cris' in active_metadata_file.lower() or 'jiang' in active_metadata_file.lower():
             to_be_removed = np.load("accessory_files/final_tss_indices_to_remove_hg38.npy")
             blacklist_file_used = "accessory_files/final_tss_indices_to_remove_hg38.npy"
         elif ('lucas' in active_metadata_file.lower() or 'mathios' in active_metadata_file.lower()):
@@ -7816,7 +9456,7 @@ def main(args):
             print("Skipping blacklist removal since there is not a predefined blacklist for this dataset.")
         
         if to_be_removed is not None:
-            print(f"\n📋 Applying blacklist removal from {blacklist_file_used}")
+            print(f"\nApplying blacklist removal from {blacklist_file_used}")
             print(f"   Removing {len(to_be_removed)} regions")
             
             for feature in tss_features:
@@ -7833,13 +9473,13 @@ def main(args):
                     
                     # Apply removal
                     feature_arrays_healthy[feature] = np.delete(feature_arrays_healthy[feature], to_be_removed, axis=1)
-                    print(f"   {feature}: {original_n_features} → {len(kept_columns_per_feature[feature])} columns")
+                    print(f"   {feature}: {original_n_features} -> {len(kept_columns_per_feature[feature])} columns")
                     
                 if feature_arrays_cancer[feature] is not None:
                     feature_arrays_cancer[feature] = np.delete(feature_arrays_cancer[feature], to_be_removed, axis=1)
-            print("   ✓ Blacklist removal complete")
+            print("   Blacklist removal complete")
     else:
-        print("\n📋 Skipping blacklist removal (no_gene_selection mode or predefined matrix)")
+        print("\nSkipping blacklist removal (no_gene_selection mode or predefined matrix)")
         # No filtering - all columns are kept
         for feature in tss_features:
             if feature_arrays_healthy.get(feature) is not None:
@@ -7848,12 +9488,15 @@ def main(args):
                 kept_columns_per_feature[feature] = np.arange(original_n_features)
                 print(f"   {feature}: All {original_n_features} columns kept")
 
+    # ------------------------------------------------------------------ STAGE 5
+    # Normalization: row-wise z-score per sample; for external validation also
+    # column-wise standardization with the TRAINING cohort's means/stds.
     # Normalize data (skip if using predefined matrix that may already be normalized)
     if args.predefined_feature_matrix:
         feature_arrays_healthy_normalized = feature_arrays_healthy
         feature_arrays_cancer_normalized = feature_arrays_cancer
     else:
-        print("\n📊 Applying normalize_feature_arrays() to loaded TSS features")
+        print("\nApplying normalize_feature_arrays() to loaded TSS features")
         feature_arrays_healthy_normalized = normalize_feature_arrays(feature_arrays_healthy)
         feature_arrays_cancer_normalized = normalize_feature_arrays(feature_arrays_cancer)
         print("All features normalized.")
@@ -7862,8 +9505,8 @@ def main(args):
     if args.validate_external and training_preprocessing_metadata is not None:
         if 'feature_means_per_feature' not in training_preprocessing_metadata or \
            'feature_stds_per_feature' not in training_preprocessing_metadata:
-            # Training stats missing from pkl — compute from training data
-            print("\n🔧 Training column-wise stats missing from preprocessing metadata")
+            # Training stats missing from pkl - compute from training data
+            print("\nTraining column-wise stats missing from preprocessing metadata")
             print("   Computing from training data (for consistent standardization)...")
 
             computed_means = {}
@@ -7903,9 +9546,9 @@ def main(args):
                             filtered = train_mat[:, indices_arr]
                             computed_means[feat_name] = np.nanmean(filtered, axis=0).tolist()
                             computed_stds[feat_name] = np.nanstd(filtered, axis=0).tolist()
-                            print(f"   ✓ '{feat_name}': computed from {filtered.shape[0]} samples × {filtered.shape[1]} features")
+                            print(f"   '{feat_name}': computed from {filtered.shape[0]} samples x {filtered.shape[1]} features")
                 else:
-                    print(f"   ⚠️  Could not find training ATAC matrix (tried _brca_crc / base variants)")
+                    print(f"    Could not find training ATAC matrix (tried _brca_crc / base variants)")
             else:
                 # CSV features (DD/RNA): Load training CSVs from features_dir
                 training_metadata_path = training_preprocessing_metadata.get('dataset', args.metadata_file)
@@ -7938,27 +9581,27 @@ def main(args):
                                     filtered = train_array[:, indices_arr]
                                     computed_means[feat_name] = np.nanmean(filtered, axis=0).tolist()
                                     computed_stds[feat_name] = np.nanstd(filtered, axis=0).tolist()
-                                    print(f"   ✓ '{feat_name}': computed from {filtered.shape[0]} samples × {filtered.shape[1]} features")
+                                    print(f"   '{feat_name}': computed from {filtered.shape[0]} samples x {filtered.shape[1]} features")
                     else:
-                        print(f"   ⚠️  Training metadata has no 'ID' column; cannot load training CSVs")
+                        print(f"    Training metadata has no 'ID' column; cannot load training CSVs")
                 else:
-                    print(f"   ⚠️  Training metadata file not found: {training_metadata_path}")
+                    print(f"    Training metadata file not found: {training_metadata_path}")
 
             if computed_means and computed_stds:
                 training_preprocessing_metadata['feature_means_per_feature'] = computed_means
                 training_preprocessing_metadata['feature_stds_per_feature'] = computed_stds
-                print(f"   ✓ Training column-wise stats computed for {len(computed_means)} feature(s)")
+                print(f"   Training column-wise stats computed for {len(computed_means)} feature(s)")
 
                 # Save back to pkl so future runs are instant
                 pkl_path = Path(args.external_model_dir) / "preprocessing_metadata.pkl"
                 if pkl_path.exists():
                     with open(pkl_path, 'wb') as f:
                         pickle.dump(training_preprocessing_metadata, f)
-                    print(f"   ✓ Saved training stats to {pkl_path} for future runs")
+                    print(f"   Saved training stats to {pkl_path} for future runs")
 
         if 'feature_means_per_feature' in training_preprocessing_metadata and \
            'feature_stds_per_feature' in training_preprocessing_metadata:
-            print("\n🔧 Applying training mean/std standardization to external data")
+            print("\nApplying training mean/std standardization to external data")
             feature_arrays_healthy_normalized = standardize_with_training_stats(
                 feature_arrays_healthy_normalized,
                 training_preprocessing_metadata
@@ -7968,10 +9611,13 @@ def main(args):
                 training_preprocessing_metadata
             )
         else:
-            print("\n⚠️  Training mean/std still unavailable after fallback; proceeding without column standardization")
+            print("\n Training mean/std still unavailable after fallback; proceeding without column standardization")
 
+    # ------------------------------------------------------------------ STAGE 6
+    # Assemble the final arrays: stack healthy+cancer, drop duplicate columns,
+    # record preprocessing metadata, and build label / stratification arrays.
     # Combine healthy and cancer data
-    print("\n🔗 Combining healthy and cancer data into unified feature arrays")
+    print("\nCombining healthy and cancer data into unified feature arrays")
     all_feature_arrays = {}
     for feature in tss_features:
         healthy_data = feature_arrays_healthy_normalized.get(feature)
@@ -7979,14 +9625,14 @@ def main(args):
         if healthy_data is not None and cancer_data is not None:
             combined = np.vstack([healthy_data, cancer_data])
             all_feature_arrays[feature] = combined
-            print(f"  Feature '{feature}': {healthy_data.shape[0]} healthy + {cancer_data.shape[0]} cancer = {combined.shape[0]} total samples × {combined.shape[1]} features")
+            print(f"  Feature '{feature}': {healthy_data.shape[0]} healthy + {cancer_data.shape[0]} cancer = {combined.shape[0]} total samples x {combined.shape[1]} features")
 
     # Per feature, check for duplicate columns and remove them (skip for external validation)
     if args.validate_external and training_preprocessing_metadata is not None:
-        print("\n📋 Skipping duplicate removal (already handled by training's column filtering)")
+        print("\nSkipping duplicate removal (already handled by training's column filtering)")
         unique_feature_arrays = all_feature_arrays
     else:
-        print("\n🔍 Checking for and removing duplicate feature columns")
+        print("\nChecking for and removing duplicate feature columns")
         unique_feature_arrays = {}
         for feature, array in all_feature_arrays.items():
             if array is None:
@@ -8010,9 +9656,60 @@ def main(args):
     # Replace the old dictionary and feature list with the unique ones
     all_feature_arrays = unique_feature_arrays
     DATA_PARAM_GRIDS['feature'] = list(all_feature_arrays.keys())
+
+    # --- Covariate block (--augment_covariates / --residualize_covariates): appended
+    # to every TSS matrix AFTER row standardization and duplicate removal, aligned by
+    # sample ID; see COVARIATE_BLOCK. Not combined with predefined matrices.
+    cov_stem = getattr(args, 'augment_covariates', None) or getattr(args, 'residualize_covariates', None)
+    # External validation of a model trained with a covariate block: the external
+    # cohort's block (same covariates, that cohort's panel stem) must be given, is
+    # appended in the same position and standardized with the training statistics of
+    # those columns (the TSS columns were standardized above).
+    trained_block = (training_preprocessing_metadata or {}).get('covariate_block') or {}
+    if args.validate_external and trained_block.get('mode'):
+        if trained_block['mode'] != 'augment':
+            raise ValueError(f"external validation of a '{trained_block['mode']}' covariate model is not defined")
+        if not getattr(args, 'augment_covariates', None):
+            raise ValueError("the deployed model was trained with --augment_covariates "
+                             f"{trained_block.get('stem')} ({', '.join(trained_block.get('names', []))}); "
+                             "pass --augment_covariates <external cohort's stem of the same panel>")
+    elif args.validate_external and cov_stem:
+        raise ValueError("--augment_covariates given, but the deployed model was trained without a covariate block")
+    if cov_stem:
+        if getattr(args, 'augment_covariates', None) and getattr(args, 'residualize_covariates', None):
+            raise ValueError("--augment_covariates and --residualize_covariates are mutually exclusive")
+        if args.predefined_feature_matrix:
+            raise ValueError("the covariate block is defined for TSS feature matrices, not predefined matrices")
+        cov_mode = 'augment' if getattr(args, 'augment_covariates', None) else 'residualize'
+        C_block, cov_names = load_covariate_block(cov_stem, sample_ids)
+        if args.validate_external:
+            if list(cov_names) != list(trained_block.get('names', [])):
+                raise ValueError(f"covariate names of {cov_stem} {cov_names} differ from the deployed model's "
+                                 f"{trained_block.get('names')}")
+            means_map = training_preprocessing_metadata.get('feature_means_per_feature', {})
+            stds_map = training_preprocessing_metadata.get('feature_stds_per_feature', {})
+        for feature, arr in all_feature_arrays.items():
+            if arr.shape[0] != C_block.shape[0]:
+                raise ValueError(f"{feature}: {arr.shape[0]} rows vs {C_block.shape[0]} covariate rows")
+            block = C_block
+            if args.validate_external:
+                n_cov = C_block.shape[1]
+                means, stds = np.array(means_map[feature]), np.array(stds_map[feature])
+                if len(means) != arr.shape[1] + n_cov:
+                    raise ValueError(f"{feature}: training stats have {len(means)} columns, expected "
+                                     f"{arr.shape[1]} TSS + {n_cov} covariate columns")
+                mu, sd = means[-n_cov:], stds[-n_cov:].copy()
+                sd[sd == 0] = 1.0
+                block = (C_block - mu) / sd
+                print(f"  '{feature}': covariate block standardized with the training statistics "
+                      f"(means {np.round(mu, 3).tolist()})")
+            all_feature_arrays[feature] = np.hstack([arr, block])
+        COVARIATE_BLOCK.update(mode=cov_mode, n=int(C_block.shape[1]), names=cov_names, stem=str(cov_stem))
+        print(f"\nCovariate block ({cov_mode}): {C_block.shape[1]} covariates from {cov_stem} appended to every "
+              f"feature matrix as passthrough columns - {', '.join(cov_names)}")
     
     total_columns = sum(arr.shape[1] for arr in all_feature_arrays.values() if arr is not None)
-    print(f"\n✓ Proceeding with {len(all_feature_arrays)} feature type(s), totaling {total_columns} columns across all features.")
+    print(f"\nProceeding with {len(all_feature_arrays)} feature type(s), totaling {total_columns} columns across all features.")
     
     # Compute per-feature training mean/std (for external standardization)
     feature_means_per_feature = {
@@ -8035,7 +9732,15 @@ def main(args):
         'feature_means_per_feature': feature_means_per_feature,
         'feature_stds_per_feature': feature_stds_per_feature,
         'note': 'External datasets must use kept_columns_per_feature to select the EXACT same columns from raw data',
-        'dataset': active_metadata_file
+        'dataset': active_metadata_file,
+        # --exclude_samples bookkeeping (empty list when the flag was not used)
+        'exclude_samples_file': getattr(args, 'exclude_samples', None),
+        'excluded_sample_ids': excluded_sample_ids,
+        # covariate block (empty when neither --augment_covariates nor --residualize_covariates)
+        'covariate_block': dict(COVARIATE_BLOCK),
+        # derived-task labels: always None (option removed); key kept for the result format
+        'task_controls': getattr(args, 'task_controls', None),
+        'task_cases': getattr(args, 'task_cases', None),
     }
     
     # If using predefined matrix, save TF names for column alignment in external validation
@@ -8046,9 +9751,9 @@ def main(args):
         if tf_names_path.exists():
             tf_df = pd.read_csv(tf_names_path)
             preprocessing_metadata['predefined_tf_names'] = tf_df.iloc[:, 0].tolist()
-            print(f"   ✓ Saved {len(preprocessing_metadata['predefined_tf_names'])} TF names in preprocessing metadata")
+            print(f"   Saved {len(preprocessing_metadata['predefined_tf_names'])} TF names in preprocessing metadata")
     
-    print(f"\n📋 Preprocessing metadata summary (for external validation):")
+    print(f"\nPreprocessing metadata summary (for external validation):")
     if original_n_features:
         print(f"   Original features: {original_n_features}")
     print(f"   Blacklist applied: {preprocessing_metadata['blacklist_applied']}")
@@ -8058,9 +9763,9 @@ def main(args):
         if feature in kept_columns_per_feature:
             n_kept = len(kept_columns_per_feature[feature])
             n_actual_cols = all_feature_arrays[feature].shape[1]
-            print(f"   {feature}: {n_kept} indices saved → {n_actual_cols} columns in array (indices: [{kept_columns_per_feature[feature][0]}...{kept_columns_per_feature[feature][-1]}])")
+            print(f"   {feature}: {n_kept} indices saved -> {n_actual_cols} columns in array (indices: [{kept_columns_per_feature[feature][0]}...{kept_columns_per_feature[feature][-1]}])")
             if n_kept != n_actual_cols:
-                print(f"      ⚠️ WARNING: Mismatch! Saved {n_kept} indices but array has {n_actual_cols} columns!")
+                print(f"      WARNING: Mismatch! Saved {n_kept} indices but array has {n_actual_cols} columns!")
     
     # Store column indices for external validation
     # This allows external datasets to use the EXACT same feature columns
@@ -8074,7 +9779,7 @@ def main(args):
                 'note': 'External datasets must use these exact column counts for proper alignment'
             }
     
-    print(f"\n📋 Column indices info (for external validation reproducibility):")
+    print(f"\nColumn indices info (for external validation reproducibility):")
     for feature, info in column_indices_per_feature.items():
         print(f"   {feature}: {info['n_columns']} columns (blacklist={info['blacklist_applied']})")
 
@@ -8085,7 +9790,7 @@ def main(args):
     # Override sample_ids if using predefined matrix (order is guaranteed by predefined metadata)
     if using_predefined_matrix:
         sample_ids = predefined_sample_ids_healthy + predefined_sample_ids_cancer
-        print(f"\n🔄 Using sample IDs from predefined matrix metadata")
+        print(f"\nUsing sample IDs from predefined matrix metadata")
         print(f"   Total: {len(sample_ids)} samples ({len(predefined_sample_ids_healthy)} healthy + {len(predefined_sample_ids_cancer)} cancer)")
         print(f"   First 5 sample IDs: {sample_ids[:5]}")
     
@@ -8097,7 +9802,7 @@ def main(args):
         healthy_strat_labels = merged_meta.loc[healthy_mask, 'disease'].tolist() if healthy_mask.any() else []
         cancer_strat_labels = merged_meta.loc[cancer_mask, 'disease'].tolist() if cancer_mask.any() else []
         stratification_labels = np.array(healthy_strat_labels + cancer_strat_labels)
-        print(f"📊 Using stratification labels from predefined matrix metadata")
+        print(f"Using stratification labels from predefined matrix metadata")
     else:
         healthy_strat_labels = healthy_files_df['disease'].tolist()
         cancer_strat_labels = cancer_files_df['disease'].tolist()
@@ -8126,25 +9831,27 @@ def main(args):
     
     print("\n--- Data preparation complete ---")
 
+    # ------------------------------------------------------------------ STAGE 7
+    # Mode dispatch: each requested mode runs on the arrays prepared above.
     # --- 1. Run Best Model Search (if requested) ---
     if args.run_best_model_search:
-        print("\n--- 🚀 STARTING BEST MODEL PER-FEATURE SEARCH ---")
+        print("\n--- STARTING BEST MODEL PER-FEATURE SEARCH ---")
         run_best_model_search(
             all_feature_arrays=all_feature_arrays,
             y_labels=y_labels,
             stratification_labels=stratification_labels,
-            sample_ids=sample_ids, # <-- ADD THIS LINE
+            sample_ids=sample_ids,
             CLASSIFIERS=CLASSIFIERS,
             CLF_PARAM_GRIDS=CLF_PARAM_GRIDS,
             DATA_PARAM_GRIDS=DATA_PARAM_GRIDS,
             args=args,
             preprocessing_metadata=preprocessing_metadata
         )
-        print("--- ✅ BEST MODEL PER-FEATURE SEARCH COMPLETE ---")
+        print("--- BEST MODEL PER-FEATURE SEARCH COMPLETE ---")
 
     # --- 1b. Label Shuffle Experiment (if requested) ---
     if args.run_label_shuffle_experiment:
-        print("\n--- 🧪 STARTING LABEL SHUFFLE EXPERIMENT ---")
+        print("\n--- STARTING LABEL SHUFFLE EXPERIMENT ---")
 
         # Resolve the best-model directory automatically based on the selected cancer
         # types (an explicit --label_shuffle_model_dir always wins). When restricted to
@@ -8168,17 +9875,17 @@ def main(args):
                     label_shuffle_model_dir = brca_candidates[0]
                 elif len(brca_candidates) > 1:
                     label_shuffle_model_dir = brca_candidates[0]
-                    print(f"⚠️  Found {len(brca_candidates)} brca_crc best-model dirs, using first: {label_shuffle_model_dir.name}")
+                    print(f"Found {len(brca_candidates)} brca_crc best-model dirs, using first: {label_shuffle_model_dir.name}")
                     print(f"   Candidates: {[d.name for d in brca_candidates]}")
                 else:
                     label_shuffle_model_dir = default_dir
-                    print(f"⚠️  Cancer types restricted to breast+colorectal but no "
+                    print(f"Cancer types restricted to breast+colorectal but no "
                           f"'best_model_*brca_crc*' dir with GridSearchCV files found in {output_dir}.")
                     print(f"   Falling back to default (likely PANCAN): {default_dir.name}")
             else:
                 label_shuffle_model_dir = default_dir
 
-            print(f"🔎 Auto-resolved label-shuffle best-model dir: {label_shuffle_model_dir}")
+            print(f"Auto-resolved label-shuffle best-model dir: {label_shuffle_model_dir}")
 
         run_label_shuffle_experiment(
             best_model_results_dir=str(label_shuffle_model_dir),
@@ -8191,11 +9898,25 @@ def main(args):
             filter_feature=args.label_shuffle_filter_feature,
             filter_n_genes=args.label_shuffle_filter_n_genes
         )
-        print("--- ✅ LABEL SHUFFLE EXPERIMENT COMPLETE ---")
+        print("--- LABEL SHUFFLE EXPERIMENT COMPLETE ---")
+
+    # --- 1c. Post-hoc nested classifier selection on an existing results dir ---
+    if args.recompute_inner_scores:
+        print("\n--- RECOMPUTING INNER-CV SCORES + NESTED CLASSIFIER SELECTION ---")
+        run_nested_classifier_selection(
+            results_dir=args.recompute_inner_scores,
+            all_feature_arrays=all_feature_arrays,
+            y_labels=y_labels,
+            stratification_labels=stratification_labels,
+            sample_ids=list(sample_ids),
+            CLASSIFIERS=CLASSIFIERS,
+            n_jobs=args.cores,
+        )
+        print("--- NESTED CLASSIFIER SELECTION COMPLETE ---")
 
     # --- 2. Run Nested CV (if requested) ---
     if args.run_nested_cv:
-        print("\n--- 🚀 STARTING NESTED CROSS-VALIDATION ---")
+        print("\n--- STARTING NESTED CROSS-VALIDATION ---")
         
         # Create dedicated output dir for nested CV results
         nested_cv_output_dir = Path(args.output_dir) / args.experiment_name
@@ -8213,8 +9934,14 @@ def main(args):
             # No gene selection: just iterate over classifiers and features
             feature_names = list(all_feature_arrays.keys())
             
+            predefined_feature_names = None
             if args.predefined_feature_matrix:
                 print(f"--- Using PREDEFINED MATRIX: No gene selection will be performed ---")
+                _pm = Path(args.predefined_feature_matrix)
+                for _cand in (_pm.with_suffix('.tf_names.csv'), _pm.parent / (_pm.stem + '.tf_names.csv')):
+                    if _cand.exists():
+                        predefined_feature_names = pd.read_csv(_cand).iloc[:, 0].tolist()
+                        break
             else:
                 print(f"--- Using NO GENE SELECTION mode ---")
             
@@ -8228,7 +9955,10 @@ def main(args):
                     'sample_ids': sample_ids,
                     'output_dir': nested_cv_output_dir,
                     'classifiers': CLASSIFIERS,
-                    'clf_param_grids': CLF_PARAM_GRIDS
+                    'clf_param_grids': CLF_PARAM_GRIDS,
+                    # extended reporting: column names of a predefined matrix (if known)
+                    'feature_names': predefined_feature_names,
+                    'store_fitted_models': args.store_fitted_models,
                 }
                 for clf, feat in itertools.product(classifier_names, feature_names)
             ]
@@ -8267,15 +9997,26 @@ def main(args):
                 delayed(run_single_experiment)(config) for config in experiment_configs
             )
         
-        print("\n--- ✅ All nested CV experiments completed successfully ---")
+        print("\n--- All nested CV experiments completed successfully ---")
 
     # --- 2b. Run Fully Nested CV (if requested) ---
     if args.run_nested_cv_full:
-        print("\n--- 🚀 STARTING FULLY NESTED CROSS-VALIDATION (joint selection) ---")
+        print("\n--- STARTING FULLY NESTED CROSS-VALIDATION (joint selection) ---")
+        nested_y, nested_strat = np.asarray(y_labels), np.asarray(stratification_labels)
+        if args.nested_full_permute_labels is not None:
+            # Label-permutation null of the COMPLETE procedure (reviewer 4, additional
+            # comment 6): diagnosis labels are shuffled over the samples once, before the
+            # outer folds are drawn, and everything (feature, ranking, k, classifier,
+            # hyperparameters) is selected again on the shuffled labels. y and the
+            # stratification labels move together, so the folds stay stratified.
+            order = np.random.RandomState(args.nested_full_permute_labels).permutation(len(nested_y))
+            nested_y, nested_strat = nested_y[order], nested_strat[order]
+            print(f"LABEL PERMUTATION seed {args.nested_full_permute_labels}: "
+                  f"{int((nested_y != np.asarray(y_labels)).sum())} of {len(nested_y)} binary labels changed")
         run_nested_experiment_full(
             all_feature_arrays=all_feature_arrays,
-            y_labels=y_labels,
-            stratification_labels=stratification_labels,
+            y_labels=nested_y,
+            stratification_labels=nested_strat,
             sample_ids=sample_ids,
             CLASSIFIERS=CLASSIFIERS,
             CLF_PARAM_GRIDS=CLF_PARAM_GRIDS,
@@ -8290,24 +10031,30 @@ def main(args):
             only_fold=args.nested_full_only_fold,
             aggregate=args.nested_full_aggregate,
             ksweep=args.nested_full_ksweep,
+            sizesweep=args.nested_full_sizesweep,
+            sizesweep_fractions=args.nested_full_sizesweep_fractions,
+            subsample_seed=args.nested_full_subsample_seed,
+            refresh_thresholds=args.nested_full_refresh_thresholds,
         )
-        print("--- ✅ FULLY NESTED CROSS-VALIDATION COMPLETE ---")
+        print("--- FULLY NESTED CROSS-VALIDATION COMPLETE ---")
 
-    # --- 3. Run Bootstrap Study (if requested) ---
-    if args.run_bootstrap_study:
-        print("\n--- 🚀 STARTING BOOTSTRAP ROBUSTNESS STUDY ---")
-        run_bootstrap_study(
+    if args.run_cross_depth_eval:
+        print("\n--- STARTING CROSS-DEPTH EVALUATION ---")
+        run_cross_depth_eval(
             all_feature_arrays=all_feature_arrays,
+            kept_columns_per_feature=kept_columns_per_feature,
+            original_n_features=original_n_features,
+            blacklist_file_used=blacklist_file_used,
             y_labels=y_labels,
             stratification_labels=stratification_labels,
             sample_ids=sample_ids,
             CLASSIFIERS=CLASSIFIERS,
-            args=args
+            args=args,
         )
-        print("--- ✅ BOOTSTRAP STUDY COMPLETE ---")
-    
+        print("--- CROSS-DEPTH EVALUATION COMPLETE ---")
+
     if args.run_baseline_aggregate:
-        print("\n--- 🧪 STARTING BASELINE AGGREGATE STUDY ---")
+        print("\n--- STARTING BASELINE AGGREGATE STUDY ---")
         run_baseline_aggregate_study(
             all_feature_arrays=all_feature_arrays,
             y_labels=y_labels,
@@ -8316,25 +10063,25 @@ def main(args):
             DATA_PARAM_GRIDS=DATA_PARAM_GRIDS,
             args=args
         )
-        print("--- ✅ BASELINE AGGREGATE STUDY COMPLETE ---")
+        print("--- BASELINE AGGREGATE STUDY COMPLETE ---")
     
     # --- 5. Within-Dataset Generalization Training ---
     if args.run_within_dataset_generalization_train:
         print("\n" + "="*90)
-        print("🧬 WITHIN-DATASET GENERALIZATION TRAINING")
+        print("WITHIN-DATASET GENERALIZATION TRAINING")
         print("="*90)
         
         # Parse training cancer types from args
         training_cancer_types = args.generalization_training_types
         if not training_cancer_types:
-            print("❌ Error: --generalization_training_types is required")
+            print("Error: --generalization_training_types is required")
             print("   Example: --generalization_training_types \"Breast cancer\" \"Colorectal cancer\"")
             return
         
         # Get feature type (should be single type now)
         feature_types = args.within_gen_feature_types
         if len(feature_types) != 1:
-            print("⚠️  Warning: Multiple feature types specified. Using first: {feature_types[0]}")
+            print(f"Warning: Multiple feature types specified. Using first: {feature_types[0]}")
         feature_type = feature_types[0]
         
         print(f"Training types: {training_cancer_types}")
@@ -8369,7 +10116,7 @@ def main(args):
         else:
             base_output_dir = Path(args.output_dir) / base_exp_name
             os.makedirs(base_output_dir, exist_ok=True)
-            print(f"\n🔁 Running {n_splits} stratified splits (holdout={args.generalization_withhold_fraction:.2f})")
+            print(f"\nRunning {n_splits} stratified splits (holdout={args.generalization_withhold_fraction:.2f})")
             print(f"   Base output dir: {base_output_dir}")
             for split_idx in range(n_splits):
                 split_args = copy.copy(args)
@@ -8391,24 +10138,24 @@ def main(args):
                     split_index=split_idx + 1
                 )
         
-        print(f"\n✅ {feature_type.upper()} training complete")
+        print(f"\n{feature_type.upper()} training complete")
         print("="*90)
     
     # --- 6. Within-Dataset Generalization Evaluation ---
     if args.run_within_dataset_generalization_eval:
         print("\n" + "="*90)
-        print("📊 WITHIN-DATASET GENERALIZATION EVALUATION")
+        print("WITHIN-DATASET GENERALIZATION EVALUATION")
         print("="*90)
         
         if args.generalization_training_dir is None:
-            print("❌ Error: --generalization_training_dir is required")
+            print("Error: --generalization_training_dir is required")
             print("   Example: --generalization_training_dir results/within_gen_Breast_cancer_Colorectal_cancer_dd")
             return
         
         # Get feature type (should be single type now)
         feature_types = args.within_gen_feature_types
         if len(feature_types) != 1:
-            print("⚠️  Warning: Multiple feature types specified. Using first: {feature_types[0]}")
+            print(f"Warning: Multiple feature types specified. Using first: {feature_types[0]}")
         feature_type = feature_types[0]
         
         print(f"Feature type: {feature_type}")
@@ -8420,15 +10167,15 @@ def main(args):
         training_dir = args.generalization_training_dir
         
         if not Path(training_dir).exists():
-            print(f"❌ Error: {training_dir} not found.")
+            print(f"Error: {training_dir} not found.")
             return
         
         # Always use multi-split-aware evaluation function.
         # run_within_dataset_generalization_evaluation detects split_* subdirs,
         # calls run_comprehensive_within_dataset_evaluation per split, and
-        # aggregates results (mean ± std) across splits. If no splits are
+        # aggregates results (mean +/- std) across splits. If no splits are
         # found it falls back to single-dir evaluation.
-        print("📊 Running within-dataset generalization evaluation...")
+        print("Running within-dataset generalization evaluation...")
         run_within_dataset_generalization_evaluation(
             training_results_dir=training_dir,
             all_feature_arrays=all_feature_arrays,
@@ -8438,13 +10185,13 @@ def main(args):
             args=args
         )
         
-        print(f"\n✅ {feature_type.upper()} evaluation complete")
+        print(f"\n{feature_type.upper()} evaluation complete")
         print("="*90)
 
     # --- 6b. Within-Dataset Generalization Comparison (DD/RNA/ATAC) ---
     if args.run_within_dataset_generalization_compare:
         if not args.generalization_compare_dirs:
-            print("❌ Error: --generalization_compare_dirs is required")
+            print("Error: --generalization_compare_dirs is required")
             print("   Example: --generalization_compare_dirs results/within_gen_*_dd results/within_gen_*_rna results/within_gen_*_atac")
             return
         run_within_dataset_generalization_compare(
@@ -8454,15 +10201,15 @@ def main(args):
     
     # --- 7. External Validation ---
     if args.validate_external:
-        print("\n--- 🌍 STARTING EXTERNAL DATASET VALIDATION ---")
+        print("\n--- STARTING EXTERNAL DATASET VALIDATION ---")
         
         # Check if comprehensive analysis is requested
         filter_feat = getattr(args, 'filter_feature', None)
         if filter_feat:
-            print(f"\n🔎 Feature filter active: only using '{filter_feat}' models")
+            print(f"\nFeature filter active: only using '{filter_feat}' models")
         
         if args.comprehensive_external_validation:
-            print("\n📊 Running comprehensive external validation (all features & gene counts)...")
+            print("\nRunning comprehensive external validation (all features & gene counts)...")
             run_comprehensive_external_validation(
                 best_model_results_dir=args.external_model_dir,
                 external_feature_arrays=all_feature_arrays,
@@ -8486,7 +10233,7 @@ def main(args):
                 filter_feature=filter_feat,
                 validation_mode=getattr(args, 'external_validation_mode', 'pipeline')
             )
-        print("--- ✅ EXTERNAL VALIDATION COMPLETE ---")
+        print("--- EXTERNAL VALIDATION COMPLETE ---")
 
     # Check if at least one mode was specified
     if not any([
@@ -8494,7 +10241,7 @@ def main(args):
         args.run_label_shuffle_experiment,
         args.run_nested_cv,
         args.run_nested_cv_full,
-        args.run_bootstrap_study,
+        args.run_cross_depth_eval,
         args.run_baseline_aggregate,
         args.validate_external,
         args.run_within_dataset_generalization_train,
@@ -8506,12 +10253,10 @@ def main(args):
         print("  --run_label_shuffle_experiment")
         print("  --run_nested_cv")
         print("  --run_nested_cv_full")
-        print("  --run_bootstrap_study")
         print("  --run_baseline_aggregate")
         print("  --validate_external")
         print("  --run_within_dataset_generalization_train")
         print("  --run_within_dataset_generalization_eval")
-        print("  --validate_external")
         print("Exiting.")
 
 
@@ -8531,6 +10276,26 @@ if __name__ == "__main__":
         action='store_true',
         default=False,
         help="Run a single comprehensive GridSearchCV to find the best model (clf+genes) per feature."
+    )
+    parser.add_argument(
+        "--best_model_top_genes",
+        nargs='+',
+        type=int,
+        default=None,
+        help=("Restrict --run_best_model_search to these k values (default: the full 12-value grid). "
+              "Configurations whose summary_* already exists in the output directory are skipped, "
+              "so a subset can be resubmitted into the same directory (e.g. only k=15000 after an OOM).")
+    )
+
+    parser.add_argument(
+        "--refresh_deployment_thresholds",
+        action='store_true',
+        default=False,
+        help=("With --run_best_model_search: for configurations already complete in the "
+              "output directory, re-derive the frozen deployment thresholds from the "
+              "selected configuration's held-out scores on the search's own ten folds "
+              "(10 fits, no new grid search) and rewrite the summary. Rerun the external "
+              "validation afterwards so its fixed-threshold evaluation uses them.")
     )
 
     parser.add_argument(
@@ -8604,6 +10369,21 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--recompute_inner_scores",
+        type=str,
+        default=None,
+        metavar="RESULTS_DIR",
+        help="Path to an existing nested-CV results directory (results_*.pkl files). "
+             "Reconstructs each fold's mean inner-CV AUC for the stored winning "
+             "hyperparameters (exact reproduction of GridSearchCV.best_score_ via the "
+             "seeded splits; ~3 fits per fold per pickle, no grid rerun), then performs "
+             "per-outer-fold classifier selection on inner scores ONLY and writes "
+             "stitched out-of-fold predictions. Must be invoked with the same data "
+             "arguments (manifest, cancer types, feature dirs) as the original run; "
+             "mismatches are detected and abort."
+    )
+
+    parser.add_argument(
         "--run_nested_cv_full",
         action='store_true',
         default=False,
@@ -8646,6 +10426,27 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--augment_covariates",
+        default=None,
+        metavar="STEM",
+        help=("Append the covariate matrix <STEM>.npy (+ .metadata.csv, .tf_names.csv; a panel from "
+              "src/comp/build_scalar_panel_matrix.py) to every TSS feature matrix. The covariates bypass "
+              "the TSS ranking (always in the model) and enter the classifier next to the selected TSSs. "
+              "Fully nested runs (fold records gain 'covariate_block'), the best-model search (the block is "
+              "column-standardized with the TSSs and recorded in preprocessing_metadata.pkl) and external "
+              "validation of such a model (give the external cohort's stem of the same panel, e.g. "
+              "extracted_features/scalar_panel_pipeline4_jiang).")
+    )
+    parser.add_argument(
+        "--residualize_covariates",
+        default=None,
+        metavar="STEM",
+        help=("Regress the covariates of <STEM> out of every TSS column inside each training partition "
+              "(OLS fitted on the training samples, applied to train and test) before ranking and "
+              "classification; the classifier sees residual TSS features only. Mutually exclusive with "
+              "--augment_covariates.")
+    )
+    parser.add_argument(
         "--nested_full_cache_dir",
         type=str,
         default=None,
@@ -8678,6 +10479,20 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--nested_full_refresh_thresholds",
+        action='store_true',
+        default=False,
+        help=("Re-derive the operating-point thresholds of the stored fold partials of "
+              "this experiment (plain run, ksweep_k* and sizesweep_f* subdirectories) "
+              "from the winning configuration's scores on the inner validation folds, "
+              "without repeating the inner search: each stored winner is refitted, must "
+              "reproduce its stored test predictions, and gets 1 + n_inner fits. Use the "
+              "data arguments of the original run. Combine with --nested_full_aggregate "
+              "(and --nested_full_ksweep / --nested_full_sizesweep where applicable) to "
+              "rebuild the tables in the same call.")
+    )
+
+    parser.add_argument(
         "--nested_full_ksweep",
         action='store_true',
         default=False,
@@ -8685,22 +10500,77 @@ if __name__ == "__main__":
               "whole k grid. Feature, ranking function and hyperparameters are still "
               "chosen inside each fold; only k is fixed. Gives a k trend whose every "
               "point is leakage-free. Combine with --nested_full_only_fold, then with "
-              "--nested_full_aggregate to write nested_full_ksweep.csv.")
+              "--nested_full_aggregate to write nested_full_ksweep.csv plus ksweep_tuned/ "
+              "(per fold the k with the best inner score = the fully nested k-as-"
+              "hyperparameter arm, derived without a second run). Works on any region "
+              "set: the comparator sweeps use --no_gene_selection --features_dir (RNA) "
+              "or --predefined_feature_matrix (ATAC) with a k grid up to that set's width.")
     )
-    
+    parser.add_argument(
+        "--nested_full_sizesweep",
+        action='store_true',
+        help=("Sample-size robustness sweep: one complete fully nested selection per "
+              "sample fraction, each on a deterministic nested stratified subset of the "
+              "cohort (per-stratum seeded shuffle, prefix per fraction). The outer fold "
+              "count per fraction is min(10, smaller binary class count). Combine with "
+              "--nested_full_only_fold (the fraction loop runs inside each task), then "
+              "with --nested_full_aggregate to write nested_full_sizesweep.csv.")
+    )
+    parser.add_argument(
+        "--nested_full_sizesweep_fractions",
+        nargs='+',
+        type=float,
+        default=None,
+        help=("Sample fractions for --nested_full_sizesweep "
+              "(default: 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1). Subsets depend only on "
+              "the seed and cohort, so fractions may be split across submissions.")
+    )
+    parser.add_argument(
+        "--nested_full_subsample_seed",
+        type=int,
+        default=42,
+        help="Seed for the per-stratum shuffle defining the sizesweep subsets."
+    )
+    parser.add_argument(
+        "--nested_full_permute_labels",
+        type=int,
+        default=None,
+        help="Shuffle the diagnosis labels with this seed before the fully nested procedure "
+             "(label-permutation null with the complete model selection repeated)."
+    )
+
+    parser.add_argument(
+        "--run_cross_depth_eval",
+        action='store_true',
+        help=("Cross-depth evaluation of a completed fully nested run: refit each "
+              "fold's stored winning configuration on its full-depth training "
+              "partition (deterministic; verified against the stored predictions), "
+              "then score the SAME outer test folds on downsampled feature matrices. "
+              "Assesses whether FUTURE samples must be sequenced deep. Requires "
+              "--cross_depth_source_dir and --cross_depth_eval_dirs; --features_dir "
+              "must be the source run's (full-depth) feature directory.")
+    )
+    parser.add_argument(
+        "--cross_depth_source_dir",
+        type=str,
+        default=None,
+        help="Completed nested_full result directory (holds nested_full_per_fold.pkl)."
+    )
+    parser.add_argument(
+        "--cross_depth_eval_dirs",
+        nargs='+',
+        default=[],
+        metavar="NAME=DIR",
+        help=("Downsampled feature directories to evaluate the test folds on, e.g. "
+              "cov1x=extracted_features/downsampled/cov1x_seed42/biomart_10kb")
+    )
+
     parser.add_argument(
         "--no_gene_selection",
         action='store_true',
         default=False,
         help="Run nested CV without gene selection - uses all features from features_dir. "
              "Skips blacklist removal and uses custom feature directory."
-    )
-    
-    parser.add_argument(
-        "--run_bootstrap_study",
-        action='store_true',
-        default=False,
-        help="Run bootstrap study to assess sample classification robustness."
     )
     
     parser.add_argument(
@@ -8777,57 +10647,6 @@ if __name__ == "__main__":
         choices=['p_value', 'fold_change', 'weighted', 'mean_diff', 'random'],
         default="fold_change",
         help="Feature selection method for baseline aggregate study."
-    )
-    
-    # Bootstrap study specific arguments
-    parser.add_argument(
-        "--bootstrap_feature",
-        type=str,
-        default="griffin_diff",
-        help="Feature to use for bootstrap study (e.g., 'griffin_diff')."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_classifier",
-        type=str,
-        default="Support Vector Machine",
-        help="Classifier to use for bootstrap study (e.g., 'Support Vector Machine')."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_selection",
-        type=str,
-        choices=['p_value', 'fold_change', 'weighted', 'mean_diff', 'random'],
-        default="fold_change",
-        help="Feature selection method for bootstrap study."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_n_genes",
-        type=int,
-        default=15000,
-        help="Number of genes to select for bootstrap study."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_iterations",
-        type=int,
-        default=100,
-        help="Number of bootstrap iterations (default: 100)."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_n_splits",
-        type=int,
-        default=5,
-        help="Number of CV folds per bootstrap iteration (default: 5)."
-    )
-    
-    parser.add_argument(
-        "--bootstrap_hyperparams",
-        type=str,
-        default=None,
-        help="JSON string of fixed hyperparameters for the classifier (e.g., '{\"C\": 1.0, \"kernel\": \"rbf\"}')."
     )
     
     # Within-dataset generalization arguments
@@ -9020,21 +10839,32 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--predefined_no_row_standardize",
+        action="store_true",
+        default=False,
+        help="Skip the row-wise z-score standardization of the predefined matrix. Required for "
+             "matrices of heterogeneous scalars (e.g. the scalar-panel baseline), where "
+             "standardizing across features within a sample mixes units and destroys the "
+             "per-feature information; per-feature scaling still happens inside the CV pipeline's "
+             "StandardScaler, fitted on training folds only. The matrix must be NaN-free."
+    )
+
+    parser.add_argument(
+        "--store_fitted_models",
+        action="store_true",
+        default=False,
+        help="Per-classifier nested CV without gene selection (predefined matrices, --no_gene_selection): "
+             "also pickle the ten fitted fold pipelines to models_<classifier>_<feature>_all_features.pkl "
+             "next to the results pickle (covariate-panel deep dive: partial dependence, decision maps). "
+             "Small matrices only - a 500-tree forest on 10 covariates is a few MB per fold."
+    )
+
+    parser.add_argument(
         "--pon_n",
         type=int,
         default=52,
         help="Number of initial healthy samples to remove as Panel-of-Normals (when using CRIS predefined matrices)."
     )
-
-    CANCER_MAP = {
-        'breast': 'Breast cancer',
-        'bileduct': 'Bile duct cancer',
-        'colorectal': 'Colorectal cancer',
-        'gastric': 'Gastric cancer',
-        'lung': 'Lung cancer naive nsclc',
-        'ovarian': 'Ovarian cancer',
-        'pancreatic': 'Pancreatic cancer'
-    }
 
     parser.add_argument(
         "-t", "--cancer_types",
@@ -9043,6 +10873,26 @@ if __name__ == "__main__":
         default=['PANCAN'],
         help=f"List of cancer types. Use short names (e.g., breast, colorectal). "
              f"Provide 'PANCAN' for all types. Available: {', '.join(CANCER_MAP.keys())}"
+    )
+    parser.add_argument(
+        "--control_groups",
+        nargs='+',
+        default=None,
+        help=("Restrict class 0 to these `disease` labels of the metadata file (must be a "
+              "subset of the dataset's default control labels). Jiang default: "
+              "'Healthy' 'Cirrhosis' 'Hepatitis B' (the 135 non-HCC comparators); pass "
+              "--control_groups Healthy for the HCC-vs-healthy-only task.")
+    )
+    parser.add_argument(
+        "--exclude_samples",
+        default=None,
+        metavar="FILE",
+        help=("Text file with sample IDs (one per line, '#' comments) to drop from BOTH "
+              "classes before anything else happens - fold generation, feature loading, "
+              "predefined-matrix rows alike. The run is otherwise identical to one without "
+              "the flag, so pass a distinct --experiment_name. Used for the sensitivity "
+              "runs without the 30 deep-sequenced healthy samples "
+              "(accessory_files/cris_exclude_deep_healthy.txt; see rebuttal Fig S10).")
     )
 
     args = parser.parse_args()

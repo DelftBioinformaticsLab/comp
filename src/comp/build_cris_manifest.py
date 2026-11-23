@@ -6,7 +6,6 @@ One row per FinaleDB sequencing run, with an explicit `role` for every record:
                     and the ichorCNA panel: the first 50 unique healthy
                     PARTICIPANTS in retrieval order, one (base) sequencing
                     run each — replicate runs are never used anywhere
-                    (decision Sep 2026)
   model             enters the classification tasks (one sequencing run per
                     participant)
   excluded          never used, with `exclusion_reason` saying why
@@ -22,8 +21,7 @@ reflect the disk:  python src/comp/build_cris_manifest.py
 
 Derivation sources: accessory_files/cris_metadata.csv (our FinaleDB retrieval
 manifest) cross-checked against the published supplement
-(accessory_files/cristiano_metadata.xlsx, Table S4) during the Sep 2026
-sample-accounting audit.
+(accessory_files/cristiano_metadata.xlsx, Table S4).
 """
 
 import os
@@ -37,9 +35,27 @@ OUT_MANIFEST = REPO / "accessory_files" / "cris_manifest.csv"
 OUT_PON_WIGS = REPO / "input" / "cris_pon_wigs.txt"
 
 FEATURES_DIR = REPO / "extracted_features" / "biomart_10kb"
-# preprocessing store as mounted on this machine / on the cluster
-WIG_DIR_LOCAL = Path("u:/KWFcfDNA/preprocessing/cris/wigs")
-WIG_DIR_CLUSTER = "/tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/cris/wigs"
+
+
+def site_setting(name: str) -> str | None:
+    """A site setting from the environment, else from slurm/site.env (`export NAME=value` lines)."""
+    if os.environ.get(name):
+        return os.environ[name]
+    site = REPO / "slurm" / "site.env"
+    if site.exists():
+        for line in site.read_text().splitlines():
+            line = line.strip()
+            if line.startswith(("export " + name + "=", name + "=")):
+                return line.split("=", 1)[1].split("#")[0].strip().strip('"')
+    return None
+
+
+# preprocessing store: PREPROCESSING_DIR is the path the cluster jobs see (written into the panel wig list);
+# PREPROCESSING_DIR_LOCAL, when set, is the same store as mounted on this machine (only used to check the wigs exist)
+PREPROCESSING_DIR = site_setting("PREPROCESSING_DIR")
+assert PREPROCESSING_DIR, "set PREPROCESSING_DIR in the environment or in slurm/site.env (template: slurm/site.env.example)"
+WIG_DIR_CLUSTER = f"{PREPROCESSING_DIR}/cris/wigs"
+WIG_DIR_LOCAL = Path(site_setting("PREPROCESSING_DIR_LOCAL") or PREPROCESSING_DIR) / "cris" / "wigs"
 
 # CGH14/CGH15: "Human adult elutriated lymphocytes" in Cristiano Table S4
 # (~9.5x germline WGS) — not plasma cfDNA. FinaleDB's tissue tag is wrong.
@@ -98,8 +114,15 @@ def main() -> None:
 
     # cancer records
     cancer = m["disease"] != "Healthy"
-    m.loc[cancer & (m["disease"] == "Lung cancer"),
-          ["role", "exclusion_reason"]] = ["excluded", "not_treatment_naive_serial"]
+    # FinaleDB "Lung cancer" (not "Lung cancer naive nsclc") is excluded as a whole,
+    # for two reasons: 59 serial monitoring samples of 15
+    # patients (timepoint suffix _D<day>, before and after treatment), and 8 single
+    # samples that Cristiano et al. Table S1 lists as preoperative treatment-naive but
+    # FinaleDB does not label as treatment-naive NSCLC.
+    lung = cancer & (m["disease"] == "Lung cancer")
+    serial = m["sample_name"].str.contains(r"_D-?\d+(?:\.\d+)?$", regex=True)
+    m.loc[lung & serial, ["role", "exclusion_reason"]] = ["excluded", "serial_monitoring"]
+    m.loc[lung & ~serial, ["role", "exclusion_reason"]] = ["excluded", "lung_not_labelled_naive_nsclc"]
     m.loc[cancer & (m["disease"] == "Duodenal cancer"),
           ["role", "exclusion_reason"]] = ["excluded", "single_case"]
     m.loc[cancer & (m["role"] == "") & m["replicate_second_run"],
@@ -117,9 +140,14 @@ def main() -> None:
         {"Healthy", "Breast cancer", "Colorectal cancer"})
     m["in_task_pancan"] = (m["role"] == "model") & (
         (m["disease"] == "Healthy") | m["disease"].isin(TASK_CANCERS))
-    for col in ["fold_brca_crc", "oof_probability_brca_crc",
-                "fold_pancan", "oof_probability_pancan"]:
-        m[col] = ""
+    # result columns are filled after the rerun: carry them over from an existing
+    # manifest instead of blanking them on a rebuild
+    result_cols = ["fold_brca_crc", "oof_probability_brca_crc",
+                   "fold_pancan", "oof_probability_pancan"]
+    old = (pd.read_csv(OUT_MANIFEST, dtype=str, keep_default_na=False).set_index("ID")
+           if OUT_MANIFEST.exists() else pd.DataFrame())
+    for col in result_cols:
+        m[col] = m["ID"].map(old[col]).fillna("") if col in old.columns else ""
 
     cols = ["ID", "sample_name", "participant_id", "disease", "material",
             "role", "exclusion_reason", "replicate_second_run", "replicate_of",
@@ -128,7 +156,7 @@ def main() -> None:
             "fold_brca_crc", "oof_probability_brca_crc",
             "fold_pancan", "oof_probability_pancan"]
     out = m[cols]
-    out.to_csv(OUT_MANIFEST, index=False)
+    out.to_csv(OUT_MANIFEST, index=False, lineterminator="\n")   # LF: the cluster wrappers read it
 
     # --- panel wig list for createPanelOfNormals.R -------------------------
     missing_wigs = [i for i in panel_ids
@@ -163,6 +191,8 @@ def main() -> None:
         "participant crosses the panel/model boundary"
     assert (m["role"] != "").all()
     assert len(m) == 534
+    assert (m["exclusion_reason"] == "serial_monitoring").sum() == 59
+    assert (m["exclusion_reason"] == "lung_not_labelled_naive_nsclc").sum() == 8
     print("\nall invariants hold: 50-participant panel / 194 healthy / 203 cancer, "
           "no replicates anywhere, boundary clean")
 

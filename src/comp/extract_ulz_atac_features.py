@@ -516,6 +516,13 @@ def main():
     )
     
     parser.add_argument(
+        "--roles",
+        nargs="+",
+        default=None,
+        help="Keep only the metadata rows with these values in the 'role' column (manifests: model)"
+    )
+
+    parser.add_argument(
         "-o", "--output",
         type=str,
         default="./extracted_features/ulz_atac_tfbs_features.npy",
@@ -566,6 +573,9 @@ def main():
     # Load metadata
     print(f"\nLoading metadata from: {args.metadata_file}")
     metadata = pd.read_csv(args.metadata_file)
+    if args.roles:
+        metadata = metadata[metadata["role"].isin(args.roles)].copy()
+        print(f"  Kept the rows with role in {args.roles}: {len(metadata)}")
 
     # Deduplicate metadata rows (some metadata files contain duplicate entries)
     n_before_dedup = len(metadata)

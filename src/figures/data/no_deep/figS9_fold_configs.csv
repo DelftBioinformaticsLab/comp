@@ -1,0 +1,199 @@
+task,sample_fraction,fold,feature,classifier,selection_type,top_genes,inner_cv_auc,test_auc
+brca_crc,1.0,1,griffin_diff,Support Vector Machine,fold_change,10000,0.9719387755102041,0.9117647058823528
+brca_crc,1.0,2,griffin_diff,Support Vector Machine,p_value,10000,0.9736394557823128,0.963235294117647
+brca_crc,1.0,3,griffin_diff,Support Vector Machine,fold_change,10000,0.9614512471655329,0.9852941176470588
+brca_crc,1.0,4,griffin_diff,Support Vector Machine,fold_change,10000,0.9682539682539683,1.0
+brca_crc,1.0,5,griffin_diff,Support Vector Machine,mean_diff,15000,0.9735487528344672,0.921875
+brca_crc,1.0,6,griffin_diff,Support Vector Machine,mean_diff,15000,0.9676814058956916,1.0
+brca_crc,1.0,7,griffin_diff,Support Vector Machine,fold_change,10000,0.956485260770975,0.96875
+brca_crc,1.0,8,griffin_diff,Support Vector Machine,fold_change,10000,0.9601757369614513,0.984375
+brca_crc,1.0,9,griffin_diff,Support Vector Machine,fold_change,10000,0.9586054421768707,0.9453125
+brca_crc,1.0,10,griffin_diff,Support Vector Machine,mean_diff,15000,0.9700680272108845,0.9765625
+brca_crc,0.9,1,griffin_diff,Support Vector Machine,weighted,10000,0.9689747401868614,0.8285714285714285
+brca_crc,0.9,2,griffin_diff,Support Vector Machine,mean_diff,15000,0.9409313189616221,0.9904761904761905
+brca_crc,0.9,3,griffin_diff,Support Vector Machine,mean_diff,15000,0.9453324733627765,1.0
+brca_crc,0.9,4,griffin_diff,Support Vector Machine,mean_diff,15000,0.9615170463655311,0.9428571428571428
+brca_crc,0.9,5,griffin_diff,Support Vector Machine,fold_change,10000,0.965783374874284,1.0
+brca_crc,0.9,6,griffin_diff,Support Vector Machine,mean_diff,15000,0.9491881294911598,1.0
+brca_crc,0.9,7,griffin_diff,Support Vector Machine,fold_change,10000,0.9613067908522455,0.9428571428571428
+brca_crc,0.9,8,griffin_diff,Support Vector Machine,fold_change,10000,0.9690592796653403,1.0
+brca_crc,0.9,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9426042532103138,0.9910714285714286
+brca_crc,0.9,10,griffin_diff,Support Vector Machine,mean_diff,15000,0.9739472648563557,0.9107142857142856
+brca_crc,0.8,1,griffin_diff,Support Vector Machine,mean_diff,15000,0.9249437696806119,0.9047619047619048
+brca_crc,0.8,2,griffin_diff,Support Vector Machine,mean_diff,15000,0.9350539811066126,0.978021978021978
+brca_crc,0.8,3,griffin_diff,Support Vector Machine,mean_diff,15000,0.9414754835807467,1.0
+brca_crc,0.8,4,griffin_diff,Support Vector Machine,mean_diff,15000,0.9258322087269456,1.0
+brca_crc,0.8,5,griffin_diff,Support Vector Machine,weighted,10000,0.9464237516869095,1.0
+brca_crc,0.8,6,griffin_diff,Support Vector Machine,weighted,10000,0.9484480431848853,0.8333333333333334
+brca_crc,0.8,7,griffin_diff,Support Vector Machine,mean_diff,15000,0.9498313090418353,0.8910256410256411
+brca_crc,0.8,8,griffin_diff,Support Vector Machine,mean_diff,15000,0.9469973009446693,1.0
+brca_crc,0.8,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9488529014844804,0.8717948717948718
+brca_crc,0.8,10,griffin_diff,Support Vector Machine,fold_change,5000,0.9184322986954565,1.0
+brca_crc,0.7,1,griffin_diff,Support Vector Machine,mean_diff,15000,0.9321758115010711,0.9166666666666667
+brca_crc,0.7,2,griffin_diff,Support Vector Machine,weighted,10000,0.9396935244686109,1.0
+brca_crc,0.7,3,griffin_diff,Support Vector Machine,p_value,10000,0.8944307134618553,1.0
+brca_crc,0.7,4,griffin_diff,Support Vector Machine,p_value,10000,0.941786126215192,0.9666666666666667
+brca_crc,0.7,5,griffin_diff,Support Vector Machine,weighted,5000,0.9556599110232327,0.8166666666666667
+brca_crc,0.7,6,griffin_diff,Support Vector Machine,mean_diff,15000,0.9501894875597298,0.9696969696969697
+brca_crc,0.7,7,griffin_diff,Support Vector Machine,mean_diff,15000,0.9414565826330533,1.0
+brca_crc,0.7,8,griffin_diff,Support Vector Machine,mean_diff,10000,0.9452895864228044,0.8939393939393939
+brca_crc,0.7,9,griffin_diff,Support Vector Machine,weighted,10000,0.960345608831768,0.8636363636363636
+brca_crc,0.7,10,griffin_diff,Support Vector Machine,weighted,10000,0.9599316197067062,0.9696969696969696
+brca_crc,0.6,1,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9144225506294473,0.9600000000000001
+brca_crc,0.6,2,griffin_diff,Support Vector Machine,mean_diff,10000,0.9592775041050903,0.8799999999999999
+brca_crc,0.6,3,griffin_diff,Support Vector Machine,weighted,10000,0.9275314723590586,0.92
+brca_crc,0.6,4,griffin_diff,Multi-Layer Perceptron,fold_change,10000,0.9277504105090312,0.76
+brca_crc,0.6,5,griffin_diff,Support Vector Machine,mean_diff,15000,0.9566502463054188,0.8400000000000001
+brca_crc,0.6,6,griffin_diff,Multi-Layer Perceptron,fold_change,15000,0.9033388067870827,1.0
+brca_crc,0.6,7,griffin_diff,Support Vector Machine,mean_diff,15000,0.9244389709906952,1.0
+brca_crc,0.6,8,griffin_diff,Support Vector Machine,mean_diff,15000,0.9416803503010399,1.0
+brca_crc,0.6,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9327859879584018,0.9555555555555556
+brca_crc,0.6,10,griffin_diff,Support Vector Machine,p_value,10000,0.9541324575807334,1.0
+brca_crc,0.5,1,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9224537037037038,0.8055555555555556
+brca_crc,0.5,2,griffin_diff,Support Vector Machine,p_value,10000,0.9218518518518519,0.8611111111111112
+brca_crc,0.5,3,griffin_diff,Support Vector Machine,mean_diff,10000,0.9048148148148147,0.9375
+brca_crc,0.5,4,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9272685185185185,1.0
+brca_crc,0.5,5,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9617592592592592,0.6875
+brca_crc,0.5,6,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.9446296296296296,0.875
+brca_crc,0.5,7,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9133333333333334,0.96875
+brca_crc,0.5,8,griffin_diff,Support Vector Machine,mean_diff,10000,0.9368055555555556,0.84375
+brca_crc,0.5,9,griffin_diff,Support Vector Machine,p_value,10000,0.9171296296296297,1.0
+brca_crc,0.5,10,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.9518518518518518,1.0
+brca_crc,0.4,1,fslr_coverage,Multi-Layer Perceptron,mean_diff,5000,0.9021150097465886,0.6190476190476191
+brca_crc,0.4,2,griffin_diff,K-Nearest Neighbors,mean_diff,15000,0.8891812865497076,0.380952380952381
+brca_crc,0.4,3,griffin_diff,Support Vector Machine,p_value,5000,0.8910233918128655,0.9047619047619048
+brca_crc,0.4,4,fslr,XGBoost,mean_diff,25,0.8553216374269006,0.7619047619047619
+brca_crc,0.4,5,griffin_diff,Support Vector Machine,mean_diff,10000,0.8835282651072124,0.7619047619047619
+brca_crc,0.4,6,griffin_diff,Multi-Layer Perceptron,weighted,10000,0.9086549707602338,0.7619047619047619
+brca_crc,0.4,7,griffin_diff,Multi-Layer Perceptron,p_value,10000,0.9148148148148149,0.75
+brca_crc,0.4,8,griffin_diff,Multi-Layer Perceptron,fold_change,10000,0.9353703703703705,0.8333333333333334
+brca_crc,0.4,9,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.8794444444444444,0.7222222222222222
+brca_crc,0.4,10,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9238888888888889,1.0
+brca_crc,0.3,1,griffin_diff,K-Nearest Neighbors,mean_diff,15000,0.9290249433106577,0.6
+brca_crc,0.3,2,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9519274376417234,0.8
+brca_crc,0.3,3,griffin_diff,Multi-Layer Perceptron,fold_change,2500,0.9301587301587301,0.6
+brca_crc,0.3,4,griffin_diff,Multi-Layer Perceptron,mean_diff,10000,0.8615079365079366,0.4
+brca_crc,0.3,5,griffin_diff,Multi-Layer Perceptron,fold_change,15000,0.9115079365079365,1.0
+brca_crc,0.3,6,griffin_diff,Multi-Layer Perceptron,mean_diff,1000,0.9057539682539683,0.8
+brca_crc,0.3,7,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9027777777777777,0.9
+brca_crc,0.3,8,griffin_diff,K-Nearest Neighbors,p_value,1500,0.8538690476190477,0.8
+brca_crc,0.3,9,griffin_diff,K-Nearest Neighbors,weighted,5000,0.8988095238095238,0.9
+brca_crc,0.3,10,griffin_diff,Multi-Layer Perceptron,mean_diff,1500,0.8793650793650793,1.0
+brca_crc,0.2,1,rcov,XGBoost,mean_diff,500,0.862962962962963,0.0
+brca_crc,0.2,2,griffin_diff,K-Nearest Neighbors,p_value,10000,0.8903703703703704,1.0
+brca_crc,0.2,3,griffin_diff,Support Vector Machine,mean_diff,250,0.9592592592592593,0.0
+brca_crc,0.2,4,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.9833333333333334,1.0
+brca_crc,0.2,5,fslr_coverage,Multi-Layer Perceptron,mean_diff,10000,0.9283333333333333,0.5
+brca_crc,0.2,6,griffin_diff,Multi-Layer Perceptron,mean_diff,10000,0.9533333333333335,0.6666666666666667
+brca_crc,0.2,7,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9233333333333333,0.5
+brca_crc,0.2,8,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9466666666666667,1.0
+brca_crc,0.2,9,griffin_diff,Support Vector Machine,p_value,5000,0.9383333333333334,1.0
+brca_crc,0.2,10,fslr,Support Vector Machine,mean_diff,25,0.8733333333333334,1.0
+brca_crc,0.1,1,fslr,K-Nearest Neighbors,mean_diff,15000,0.9722222222222222,0.5
+brca_crc,0.1,2,griffin_diff,Random Forest,mean_diff,250,1.0,0.5
+brca_crc,0.1,3,griffin_diff,Multi-Layer Perceptron,mean_diff,5000,1.0,0.0
+brca_crc,0.1,4,fslr_coverage,XGBoost,mean_diff,10000,1.0,1.0
+brca_crc,0.1,5,fslr_coverage,Multi-Layer Perceptron,mean_diff,2500,1.0,1.0
+brca_crc,0.1,6,griffin_diff,Support Vector Machine,p_value,5000,1.0,1.0
+brca_crc,0.1,7,griffin_diff,Support Vector Machine,p_value,1000,1.0,1.0
+brca_crc,0.1,8,fslr_coverage,Multi-Layer Perceptron,weighted,1500,0.9666666666666667,1.0
+pancan,1.0,1,griffin_diff,Logistic Regression,mean_diff,15000,0.9625292740046838,0.9794117647058822
+pancan,1.0,2,griffin_diff,Logistic Regression,mean_diff,10000,0.9673246347719416,0.9735294117647059
+pancan,1.0,3,griffin_diff,Logistic Regression,mean_diff,15000,0.9507081521133044,0.9705882352941175
+pancan,1.0,4,griffin_diff,Logistic Regression,p_value,10000,0.9626407940225269,0.9382352941176471
+pancan,1.0,5,griffin_diff,Logistic Regression,mean_diff,10000,0.9636685996803092,0.9821428571428572
+pancan,1.0,6,griffin_diff,Logistic Regression,mean_diff,10000,0.974158841678748,0.9642857142857143
+pancan,1.0,7,griffin_diff,Logistic Regression,mean_diff,15000,0.9632417382253449,0.9523809523809523
+pancan,1.0,8,griffin_diff,Logistic Regression,mean_diff,15000,0.953667893386863,0.996875
+pancan,1.0,9,griffin_diff,Logistic Regression,p_value,10000,0.9602765696442511,0.96875
+pancan,1.0,10,griffin_diff,Logistic Regression,mean_diff,15000,0.9654377160700345,0.96875
+pancan,0.9,1,griffin_diff,Logistic Regression,mean_diff,15000,0.9635524719699804,0.9543859649122807
+pancan,0.9,2,griffin_diff,Logistic Regression,p_value,10000,0.9516804407713498,0.9962962962962963
+pancan,0.9,3,griffin_diff,Logistic Regression,mean_diff,15000,0.968389960208142,0.9814814814814815
+pancan,0.9,4,griffin_diff,Support Vector Machine,mean_diff,15000,0.9659595959595958,0.9296296296296297
+pancan,0.9,5,griffin_diff,Support Vector Machine,mean_diff,15000,0.9697275788184879,0.9851851851851853
+pancan,0.9,6,griffin_diff,Support Vector Machine,mean_diff,15000,0.9525068870523415,0.9888888888888889
+pancan,0.9,7,griffin_diff,Logistic Regression,mean_diff,10000,0.9535537190082645,0.9740740740740741
+pancan,0.9,8,griffin_diff,Logistic Regression,mean_diff,15000,0.9627272727272728,0.9740740740740741
+pancan,0.9,9,griffin_diff,Logistic Regression,fold_change,10000,0.9615263748597082,0.9473684210526315
+pancan,0.9,10,griffin_diff,Logistic Regression,p_value,10000,0.9619952612545205,0.9699248120300752
+pancan,0.8,1,griffin_diff,Logistic Regression,fold_change,10000,0.9604083086225943,0.9285714285714286
+pancan,0.8,2,griffin_diff,Logistic Regression,mean_diff,10000,0.9565635175010175,1.0
+pancan,0.8,3,griffin_diff,Logistic Regression,mean_diff,15000,0.9569514397639397,0.9276018099547512
+pancan,0.8,4,griffin_diff,Logistic Regression,mean_diff,10000,0.9479651796616082,1.0
+pancan,0.8,5,griffin_diff,Support Vector Machine,mean_diff,10000,0.9606428789464504,0.9711538461538461
+pancan,0.8,6,griffin_diff,Logistic Regression,mean_diff,10000,0.9550660648874935,0.9663461538461537
+pancan,0.8,7,griffin_diff,Logistic Regression,fold_change,10000,0.9719856532356532,0.9086538461538461
+pancan,0.8,8,griffin_diff,Logistic Regression,mean_diff,15000,0.9536624585731728,0.9567307692307693
+pancan,0.8,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9549243415314844,0.9423076923076923
+pancan,0.8,10,griffin_diff,Logistic Regression,mean_diff,10000,0.9517584597941742,0.9951923076923077
+pancan,0.7,1,griffin_diff,Support Vector Machine,mean_diff,15000,0.9518793563937202,0.9345238095238095
+pancan,0.7,2,griffin_diff,Logistic Regression,p_value,10000,0.9535404859618266,0.9761904761904763
+pancan,0.7,3,griffin_diff,Logistic Regression,mean_diff,15000,0.9558139534883722,0.9702380952380952
+pancan,0.7,4,griffin_diff,Logistic Regression,fold_change,10000,0.9570190867044491,0.9345238095238095
+pancan,0.7,5,griffin_diff,Logistic Regression,mean_diff,10000,0.9585629600677481,0.9583333333333334
+pancan,0.7,6,griffin_diff,Logistic Regression,mean_diff,10000,0.9543963321762815,0.9818181818181818
+pancan,0.7,7,griffin_diff,Logistic Regression,mean_diff,15000,0.9328943980693052,1.0
+pancan,0.7,8,griffin_diff,Logistic Regression,mean_diff,15000,0.9669405746794842,0.896969696969697
+pancan,0.7,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9570190867044492,0.9675324675324675
+pancan,0.7,10,griffin_diff,Logistic Regression,mean_diff,15000,0.9574490261220768,0.987012987012987
+pancan,0.6,1,griffin_diff,Logistic Regression,p_value,10000,0.9430214697456076,0.95
+pancan,0.6,2,griffin_diff,Logistic Regression,mean_diff,15000,0.9386239687963828,0.9833333333333334
+pancan,0.6,3,griffin_diff,Support Vector Machine,mean_diff,15000,0.9515783024403714,0.95
+pancan,0.6,4,griffin_diff,Logistic Regression,p_value,10000,0.9534727255991623,0.9500000000000001
+pancan,0.6,5,griffin_diff,Support Vector Machine,mean_diff,15000,0.9549382716049384,0.9916666666666667
+pancan,0.6,6,griffin_diff,Support Vector Machine,mean_diff,15000,0.9395611128369747,1.0
+pancan,0.6,7,griffin_diff,Logistic Regression,mean_diff,5000,0.9452239595917756,0.9833333333333334
+pancan,0.6,8,griffin_diff,Logistic Regression,mean_diff,10000,0.9637836111974044,0.9916666666666667
+pancan,0.6,9,griffin_diff,Logistic Regression,p_value,10000,0.975053214133674,0.8205128205128205
+pancan,0.6,10,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.9672255588922255,0.925925925925926
+pancan,0.5,1,griffin_diff,Logistic Regression,mean_diff,15000,0.9490716845878135,0.9666666666666667
+pancan,0.5,2,griffin_diff,Logistic Regression,fold_change,10000,0.9602903225806453,1.0
+pancan,0.5,3,griffin_diff,Logistic Regression,mean_diff,10000,0.9273620071684588,0.9318181818181819
+pancan,0.5,4,griffin_diff,Multi-Layer Perceptron,fold_change,15000,0.9518351254480287,0.9204545454545454
+pancan,0.5,5,griffin_diff,Logistic Regression,p_value,5000,0.9576236559139786,0.875
+pancan,0.5,6,griffin_diff,Logistic Regression,mean_diff,10000,0.9666559139784946,0.975
+pancan,0.5,7,griffin_diff,Multi-Layer Perceptron,p_value,10000,0.9429068100358423,0.9625
+pancan,0.5,8,griffin_diff,Support Vector Machine,mean_diff,10000,0.9439139784946237,0.9
+pancan,0.5,9,griffin_diff,Logistic Regression,mean_diff,10000,0.9444408602150537,0.95
+pancan,0.5,10,griffin_diff,Logistic Regression,mean_diff,5000,0.9624982078853046,0.9375
+pancan,0.4,1,griffin_diff,Logistic Regression,mean_diff,5000,0.9556520467836259,0.9285714285714286
+pancan,0.4,2,griffin_diff,Support Vector Machine,mean_diff,15000,0.9221505847953217,0.9464285714285714
+pancan,0.4,3,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.930545321637427,0.9107142857142857
+pancan,0.4,4,griffin_diff,Logistic Regression,mean_diff,10000,0.9193815789473684,0.9464285714285714
+pancan,0.4,5,griffin_diff,Logistic Regression,mean_diff,15000,0.9376725146198831,0.9464285714285714
+pancan,0.4,6,griffin_diff,Logistic Regression,p_value,10000,0.9237616959064328,0.9821428571428572
+pancan,0.4,7,griffin_diff,Logistic Regression,p_value,10000,0.9219444444444443,0.8518518518518519
+pancan,0.4,8,griffin_diff,Logistic Regression,fold_change,5000,0.9047222222222221,0.8703703703703703
+pancan,0.4,9,griffin_diff,Logistic Regression,mean_diff,15000,0.9242500000000001,0.9583333333333334
+pancan,0.4,10,griffin_diff,Support Vector Machine,p_value,10000,0.9288055555555556,0.8958333333333334
+pancan,0.3,1,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9413580246913581,0.9333333333333333
+pancan,0.3,2,griffin_diff,Support Vector Machine,mean_diff,15000,0.9356261022927689,0.9333333333333333
+pancan,0.3,3,griffin_diff,Logistic Regression,p_value,5000,0.9333333333333332,1.0
+pancan,0.3,4,griffin_diff,Multi-Layer Perceptron,mean_diff,15000,0.9267195767195767,0.7666666666666666
+pancan,0.3,5,griffin_diff,Support Vector Machine,mean_diff,15000,0.9451499118165785,0.8666666666666667
+pancan,0.3,6,griffin_diff,Support Vector Machine,weighted,10000,0.9695767195767196,0.9333333333333333
+pancan,0.3,7,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.9287477954144622,1.0
+pancan,0.3,8,griffin_diff,Support Vector Machine,p_value,10000,0.9239858906525574,1.0
+pancan,0.3,9,griffin_diff,Support Vector Machine,mean_diff,15000,0.9495590828924163,0.9
+pancan,0.3,10,griffin_diff,Multi-Layer Perceptron,weighted,15000,0.8950617283950617,1.0
+pancan,0.2,1,griffin_diff,Multi-Layer Perceptron,weighted,10000,0.9136039886039886,0.9375
+pancan,0.2,2,griffin_diff,Multi-Layer Perceptron,fold_change,2500,0.9524928774928775,0.8125
+pancan,0.2,3,griffin_diff,Support Vector Machine,fold_change,5000,0.9831196581196582,1.0
+pancan,0.2,4,griffin_diff,Multi-Layer Perceptron,p_value,15000,0.9666666666666668,0.7333333333333334
+pancan,0.2,5,griffin_diff,Multi-Layer Perceptron,weighted,5000,0.9121794871794874,0.9166666666666667
+pancan,0.2,6,griffin_diff,Multi-Layer Perceptron,fold_change,5000,0.9784188034188035,0.4166666666666667
+pancan,0.2,7,griffin_diff,Support Vector Machine,fold_change,10000,0.932051282051282,1.0
+pancan,0.2,8,griffin_diff,Support Vector Machine,fold_change,5000,0.9504273504273503,1.0
+pancan,0.2,9,griffin_diff,Multi-Layer Perceptron,fold_change,10000,0.9491452991452992,1.0
+pancan,0.2,10,griffin_diff,Support Vector Machine,weighted,10000,0.9675213675213676,1.0
+pancan,0.1,1,griffin_diff,Multi-Layer Perceptron,fold_change,10000,0.9666666666666667,1.0
+pancan,0.1,2,griffin_diff,Multi-Layer Perceptron,fold_change,5000,0.9555555555555556,1.0
+pancan,0.1,3,griffin_diff,Support Vector Machine,fold_change,5000,1.0,1.0
+pancan,0.1,4,griffin_diff,Multi-Layer Perceptron,mean_diff,5000,0.9055555555555556,1.0
+pancan,0.1,5,griffin_diff,Logistic Regression,fold_change,1500,1.0,0.75
+pancan,0.1,6,griffin_diff,Support Vector Machine,weighted,500,1.0,0.5
+pancan,0.1,7,griffin_diff,K-Nearest Neighbors,weighted,1500,0.9777777777777779,0.5
+pancan,0.1,8,griffin_diff,K-Nearest Neighbors,mean_diff,1000,0.9555555555555557,1.0
+pancan,0.1,9,griffin_diff,Multi-Layer Perceptron,fold_change,1500,0.9888888888888889,1.0
+pancan,0.1,10,griffin_diff,K-Nearest Neighbors,weighted,500,0.9777777777777779,1.0

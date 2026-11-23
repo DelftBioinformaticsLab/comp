@@ -1,0 +1,3 @@
+task,arm,reference,auc_fold_mean,auc_fold_sd,sensitivity_95spec_mean,aupr_fold_mean
+brca_crc,cov_techdemo5,bl_panel_techdemo5,0.8758042279411764,0.0791457997711273,0.5375,0.8302546138072453
+pancan,cov_techdemo5,bl_panel_techdemo5,0.8992086834733893,0.0389811203985558,0.64,0.9251097732759799

@@ -1,0 +1,13 @@
+step,n,note
+finaledb_export_rows,249,rows in accessory_files/jiang_metadata.csv (FinaleDB export)
+duplicate_export_rows,24,"byte-identical repeat rows for 20 IDs, dropped (drop_duplicates on ID)"
+unique_samples,225,one plasma sample per participant
+healthy,32,control_group = Healthy
+chronic_hepatitis_b,67,control_group = Chronic hepatitis B
+hbv_cirrhosis,36,control_group = HBV-associated cirrhosis
+non_hcc_total,135,class 0 of the HCC-vs-non-HCC task
+hcc,90,class 1
+features_available,225,extracted_features/biomart_10kb/<ID>.hg38.frag.tsv_BIN.csv present on this machine
+role_model,225,enter the modelling / external-application analyses
+excluded,0,none
+not_a_jiang_record,24,"accessions in input/jiang_bam.txt from the same EE-number range that are not in the FinaleDB Jiang export, have no fragment file and zero coverage; never analysed: EE85778 EE85782 EE85801 EE85803 EE85804 EE85819 EE85820 EE85824 EE85850 EE85852 EE85889 EE85894 EE85909 EE85910 EE85914 EE85929 EE85934 EE85954 EE85958 EE85976 EE85977 EE85979 EE85993 EE85995"

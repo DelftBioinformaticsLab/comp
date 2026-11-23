@@ -1,0 +1,5 @@
+method,feature,classifier,weighting_function,top_genes,source_dir,selection_mean_auc,note
+data_driven,griffin_diff,Support Vector Machine,fold_change,10000,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_ksweep/ksweep_tuned,0.9657169117647058,fully nested: config chosen per fold; modal shown (3 distinct)
+rna,rcov,XGBoost,,,nested_cv_results_cris/brca_crc_rna_rev_nodeep,0.6655330882352941,"fully nested: classifier chosen per fold on inner CV {'XGBoost': 6, 'Random Forest': 2, 'Multi-Layer Perceptron': 2}; modal shown (post-hoc best-of-6 Random Forest would give 0.7199)"
+atac,ulz_atac_tfbs_features,Logistic Regression,,,nested_cv_results_cris/brca_crc_atac_rev_nodeep,0.8905790441176471,"fully nested: classifier chosen per fold on inner CV {'Logistic Regression': 5, 'Support Vector Machine': 4, 'Multi-Layer Perceptron': 1}; modal shown (post-hoc best-of-6 Support Vector Machine would give 0.9321)"
+ichorcna,ichorcna_tf,,,,accessory_files/cris_stage_vaf_coverage_ichor_aggregate.csv,,

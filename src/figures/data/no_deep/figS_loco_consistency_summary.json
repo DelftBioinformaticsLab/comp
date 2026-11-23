@@ -1,0 +1,80 @@
+{
+ "n_splits": {
+  "cohen_d": 200,
+  "weight": 20
+ },
+ "seed": 20261103,
+ "n_per_type": {
+  "Bile duct cancer": 24,
+  "Breast cancer": 54,
+  "Colorectal cancer": 26,
+  "Gastric cancer": 27,
+  "Lung cancer naive nsclc": 10,
+  "Ovarian cancer": 28,
+  "Pancreatic cancer": 34
+ },
+ "n_healthy": 164,
+ "cohen_d": {
+  "within": {
+   "Bile duct cancer": 0.1036392665310722,
+   "Breast cancer": 0.3078562784976806,
+   "Colorectal cancer": 0.13298766438835277,
+   "Gastric cancer": 0.2513717463116717,
+   "Lung cancer naive nsclc": 0.14746721947625718,
+   "Ovarian cancer": 0.1312680700471573,
+   "Pancreatic cancer": 0.1983365391662658
+  },
+  "within_rest": {
+   "Bile duct cancer": 0.35199352478524193,
+   "Breast cancer": 0.28070862108766276,
+   "Colorectal cancer": 0.34960142131321875,
+   "Gastric cancer": 0.30845061675984026,
+   "Lung cancer naive nsclc": 0.3208203456149402,
+   "Ovarian cancer": 0.3478925028358196,
+   "Pancreatic cancer": 0.3584984585575969
+  },
+  "between_median": 0.08362666258171707,
+  "disattenuated_median": 0.47880365398894814,
+  "vs_rest_disattenuated": {
+   "Bile duct cancer": 0.6312895115828777,
+   "Breast cancer": 0.7880949312253027,
+   "Colorectal cancer": 0.5696386426702733,
+   "Gastric cancer": 0.7573697317116033,
+   "Lung cancer naive nsclc": 0.9173182760257594,
+   "Ovarian cancer": 0.6634631725720469,
+   "Pancreatic cancer": 0.37769848755991314
+  }
+ },
+ "weight": {
+  "within": {
+   "Bile duct cancer": 0.08808111227730478,
+   "Breast cancer": 0.25794182198032234,
+   "Colorectal cancer": 0.12228286830229558,
+   "Gastric cancer": 0.22142745836991345,
+   "Lung cancer naive nsclc": 0.12039693032368068,
+   "Ovarian cancer": 0.11768680029906409,
+   "Pancreatic cancer": 0.1770396368949916
+  },
+  "within_rest": {
+   "Bile duct cancer": 0.17489476335208884,
+   "Breast cancer": 0.19164083377845703,
+   "Colorectal cancer": 0.17701200426353295,
+   "Gastric cancer": 0.181203193780113,
+   "Lung cancer naive nsclc": 0.1735498916081472,
+   "Ovarian cancer": 0.17206740712735796,
+   "Pancreatic cancer": 0.20231364390169881
+  },
+  "between_median": 0.07576338887179487,
+  "disattenuated_median": 0.5413878997493706,
+  "vs_rest_disattenuated": {
+   "Bile duct cancer": 0.840772157553233,
+   "Breast cancer": 0.6958406629994737,
+   "Colorectal cancer": 0.7573305508336833,
+   "Gastric cancer": 0.6099462091259301,
+   "Lung cancer naive nsclc": 0.7444692856223124,
+   "Ovarian cancer": 0.8176980195664671,
+   "Pancreatic cancer": 0.3018984870795204
+  }
+ },
+ "minutes": 187.90275395313898
+}

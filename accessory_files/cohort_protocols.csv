@@ -1,0 +1,8 @@
+characteristic,cristiano,jiang,source
+Study,"Cristiano et al. 2019, Nature 570:385 (DELFI)","Jiang et al. 2015, PNAS 112:E1317",publications
+Data source,"FinaleDB, hg38 fragment files (EGA EGAS00001003611)","FinaleDB, hg38 fragment files",FinaleDB export metadata
+Comparison group,Healthy individuals,"135 non-HCC: 32 healthy, 67 chronic hepatitis B carriers, 36 HBV-associated cirrhosis",Jiang 2015 Table 1
+Blood collection and plasma processing,"EDTA tubes, processed within 1 day; 800 g 10 min at 4 °C, then 18,000 g at room temperature; plasma at −80 °C","EDTA tubes; 1,600 g 10 min at 4 °C, then 16,000 g 10 min at 4 °C; plasma at −80 °C","Methods of Cristiano 2019 (PMC6774252) and Jiang 2015 (PMC4372002), verified 6 Nov 2026"
+cfDNA extraction,Qiagen Circulating Nucleic Acids Kit,QIAamp DSP DNA Blood Mini Kit (3–4.8 mL plasma),"Methods of Cristiano 2019 (PMC6774252) and Jiang 2015 (PMC4372002), verified 6 Nov 2026"
+Library preparation,"NEBNext DNA Library Prep Kit for Illumina (modified), Phusion Hot Start amplification; PCR cycles not reported","KAPA Library Preparation Kit, 14 PCR cycles (KAPA HiFi HotStart ReadyMix)","Methods of Cristiano 2019 (PMC6774252) and Jiang 2015 (PMC4372002), verified 6 Nov 2026"
+Size selection,None reported (AMPure XP clean-up only),None reported,"Methods of Cristiano 2019 (PMC6774252) and Jiang 2015 (PMC4372002), verified 6 Nov 2026"

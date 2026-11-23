@@ -1,30 +1,34 @@
 #!/bin/sh
-#SBATCH --account=ewi-insy-prb
-#SBATCH --partition=insy,general # Request partition. Default is 'general'
 #SBATCH --job-name=cov
-#SBATCH --qos=medium         # Request Quality of Service. Default is 'short' (maximum run time: 4 hours)
 #SBATCH --time=12:38:00      # Request run time (wall-clock). Default is 1 minute
 #SBATCH --cpus-per-task=1   # Request number of CPUs (threads) per task. Default is 1 (note: CPUs are always allocated to jobs per 2).
-#SBATCH --mem=100GB         # Request memory (MB) per node. Default is 1024MB (1GB). For multiple tasks, specify --mem-per-cpu instead
+#SBATCH --mem=80GB         # Request memory (MB) per node. Default is 1024MB (1GB). For multiple tasks, specify --mem-per-cpu instead
 #SBATCH --mail-type=END     # Set mail type to 'END' to receive a mail when the job finishes.
 #SBATCH --output=logs/%j_all.out # Set name of output log. %j is the Slurm jobId
 #SBATCH --error=logs/%j_all.out # Set name of error log. %j is the Slurm jobId
-# /usr/bin/scontrol show job -d "$SLURM_JOB_ID"  # check sbatch directives are working
+. slurm/_site.sh   # site settings: slurm/site.env (scheduler, storage paths, container, Apptainer cache)
 
-
-# Build the command with optional job splitting parameters
-# CMD_ARGS="-I input/jiang_bam.txt --gc_file input/jiang_gc.txt -c 64 -F BIN -b beds/hypothesis/zhu_all_after_lift.bed"
-# CMD_ARGS="-I input/jiang_bam.txt --gc_file input/jiang_gc.txt -c 64 -F BIN -b beds/hypothesis/GTRD_1000sites_hg38_504 --aggregate"  # Add this if you want to aggregate coverage across loci (.npy)
-# CMD_ARGS="-I input/jiang_bam.txt --gc_file input/jiang_gc.txt -c 64 -F BIN -b beds/biomart_10kb.bed"  # Add this if you want to store coverage for each locus (.npy), but be cautious of large file sizes, especially with many loci!!!
- CMD_ARGS="-I deconvo_data/BH01.bam --gc -c 1 -F BIN -b beds/biomart_10kb.bed"  # Add this if you want to store coverage for each locus (.npy), but be cautious of large file sizes, especially with many loci!!!
-
-# Get job index and total jobs from command line arguments (default to single job)
-# only used when running multiple parallel jobs via slurm/submit_parallel_jobs.sh (to split TFBS workload)
-JOB_INDEX=${1:-""}
-TOTAL_JOBS=${2:-1}
-if [ -n "$JOB_INDEX" ]; then
-    CMD_ARGS="$CMD_ARGS --job_index $JOB_INDEX --total_jobs $TOTAL_JOBS"
+# ============================================================================
+# Feature extraction (features.py) in the container. All arguments are passed to
+# features.py. Submit from the repository root, for example:
+#   TSS windows (the data-driven model):
+#     sbatch slurm/extract_features.sh -I input/cris_bam.txt --gc_file input/cris_gc.txt -c 64 -F BIN -b beds/biomart_10kb.bed
+#   RNA-seq comparator (the 792 regions of Zhu et al. 2021):
+#     sbatch slurm/extract_features.sh -I input/cris_bam.txt --gc_file input/cris_gc.txt -c 64 -F BIN -b beds/hypothesis/zhu_all_after_lift.bed
+#   ATAC-seq comparator (coverage summed over the top 1,000 sites of each of 504 TFs):
+#     sbatch slurm/extract_features.sh -I input/cris_bam.txt --gc_file input/cris_gc.txt -c 64 -F BIN -b beds/hypothesis/GTRD_1000sites_hg38_504 --aggregate
+# For the Jiang cohort use input/jiang_bam.txt and input/jiang_gc.txt. Set the
+# resources on the command line (sbatch --cpus-per-task=64 --mem=...). As an array
+# job the bed files are split over the tasks (--job_index / --total_jobs):
+#     sbatch --array=0-7 slurm/extract_features.sh ... -b beds/hypothesis/GTRD_1000sites_hg38_504 --aggregate
+# Output: extracted_features/<bed name>/<ID>.hg38.frag.tsv_BIN.csv (one folder per bed).
+# ============================================================================
+[ $# -gt 0 ] || { echo "usage: sbatch slurm/extract_features.sh <features.py arguments>" >&2; exit 1; }
+CMD_ARGS="$*"
+if [ -n "${SLURM_ARRAY_TASK_ID}" ]; then
+	CMD_ARGS="${CMD_ARGS} --job_index ${SLURM_ARRAY_TASK_ID} --total_jobs ${SLURM_ARRAY_TASK_COUNT}"
 fi
+echo "features.py ${CMD_ARGS}"
 
 apptainer exec --writable-tmpfs --pwd /opt/app --containall \
 	--bind src/:/opt/app/src/ \
@@ -33,13 +37,9 @@ apptainer exec --writable-tmpfs --pwd /opt/app --containall \
 	--bind beds/:/opt/app/beds/ \
 	--bind accessory_files/:/opt/app/accessory_files/ \
 	--bind nested_cv_results/:/opt/app/nested_cv_results/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/fragdeconvo/data/:/opt/app/deconvo_data/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/cris/:/opt/app/cris/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/jiang/:/opt/app/jiang/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/lucas/:/opt/app/lucas/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/preprocessing/mathios/:/opt/app/mathios/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/GCfix_Software/:/opt/app/GC \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/TSSClassification/data/:/opt/app/data/ \
-	--bind /tudelft.net/staff-umbrella/KWFcfDNA/emc/GCfix_Software/hg38/:/opt/app/hg38 \
+	--bind ${PREPROCESSING_DIR}/cris/:/opt/app/cris/ \
+	--bind ${PREPROCESSING_DIR}/jiang/:/opt/app/jiang/ \
+	--bind ${GCFIX_DIR}/:/opt/app/GC \
+	--bind ${GCFIX_DIR}/hg38/:/opt/app/hg38 \
 	--bind extracted_features/:/opt/app/extracted_features/ \
-		./comp.sif pixi run python features.py $CMD_ARGS
+		${CONTAINER} pixi run python features.py $CMD_ARGS

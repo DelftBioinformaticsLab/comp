@@ -1,0 +1,21 @@
+task,method,TP,FN,TN,FP,sensitivity,sensitivity_lo,sensitivity_hi,specificity,specificity_lo,specificity_hi,specificity_fold_min,specificity_fold_max
+BRCA/CRC vs healthy,Data-driven,65,15,156,8,0.8125,0.7097,0.8911,0.9512,0.9061,0.9787,0.8750,1.0000
+BRCA/CRC vs healthy,ATAC,54,26,153,11,0.6750,0.5611,0.7755,0.9329,0.8832,0.9660,0.8750,1.0000
+BRCA/CRC vs healthy,RNA,11,69,148,16,0.1375,0.0707,0.2327,0.9024,0.8464,0.9432,0.6875,1.0000
+BRCA/CRC vs healthy,ichorCNA,24,56,158,6,0.3000,0.2026,0.4128,0.9634,0.9221,0.9865,0.8235,1.0000
+Pan-cancer vs healthy,Data-driven,165,38,160,4,0.8128,0.7522,0.8640,0.9756,0.9387,0.9933,0.9375,1.0000
+Pan-cancer vs healthy,ATAC,134,69,153,11,0.6601,0.5905,0.7249,0.9329,0.8832,0.9660,0.8235,1.0000
+Pan-cancer vs healthy,RNA,46,157,154,10,0.2266,0.1709,0.2904,0.9390,0.8907,0.9704,0.8235,1.0000
+Pan-cancer vs healthy,ichorCNA,60,143,157,7,0.2956,0.2337,0.3635,0.9573,0.9140,0.9827,0.8235,1.0000
+"Jiang, HCC vs non-HCC (threshold fixed on Cristiano)",Data-driven,39,51,120,15,0.4333,0.3292,0.5420,0.8889,0.8234,0.9365,,
+"Jiang, HCC vs non-HCC (threshold fixed on Cristiano)",RNA,21,69,113,22,0.2333,0.1506,0.3343,0.8370,0.7637,0.8950,,
+"Jiang, HCC vs non-HCC (threshold fixed on Cristiano)",ATAC,74,16,14,121,0.8222,0.7274,0.8948,0.1037,0.0579,0.1679,,
+"Jiang, HCC vs healthy (threshold fixed on Cristiano)",Data-driven,39,51,26,6,0.4333,0.3292,0.5420,0.8125,0.6356,0.9279,,
+"Jiang, HCC vs healthy (threshold fixed on Cristiano)",RNA,21,69,27,5,0.2333,0.1506,0.3343,0.8438,0.6721,0.9472,,
+"Jiang, HCC vs healthy (threshold fixed on Cristiano)",ATAC,74,16,6,26,0.8222,0.7274,0.8948,0.1875,0.0721,0.3644,,
+"Jiang, HCC vs chronic hepatitis B (threshold fixed on Cristiano)",Data-driven,39,51,61,6,0.4333,0.3292,0.5420,0.9104,0.8152,0.9664,,
+"Jiang, HCC vs chronic hepatitis B (threshold fixed on Cristiano)",RNA,21,69,57,10,0.2333,0.1506,0.3343,0.8507,0.7426,0.9260,,
+"Jiang, HCC vs chronic hepatitis B (threshold fixed on Cristiano)",ATAC,74,16,4,63,0.8222,0.7274,0.8948,0.0597,0.0165,0.1459,,
+"Jiang, HCC vs cirrhosis (threshold fixed on Cristiano)",Data-driven,39,51,33,3,0.4333,0.3292,0.5420,0.9167,0.7753,0.9825,,
+"Jiang, HCC vs cirrhosis (threshold fixed on Cristiano)",RNA,21,69,29,7,0.2333,0.1506,0.3343,0.8056,0.6398,0.9181,,
+"Jiang, HCC vs cirrhosis (threshold fixed on Cristiano)",ATAC,74,16,4,32,0.8222,0.7274,0.8948,0.1111,0.0311,0.2606,,

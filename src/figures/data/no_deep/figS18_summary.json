@@ -1,0 +1,635 @@
+{
+ "n_tss": 14221,
+ "cohort_variant": "no_deep",
+ "contrasts": {
+  "brca_crc": {
+   "label": "Healthy vs BRCA + CRC",
+   "n_cancer": 80
+  },
+  "pancan": {
+   "label": "Healthy vs PANCAN",
+   "n_cancer": 203
+  },
+  "type_breast": {
+   "label": "Healthy vs Breast cancer",
+   "n_cancer": 54
+  },
+  "type_pancreatic": {
+   "label": "Healthy vs Pancreatic cancer",
+   "n_cancer": 34
+  },
+  "type_ovarian": {
+   "label": "Healthy vs Ovarian cancer",
+   "n_cancer": 28
+  },
+  "type_gastric": {
+   "label": "Healthy vs Gastric cancer",
+   "n_cancer": 27
+  },
+  "type_colorectal": {
+   "label": "Healthy vs Colorectal cancer",
+   "n_cancer": 26
+  },
+  "type_bile_duct": {
+   "label": "Healthy vs Bile duct cancer",
+   "n_cancer": 24
+  },
+  "type_lung": {
+   "label": "Healthy vs Lung cancer naive nsclc",
+   "n_cancer": 10
+  }
+ },
+ "sets": {
+  "zhu_promoter": {
+   "set": "zhu_promoter",
+   "label": "Zhu promoter genes (RNA region set)",
+   "n_genes_in_bed": 265,
+   "n_in_tss_universe_19376": 258,
+   "n_removed_by_tss_filter": 54,
+   "n_mapped_to_14221": 204
+  },
+  "hk": {
+   "set": "hk",
+   "label": "housekeeping genes (Fig 1)",
+   "n_genes_in_bed": 2126,
+   "n_in_tss_universe_19376": 2126,
+   "n_removed_by_tss_filter": 703,
+   "n_mapped_to_14221": 1423
+  },
+  "pau": {
+   "set": "pau",
+   "label": "genes unexpressed in blood (Fig 1)",
+   "n_genes_in_bed": 751,
+   "n_in_tss_universe_19376": 751,
+   "n_removed_by_tss_filter": 222,
+   "n_mapped_to_14221": 529
+  }
+ },
+ "n_null": 1000,
+ "strata": "5 GC x 5 coverage quantile bins",
+ "axis_spearman": {
+  "brca_crc": {
+   "gc": 0.08376200031936089,
+   "log_coverage": 0.25647495991403063,
+   "dip_depth": -0.1454060634412791
+  },
+  "pancan": {
+   "gc": 0.11619838144406547,
+   "log_coverage": 0.28671938973873007,
+   "dip_depth": -0.22703635328377256
+  },
+  "type_breast": {
+   "gc": 0.09926486231251953,
+   "log_coverage": 0.33276298453271347,
+   "dip_depth": -0.20466551437054986
+  },
+  "type_pancreatic": {
+   "gc": 0.145336484458815,
+   "log_coverage": 0.22134907111657412,
+   "dip_depth": -0.3313389184586223
+  },
+  "type_ovarian": {
+   "gc": -0.007667980488930226,
+   "log_coverage": 0.0498353268085188,
+   "dip_depth": 0.06858719814924026
+  },
+  "type_gastric": {
+   "gc": 0.12405373699646757,
+   "log_coverage": 0.1910692945643694,
+   "dip_depth": -0.2321124672848592
+  },
+  "type_colorectal": {
+   "gc": 0.008081351231816004,
+   "log_coverage": -0.02535593349946265,
+   "dip_depth": 0.04353693947829313
+  },
+  "type_bile_duct": {
+   "gc": -0.0024783136995285815,
+   "log_coverage": 0.05079120477241892,
+   "dip_depth": 0.05588200991236597
+  },
+  "type_lung": {
+   "gc": 0.07150889643025907,
+   "log_coverage": 0.2940361317920793,
+   "dip_depth": -0.2636737311299471
+  }
+ },
+ "gsea_hallmark": {
+  "n_sets": 50,
+  "n_sets_usable": 50,
+  "n_tss_in_any_set": 3431
+ },
+ "gsea_c8_cell_type": {
+  "n_sets": 840,
+  "n_sets_usable": 738,
+  "n_tss_in_any_set": 12264
+ },
+ "neighbour_spearman": {
+  "brca_crc": {
+   "1": 0.04588409350546829,
+   "2": 0.04244613786899772,
+   "5": 0.012410867327809688,
+   "10": 0.012762148201838583,
+   "50": 0.0030972851704825434
+  },
+  "pancan": {
+   "1": 0.052628534401998536,
+   "2": 0.03266134292564683,
+   "5": 0.002361234756487985,
+   "10": 0.0032696793817627553,
+   "50": 0.004933144340908546
+  }
+ },
+ "matched_screen_counts": {
+  "brca_crc|c8_cell_type|gc_coverage": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 134,
+   "n_signed_q_0.25": 294,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 365,
+   "n_shift_q_0.25": 498
+  },
+  "brca_crc|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 5,
+   "n_signed_q_0.25": 10,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 16,
+   "n_shift_q_0.25": 32
+  },
+  "pancan|c8_cell_type|gc_coverage": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 157,
+   "n_signed_q_0.25": 368,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 385,
+   "n_shift_q_0.25": 525
+  },
+  "pancan|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 2,
+   "n_signed_q_0.25": 14,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 21,
+   "n_shift_q_0.25": 34
+  },
+  "type_bile_duct|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 3,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 0
+  },
+  "type_breast|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 11,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 24,
+   "n_shift_q_0.25": 31
+  },
+  "type_colorectal|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 1,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 1
+  },
+  "type_gastric|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 7,
+   "n_signed_q_0.25": 14,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 11,
+   "n_shift_q_0.25": 28
+  },
+  "type_lung|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 8,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 19,
+   "n_shift_q_0.25": 27
+  },
+  "type_ovarian|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 1,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 1
+  },
+  "type_pancreatic|hallmark|gc_coverage": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 1,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 8,
+   "n_shift_q_0.25": 24
+  },
+  "brca_crc|c8_cell_type|gc_coverage_dip": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 131,
+   "n_signed_q_0.25": 301,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 365,
+   "n_shift_q_0.25": 498
+  },
+  "brca_crc|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 5,
+   "n_signed_q_0.25": 8,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 16,
+   "n_shift_q_0.25": 32
+  },
+  "pancan|c8_cell_type|gc_coverage_dip": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 159,
+   "n_signed_q_0.25": 354,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 385,
+   "n_shift_q_0.25": 525
+  },
+  "pancan|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 14,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 21,
+   "n_shift_q_0.25": 34
+  },
+  "type_bile_duct|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 0,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 0
+  },
+  "type_breast|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 2,
+   "n_signed_q_0.25": 8,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 24,
+   "n_shift_q_0.25": 31
+  },
+  "type_colorectal|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 1,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 1
+  },
+  "type_gastric|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 4,
+   "n_signed_q_0.25": 14,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 11,
+   "n_shift_q_0.25": 28
+  },
+  "type_lung|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 2,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 19,
+   "n_shift_q_0.25": 27
+  },
+  "type_ovarian|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 1,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 0,
+   "n_shift_q_0.25": 1
+  },
+  "type_pancreatic|hallmark|gc_coverage_dip": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 2,
+   "n_abs_q_0.05": 0,
+   "n_shift_q_0.05": 8,
+   "n_shift_q_0.25": 24
+  }
+ },
+ "matched_screen_counts_residual_binned": {
+  "brca_crc|c8_cell_type": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 98,
+   "n_signed_q_0.25": 241,
+   "n_abs_q_0.05": 0
+  },
+  "brca_crc|hallmark": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 2,
+   "n_signed_q_0.25": 7,
+   "n_abs_q_0.05": 0
+  },
+  "pancan|c8_cell_type": {
+   "n_tested": 738,
+   "n_signed_q_0.05": 131,
+   "n_signed_q_0.25": 310,
+   "n_abs_q_0.05": 0
+  },
+  "pancan|hallmark": {
+   "n_tested": 50,
+   "n_signed_q_0.05": 0,
+   "n_signed_q_0.25": 10,
+   "n_abs_q_0.05": 0
+  }
+ },
+ "set_level_spearman": {
+  "brca_crc|c8_cell_type": {
+   "mean_d_vs_adjusted_t": 0.9746454636675633,
+   "mean_d_vs_log_coverage": 0.8352902428560312
+  },
+  "brca_crc|hallmark": {
+   "mean_d_vs_adjusted_t": 0.9845378151260503,
+   "mean_d_vs_log_coverage": 0.6960384153661464
+  },
+  "pancan|c8_cell_type": {
+   "mean_d_vs_adjusted_t": 0.987648834906983,
+   "mean_d_vs_log_coverage": 0.8589997842847427
+  },
+  "pancan|hallmark": {
+   "mean_d_vs_adjusted_t": 0.9860744297719087,
+   "mean_d_vs_log_coverage": 0.760672268907563
+  },
+  "type_bile_duct|hallmark": {
+   "mean_d_vs_adjusted_t": 0.3262905162064826,
+   "mean_d_vs_log_coverage": 0.188859543817527
+  },
+  "type_breast|hallmark": {
+   "mean_d_vs_adjusted_t": 0.9770468187274909,
+   "mean_d_vs_log_coverage": 0.7472268907563024
+  },
+  "type_colorectal|hallmark": {
+   "mean_d_vs_adjusted_t": 0.2975750300120048,
+   "mean_d_vs_log_coverage": 0.044801920768307316
+  },
+  "type_gastric|hallmark": {
+   "mean_d_vs_adjusted_t": 0.9097238895558223,
+   "mean_d_vs_log_coverage": 0.6745258103241296
+  },
+  "type_lung|hallmark": {
+   "mean_d_vs_adjusted_t": 0.8905162064825929,
+   "mean_d_vs_log_coverage": 0.7785354141656662
+  },
+  "type_ovarian|hallmark": {
+   "mean_d_vs_adjusted_t": 0.6808643457382952,
+   "mean_d_vs_log_coverage": 0.43020408163265306
+  },
+  "type_pancreatic|hallmark": {
+   "mean_d_vs_adjusted_t": 0.6844177671068427,
+   "mean_d_vs_log_coverage": 0.7208163265306122
+  }
+ },
+ "gsea_counts": {
+  "brca_crc|c8_cell_type|cohen_d": {
+   "n_tested": 738,
+   "n_fdr_0.05": 283,
+   "n_fdr_0.25": 461
+  },
+  "brca_crc|c8_cell_type|cohen_d_residual": {
+   "n_tested": 738,
+   "n_fdr_0.05": 157,
+   "n_fdr_0.25": 322
+  },
+  "brca_crc|c8_cell_type|cohen_d_residual_binned": {
+   "n_tested": 738,
+   "n_fdr_0.05": 78,
+   "n_fdr_0.25": 225
+  },
+  "brca_crc|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 12,
+   "n_fdr_0.25": 29
+  },
+  "brca_crc|hallmark|cohen_d_residual": {
+   "n_tested": 50,
+   "n_fdr_0.05": 5,
+   "n_fdr_0.25": 19
+  },
+  "brca_crc|hallmark|cohen_d_residual_binned": {
+   "n_tested": 50,
+   "n_fdr_0.05": 0,
+   "n_fdr_0.25": 7
+  },
+  "brca_crc|hallmark|weight_mean": {
+   "n_tested": 50,
+   "n_fdr_0.05": 1,
+   "n_fdr_0.25": 1
+  },
+  "brca_crc|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 12,
+   "n_fdr_0.25": 13
+  },
+  "brca_crc|hpa|cohen_d_residual_binned": {
+   "n_tested": 15,
+   "n_fdr_0.05": 9,
+   "n_fdr_0.25": 13
+  },
+  "brca_crc|prespecified|abs_mean_diff": {
+   "n_tested": 3,
+   "n_fdr_0.05": 0,
+   "n_fdr_0.25": 0
+  },
+  "brca_crc|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "brca_crc|prespecified|cohen_d_residual_binned": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 3
+  },
+  "healthy|c8_cell_type|healthy_mean_gd": {
+   "n_tested": 738,
+   "n_fdr_0.05": 353,
+   "n_fdr_0.25": 474
+  },
+  "healthy|hallmark|healthy_mean_gd": {
+   "n_tested": 50,
+   "n_fdr_0.05": 29,
+   "n_fdr_0.25": 37
+  },
+  "healthy|hpa|healthy_mean_gd": {
+   "n_tested": 15,
+   "n_fdr_0.05": 13,
+   "n_fdr_0.25": 14
+  },
+  "pancan|c8_cell_type|cohen_d": {
+   "n_tested": 738,
+   "n_fdr_0.05": 340,
+   "n_fdr_0.25": 503
+  },
+  "pancan|c8_cell_type|cohen_d_residual": {
+   "n_tested": 738,
+   "n_fdr_0.05": 181,
+   "n_fdr_0.25": 366
+  },
+  "pancan|c8_cell_type|cohen_d_residual_binned": {
+   "n_tested": 738,
+   "n_fdr_0.05": 86,
+   "n_fdr_0.25": 288
+  },
+  "pancan|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 18,
+   "n_fdr_0.25": 25
+  },
+  "pancan|hallmark|cohen_d_residual": {
+   "n_tested": 50,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 14
+  },
+  "pancan|hallmark|cohen_d_residual_binned": {
+   "n_tested": 50,
+   "n_fdr_0.05": 0,
+   "n_fdr_0.25": 4
+  },
+  "pancan|hallmark|weight_mean": {
+   "n_tested": 50,
+   "n_fdr_0.05": 0,
+   "n_fdr_0.25": 0
+  },
+  "pancan|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 13,
+   "n_fdr_0.25": 13
+  },
+  "pancan|hpa|cohen_d_residual_binned": {
+   "n_tested": 15,
+   "n_fdr_0.05": 7,
+   "n_fdr_0.25": 14
+  },
+  "pancan|prespecified|abs_mean_diff": {
+   "n_tested": 3,
+   "n_fdr_0.05": 0,
+   "n_fdr_0.25": 0
+  },
+  "pancan|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "pancan|prespecified|cohen_d_residual_binned": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "type_bile_duct|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 1,
+   "n_fdr_0.25": 4
+  },
+  "type_bile_duct|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 4,
+   "n_fdr_0.25": 6
+  },
+  "type_bile_duct|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "type_breast|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 19,
+   "n_fdr_0.25": 29
+  },
+  "type_breast|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 11,
+   "n_fdr_0.25": 12
+  },
+  "type_breast|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 3,
+   "n_fdr_0.25": 3
+  },
+  "type_colorectal|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 1,
+   "n_fdr_0.25": 1
+  },
+  "type_colorectal|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 5,
+   "n_fdr_0.25": 9
+  },
+  "type_colorectal|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "type_gastric|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 14,
+   "n_fdr_0.25": 24
+  },
+  "type_gastric|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 13,
+   "n_fdr_0.25": 14
+  },
+  "type_gastric|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "type_lung|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 12,
+   "n_fdr_0.25": 25
+  },
+  "type_lung|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 11,
+   "n_fdr_0.25": 12
+  },
+  "type_lung|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 2
+  },
+  "type_ovarian|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 1,
+   "n_fdr_0.25": 4
+  },
+  "type_ovarian|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 4,
+   "n_fdr_0.25": 9
+  },
+  "type_ovarian|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 2,
+   "n_fdr_0.25": 3
+  },
+  "type_pancreatic|hallmark|cohen_d": {
+   "n_tested": 50,
+   "n_fdr_0.05": 7,
+   "n_fdr_0.25": 19
+  },
+  "type_pancreatic|hpa|cohen_d": {
+   "n_tested": 15,
+   "n_fdr_0.05": 8,
+   "n_fdr_0.25": 9
+  },
+  "type_pancreatic|prespecified|cohen_d": {
+   "n_tested": 3,
+   "n_fdr_0.05": 3,
+   "n_fdr_0.25": 3
+  }
+ }
+}

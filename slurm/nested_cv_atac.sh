@@ -1,10 +1,7 @@
 #!/bin/sh
-#SBATCH --account=ewi-insy-prb
-#SBATCH --partition=insy,general
-#SBATCH --qos=medium
 #SBATCH --time=11:59:00
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=50GB
+#SBATCH --mem=40GB
 #SBATCH --mail-type=END
 #SBATCH --job-name=nested_cv_atac
 #SBATCH --output=logs/%j_nested_cv_atac.out
@@ -12,7 +9,6 @@
 
 # ============================================================================
 # Nested CV — ATAC baseline (predefined Ulz TFBS feature matrix)
-# (replaces run_model.sh MODE 5)
 # ============================================================================
 # Verified against archived logs (logs/slurm_archive):
 #   Mode Arguments: --run_nested_cv --predefined_feature_matrix extracted_features/ulz_atac_tfbs_features.npy --predefined_metadata_csv extracted_features/ulz_atac_tfbs_features.metadata.csv
@@ -36,13 +32,23 @@ PREDEFINED_MATRIX="extracted_features/ulz_atac_tfbs_features.npy"
 PREDEFINED_META="extracted_features/ulz_atac_tfbs_features.metadata.csv"
 MODE_ARGS="--run_nested_cv --predefined_feature_matrix ${PREDEFINED_MATRIX} --predefined_metadata_csv ${PREDEFINED_META}"
 
+# NOTE: model_hpc.py auto-switches to ulz_atac_tfbs_features_pancan.npy when that file
+# exists (predefined-matrix path, ~line 7582). Keep the _pancan/_brca_crc copies in
+# sync with the base matrix, or delete them — a stale copy silently changes the cohort.
+
+# For the Cristiano cohort the audited manifest (role-based selection, exact-ID
+# feature matching) is the single source of truth; other cohorts keep their
+# plain metadata CSVs. Override with METADATA_FILE=... for special cases.
+DEFAULT_METADATA="accessory_files/${DATASET}_metadata.csv"
+[ "${DATASET}" = "cris" ] && DEFAULT_METADATA="accessory_files/cris_manifest.csv"
+
 . slurm/_model_hpc_exec.sh
 print_job_header
 
 set -- \
 	-c 64 -t ${CANCER_TYPES:-PANCAN} \
 	${MODE_ARGS} \
-	--metadata_file accessory_files/${DATASET}_metadata.csv \
+	--metadata_file ${METADATA_FILE:-${DEFAULT_METADATA}} \
 	-e "${EXPERIMENT_NAME}" \
 	-o ${OUTPUT_DIR:-nested_cv_results_${DATASET}} \
 	-s ${STRATEGY:-mean_diff}

@@ -1,0 +1,4 @@
+set,label,n_genes_in_bed,n_in_tss_universe_19376,n_removed_by_tss_filter,n_mapped_to_14221
+zhu_promoter,Zhu promoter genes (RNA region set),265,258,54,204
+hk,housekeeping genes (Fig 1),2126,2126,703,1423
+pau,genes unexpressed in blood (Fig 1),751,751,222,529

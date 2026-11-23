@@ -1,0 +1,10 @@
+cris/EE87865.hg38.frag.tsv.bam
+cris/EE87934.hg38.frag.tsv.bam
+cris/EE88002.hg38.frag.tsv.bam
+cris/EE88060.hg38.frag.tsv.bam
+cris/EE88065.hg38.frag.tsv.bam
+cris/EE88137.hg38.frag.tsv.bam
+cris/EE88160.hg38.frag.tsv.bam
+cris/EE88165.hg38.frag.tsv.bam
+cris/EE88192.hg38.frag.tsv.bam
+cris/EE88258.hg38.frag.tsv.bam

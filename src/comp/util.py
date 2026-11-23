@@ -1,3 +1,4 @@
+import hashlib
 import os
 from glob import glob
 from scipy.signal import savgol_filter
@@ -10,6 +11,17 @@ from tqdm import tqdm
 def get_filtered_alignments(bam, args, chrom=None, start=None, end=None):
     """
     Fetch alignments from a BAM file with optional filtering by chromosome and position.
+
+    If args.downsample_frac is set (see features.py --downsample_frac / --target_coverage),
+    only that fraction of fragments is returned: a fragment is kept iff the MD5 hash of
+    its seed-salted read name falls in the lowest downsample_frac slice of the hash space
+    (the samtools view -s approach). Keying on the read name makes the decision identical
+    for both mates and for repeat encounters of the same fragment in overlapping loci, and
+    reproducible across processes (unlike Python's builtin hash()). MD5 rather than CRC32
+    because CRC32 is GF(2)-affine in its seed: two seeds would select near-identical or
+    near-disjoint fragment sets instead of independent draws, which would invalidate
+    replicate downsampling runs. With a fixed seed, thresholds nest: the fragments kept
+    at 0.05 are a subset of those kept at 0.5, so depths are coupled samples.
     """
 
     # From GCparagon:
@@ -24,10 +36,16 @@ def get_filtered_alignments(bam, args, chrom=None, start=None, end=None):
     exclude_flags = np.uint32(3852)  # = 256 + 2048 + 512 + 1024 + 4 + 8
     exclude_flags_binary = bin(exclude_flags)
 
+    # In-code downsampling: keep a fragment iff md5(seed + ":" + query_name) < downsample_frac * 2**64
+    downsample_frac = getattr(args, "downsample_frac", None)
+    downsample_seed = getattr(args, "downsample_seed", 42)
+    keep_threshold = int(downsample_frac * 2**64) if downsample_frac is not None and downsample_frac < 1.0 else None
+    seed_salt = f"{downsample_seed}:".encode()
+
     # Fetch reads overlapping the region, or genome-wide if no region is specified
     try:
         filtered_alignments = filter(
-            lambda a: a.is_paired and bin(~np.uint32(a.flag) & exclude_flags) == exclude_flags_binary and a.mapping_quality >= 5 and (args.min_frag_len <= abs(a.template_length) <= args.max_frag_len) and not a.is_unmapped,
+            lambda a: (keep_threshold is None or int.from_bytes(hashlib.md5(seed_salt + a.query_name.encode()).digest()[:8], "big") < keep_threshold) and a.is_paired and bin(~np.uint32(a.flag) & exclude_flags) == exclude_flags_binary and a.mapping_quality >= 5 and (args.min_frag_len <= abs(a.template_length) <= args.max_frag_len) and not a.is_unmapped,
             bam.fetch(
                 contig=chrom if chrom is not None else None,
                 start=start if start is not None else None,

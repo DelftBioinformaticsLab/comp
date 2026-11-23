@@ -1,0 +1,448 @@
+sample_id,group,disease,mean_coverage
+EE87786,cohort,Bile duct cancer,2.538415
+EE87787,cohort,Bile duct cancer,2.45739
+EE87788,cohort,Bile duct cancer,2.578137
+EE87789,cohort,Bile duct cancer,2.260566
+EE87790,cohort,Bile duct cancer,3.158819
+EE87791,cohort,Bile duct cancer,2.465281
+EE87792,cohort,Bile duct cancer,2.634133
+EE87793,cohort,Bile duct cancer,2.332184
+EE87794,cohort,Bile duct cancer,2.254877
+EE87795,cohort,Bile duct cancer,1.763986
+EE87796,cohort,Bile duct cancer,2.084949
+EE87797,cohort,Bile duct cancer,1.533391
+EE87798,cohort,Bile duct cancer,2.410996
+EE87799,cohort,Bile duct cancer,2.08635
+EE87800,cohort,Bile duct cancer,2.435544
+EE87801,cohort,Bile duct cancer,2.210601
+EE87802,cohort,Bile duct cancer,2.407421
+EE87803,cohort,Bile duct cancer,2.576277
+EE87804,cohort,Bile duct cancer,4.63607
+EE87805,cohort,Bile duct cancer,4.309792
+EE87806,cohort,Bile duct cancer,2.763478
+EE87807,cohort,Bile duct cancer,2.385767
+EE87809,cohort,Bile duct cancer,2.621243
+EE87810,cohort,Bile duct cancer,2.574725
+EE87811,cohort,Breast cancer,2.395142
+EE87812,cohort,Breast cancer,2.805973
+EE87813,cohort,Breast cancer,2.410738
+EE87814,cohort,Breast cancer,2.809803
+EE87815,cohort,Breast cancer,2.714078
+EE87816,cohort,Breast cancer,2.027222
+EE87817,cohort,Breast cancer,3.005737
+EE87818,cohort,Breast cancer,2.606745
+EE87819,cohort,Breast cancer,2.796072
+EE87820,cohort,Breast cancer,2.279366
+EE87821,cohort,Breast cancer,2.460713
+EE87822,cohort,Breast cancer,3.609438
+EE87823,cohort,Breast cancer,2.474533
+EE87824,cohort,Breast cancer,2.944983
+EE87825,cohort,Breast cancer,3.14752
+EE87826,cohort,Breast cancer,2.612359
+EE87827,cohort,Breast cancer,2.593306
+EE87828,cohort,Breast cancer,2.935006
+EE87829,cohort,Breast cancer,2.866699
+EE87830,cohort,Breast cancer,2.949399
+EE87831,cohort,Breast cancer,3.181187
+EE87832,cohort,Breast cancer,2.534978
+EE87833,cohort,Breast cancer,2.008119
+EE87834,cohort,Breast cancer,2.254443
+EE87835,cohort,Breast cancer,1.889411
+EE87836,cohort,Breast cancer,1.9565
+EE87837,cohort,Breast cancer,3.225105
+EE87838,cohort,Breast cancer,2.178069
+EE87839,cohort,Breast cancer,2.614622
+EE87840,cohort,Breast cancer,2.717643
+EE87841,cohort,Breast cancer,3.504274
+EE87842,cohort,Breast cancer,2.817588
+EE87843,cohort,Breast cancer,2.138024
+EE87844,cohort,Breast cancer,1.826213
+EE87845,cohort,Breast cancer,2.697189
+EE87846,cohort,Breast cancer,2.545365
+EE87847,cohort,Breast cancer,2.04012
+EE87848,cohort,Breast cancer,2.910027
+EE87849,cohort,Breast cancer,2.900292
+EE87850,cohort,Breast cancer,2.533472
+EE87851,cohort,Breast cancer,2.941123
+EE87852,cohort,Breast cancer,5.248124
+EE87853,cohort,Breast cancer,2.97552
+EE87854,cohort,Breast cancer,2.879691
+EE87855,cohort,Breast cancer,1.387225
+EE87856,cohort,Breast cancer,3.014278
+EE87857,cohort,Breast cancer,2.501353
+EE87858,cohort,Breast cancer,1.72274
+EE87859,cohort,Breast cancer,2.274211
+EE87860,cohort,Breast cancer,2.326678
+EE87861,cohort,Breast cancer,1.854147
+EE87862,cohort,Breast cancer,3.188613
+EE87863,cohort,Breast cancer,2.836039
+EE87864,cohort,Breast cancer,1.653613
+EE87865,cohort,Colorectal cancer,1.906988
+EE87866,cohort,Colorectal cancer,1.769139
+EE87867,cohort,Colorectal cancer,2.34813
+EE87868,cohort,Colorectal cancer,2.142307
+EE87869,cohort,Colorectal cancer,2.854207
+EE87870,cohort,Colorectal cancer,3.141828
+EE87871,cohort,Colorectal cancer,2.763405
+EE87872,cohort,Colorectal cancer,2.01094
+EE87873,cohort,Colorectal cancer,3.416291
+EE87875,cohort,Colorectal cancer,2.050742
+EE87876,cohort,Colorectal cancer,2.368183
+EE87877,cohort,Colorectal cancer,2.272012
+EE87878,cohort,Colorectal cancer,2.494076
+EE87879,cohort,Colorectal cancer,1.955141
+EE87880,cohort,Colorectal cancer,1.387877
+EE87881,cohort,Colorectal cancer,1.791351
+EE87882,cohort,Colorectal cancer,1.655579
+EE87883,cohort,Colorectal cancer,1.796122
+EE87884,cohort,Colorectal cancer,3.100103
+EE87885,cohort,Colorectal cancer,1.627145
+EE87886,cohort,Colorectal cancer,2.322379
+EE87887,cohort,Colorectal cancer,2.910915
+EE87888,cohort,Colorectal cancer,2.962795
+EE87889,cohort,Colorectal cancer,3.85394
+EE87890,cohort,Colorectal cancer,3.097763
+EE87891,cohort,Colorectal cancer,3.275712
+EE87893,cohort,Gastric cancer,1.912568
+EE87894,cohort,Gastric cancer,2.591321
+EE87895,cohort,Gastric cancer,2.626639
+EE87896,cohort,Gastric cancer,1.987412
+EE87897,cohort,Gastric cancer,2.663939
+EE87898,cohort,Gastric cancer,1.614398
+EE87899,cohort,Gastric cancer,2.463841
+EE87900,cohort,Gastric cancer,3.856361
+EE87901,cohort,Gastric cancer,2.172171
+EE87902,cohort,Gastric cancer,2.027159
+EE87903,cohort,Gastric cancer,2.492562
+EE87904,cohort,Gastric cancer,2.744893
+EE87905,cohort,Gastric cancer,2.425943
+EE87906,cohort,Gastric cancer,2.375903
+EE87907,cohort,Gastric cancer,2.654611
+EE87908,cohort,Gastric cancer,2.402948
+EE87909,cohort,Gastric cancer,3.098754
+EE87910,cohort,Gastric cancer,2.757841
+EE87911,cohort,Gastric cancer,2.362157
+EE87912,cohort,Gastric cancer,2.571709
+EE87913,cohort,Gastric cancer,2.663796
+EE87914,cohort,Gastric cancer,2.483622
+EE87915,cohort,Gastric cancer,2.566661
+EE87916,cohort,Gastric cancer,2.470431
+EE87917,cohort,Gastric cancer,2.206076
+EE87918,cohort,Gastric cancer,3.011079
+EE87919,cohort,Gastric cancer,2.450249
+EE87922,panel_of_normals,Healthy,3.18638
+EE87923,panel_of_normals,Healthy,3.142121
+EE87924,panel_of_normals,Healthy,3.386036
+EE87925,panel_of_normals,Healthy,2.835494
+EE87926,panel_of_normals,Healthy,3.023425
+EE87927,panel_of_normals,Healthy,3.586632
+EE87928,panel_of_normals,Healthy,3.337362
+EE87929,panel_of_normals,Healthy,3.723977
+EE87931,panel_of_normals,Healthy,3.905383
+EE87932,panel_of_normals,Healthy,1.778534
+EE87933,panel_of_normals,Healthy,3.07653
+EE87934,panel_of_normals,Healthy,3.779381
+EE87935,panel_of_normals,Healthy,2.856465
+EE87936,panel_of_normals,Healthy,3.53435
+EE87937,panel_of_normals,Healthy,3.557985
+EE87938,panel_of_normals,Healthy,2.845471
+EE87939,panel_of_normals,Healthy,3.790539
+EE87940,panel_of_normals,Healthy,1.930055
+EE87941,panel_of_normals,Healthy,1.888202
+EE87942,panel_of_normals,Healthy,2.287446
+EE87943,panel_of_normals,Healthy,3.129819
+EE87944,panel_of_normals,Healthy,3.142019
+EE87945,panel_of_normals,Healthy,2.798456
+EE87946,panel_of_normals,Healthy,2.864615
+EE87948,panel_of_normals,Healthy,2.652184
+EE87949,panel_of_normals,Healthy,2.823604
+EE87950,panel_of_normals,Healthy,2.266319
+EE87951,panel_of_normals,Healthy,2.364924
+EE87952,panel_of_normals,Healthy,2.433571
+EE87953,panel_of_normals,Healthy,2.716012
+EE87954,panel_of_normals,Healthy,1.903307
+EE87955,panel_of_normals,Healthy,2.130305
+EE87956,panel_of_normals,Healthy,2.610472
+EE87957,panel_of_normals,Healthy,2.224481
+EE87958,panel_of_normals,Healthy,1.939856
+EE87960,panel_of_normals,Healthy,2.29931
+EE87961,panel_of_normals,Healthy,2.966716
+EE87962,panel_of_normals,Healthy,2.303661
+EE87964,panel_of_normals,Healthy,2.146039
+EE87965,panel_of_normals,Healthy,2.517509
+EE87966,panel_of_normals,Healthy,2.265964
+EE87967,panel_of_normals,Healthy,2.097858
+EE87968,panel_of_normals,Healthy,2.552636
+EE87969,panel_of_normals,Healthy,2.425516
+EE87970,panel_of_normals,Healthy,2.225303
+EE87971,panel_of_normals,Healthy,2.206156
+EE87972,panel_of_normals,Healthy,2.418552
+EE87973,panel_of_normals,Healthy,1.826804
+EE87974,panel_of_normals,Healthy,2.05612
+EE87975,panel_of_normals,Healthy,2.013161
+EE87976,cohort,Healthy,2.077762
+EE87977,deep_excluded,Healthy,13.457563
+EE87978,cohort,Healthy,2.553819
+EE87979,cohort,Healthy,3.665375
+EE87980,cohort,Healthy,2.025555
+EE87981,cohort,Healthy,2.23702
+EE87982,cohort,Healthy,2.069813
+EE87983,cohort,Healthy,2.366012
+EE87984,cohort,Healthy,2.420102
+EE87985,cohort,Healthy,3.29482
+EE87986,cohort,Healthy,3.533445
+EE87987,deep_excluded,Healthy,10.623124
+EE87988,cohort,Healthy,2.038374
+EE87989,cohort,Healthy,2.062815
+EE87990,cohort,Healthy,3.202679
+EE87991,cohort,Healthy,1.691446
+EE87992,cohort,Healthy,3.070903
+EE87993,cohort,Healthy,1.660148
+EE87994,cohort,Healthy,1.95647
+EE87995,cohort,Healthy,1.965659
+EE87996,cohort,Healthy,2.078263
+EE87997,cohort,Healthy,3.035122
+EE87999,deep_excluded,Healthy,12.995633
+EE88000,cohort,Healthy,2.586262
+EE88001,cohort,Healthy,2.231535
+EE88002,cohort,Healthy,3.679926
+EE88003,cohort,Healthy,4.603966
+EE88004,cohort,Healthy,5.21446
+EE88005,cohort,Healthy,3.593609
+EE88006,cohort,Healthy,2.279816
+EE88007,cohort,Healthy,2.679963
+EE88008,cohort,Healthy,2.044079
+EE88010,cohort,Healthy,1.847748
+EE88011,cohort,Healthy,2.323639
+EE88012,cohort,Healthy,1.995508
+EE88013,cohort,Healthy,2.088364
+EE88014,cohort,Healthy,1.960833
+EE88016,cohort,Healthy,2.01231
+EE88017,cohort,Healthy,2.467248
+EE88018,cohort,Healthy,2.374667
+EE88019,cohort,Healthy,2.096149
+EE88021,cohort,Healthy,2.108971
+EE88022,cohort,Healthy,3.571122
+EE88023,cohort,Healthy,2.37341
+EE88024,cohort,Healthy,2.614886
+EE88026,cohort,Healthy,2.554303
+EE88028,cohort,Healthy,1.296498
+EE88029,cohort,Healthy,1.520645
+EE88030,cohort,Healthy,1.75582
+EE88031,cohort,Healthy,1.852443
+EE88032,cohort,Healthy,1.444607
+EE88033,cohort,Healthy,1.765397
+EE88034,cohort,Healthy,2.177537
+EE88035,cohort,Healthy,1.868889
+EE88036,cohort,Healthy,2.026912
+EE88037,cohort,Healthy,1.566922
+EE88038,cohort,Healthy,2.121399
+EE88039,cohort,Healthy,2.067662
+EE88040,cohort,Healthy,1.992082
+EE88041,cohort,Healthy,1.767345
+EE88042,cohort,Healthy,1.998379
+EE88043,cohort,Healthy,1.851781
+EE88044,cohort,Healthy,2.197466
+EE88045,cohort,Healthy,2.158776
+EE88046,deep_excluded,Healthy,10.566766
+EE88047,cohort,Healthy,1.958092
+EE88048,cohort,Healthy,2.565277
+EE88049,cohort,Healthy,2.546852
+EE88050,cohort,Healthy,2.804803
+EE88051,cohort,Healthy,3.935969
+EE88052,cohort,Healthy,2.152447
+EE88053,cohort,Healthy,2.337015
+EE88054,cohort,Healthy,2.3826
+EE88055,cohort,Healthy,2.316476
+EE88056,deep_excluded,Healthy,10.344182
+EE88057,cohort,Healthy,2.917639
+EE88058,cohort,Healthy,2.128911
+EE88059,cohort,Healthy,2.108574
+EE88060,cohort,Healthy,2.903366
+EE88061,cohort,Healthy,2.393783
+EE88062,cohort,Healthy,2.235019
+EE88063,cohort,Healthy,2.885695
+EE88064,cohort,Healthy,2.684392
+EE88065,cohort,Healthy,2.32177
+EE88066,cohort,Healthy,2.501118
+EE88067,cohort,Healthy,2.932472
+EE88068,cohort,Healthy,2.803337
+EE88069,cohort,Healthy,2.707097
+EE88070,cohort,Healthy,2.463523
+EE88071,cohort,Healthy,2.223111
+EE88072,cohort,Healthy,2.198515
+EE88073,cohort,Healthy,2.171568
+EE88074,cohort,Healthy,2.378119
+EE88075,cohort,Healthy,2.345879
+EE88076,deep_excluded,Healthy,10.307444
+EE88077,cohort,Healthy,2.306358
+EE88078,cohort,Healthy,2.213088
+EE88079,cohort,Healthy,1.754885
+EE88080,cohort,Healthy,2.656984
+EE88081,cohort,Healthy,1.946732
+EE88083,cohort,Healthy,2.321802
+EE88084,cohort,Healthy,2.362883
+EE88085,cohort,Healthy,1.875171
+EE88086,cohort,Healthy,2.339321
+EE88087,deep_excluded,Healthy,9.517579
+EE88088,cohort,Healthy,1.912439
+EE88089,cohort,Healthy,2.339527
+EE88090,cohort,Healthy,1.788417
+EE88091,cohort,Healthy,2.088524
+EE88092,cohort,Healthy,2.479793
+EE88094,cohort,Healthy,1.956016
+EE88095,cohort,Healthy,2.626893
+EE88096,cohort,Healthy,1.945321
+EE88097,deep_excluded,Healthy,10.204727
+EE88098,cohort,Healthy,2.231458
+EE88099,cohort,Healthy,2.607326
+EE88100,cohort,Healthy,2.298851
+EE88101,cohort,Healthy,2.255943
+EE88102,cohort,Healthy,2.524259
+EE88103,cohort,Healthy,2.256322
+EE88104,cohort,Healthy,2.181097
+EE88105,cohort,Healthy,2.32384
+EE88106,cohort,Healthy,2.297377
+EE88107,cohort,Healthy,2.248855
+EE88108,deep_excluded,Healthy,11.881884
+EE88109,cohort,Healthy,2.143991
+EE88110,cohort,Healthy,2.072108
+EE88111,cohort,Healthy,2.351096
+EE88112,cohort,Healthy,2.4291
+EE88113,cohort,Healthy,2.402007
+EE88114,cohort,Healthy,2.340601
+EE88115,cohort,Healthy,2.338253
+EE88116,cohort,Healthy,2.204707
+EE88117,cohort,Healthy,2.315265
+EE88118,deep_excluded,Healthy,8.981363
+EE88119,cohort,Healthy,2.192093
+EE88120,cohort,Healthy,2.55806
+EE88121,cohort,Healthy,2.027007
+EE88122,cohort,Healthy,3.00344
+EE88123,cohort,Healthy,2.995243
+EE88124,cohort,Healthy,2.482278
+EE88125,cohort,Healthy,3.122836
+EE88126,cohort,Healthy,2.730757
+EE88128,cohort,Healthy,2.840181
+EE88129,cohort,Healthy,2.930512
+EE88130,deep_excluded,Healthy,11.046049
+EE88131,cohort,Healthy,2.642705
+EE88132,cohort,Healthy,2.601286
+EE88133,cohort,Healthy,2.270943
+EE88134,cohort,Healthy,2.531369
+EE88135,cohort,Healthy,2.619942
+EE88137,cohort,Healthy,2.080012
+EE88138,cohort,Healthy,2.955381
+EE88139,cohort,Healthy,2.549048
+EE88140,cohort,Healthy,3.106193
+EE88142,cohort,Healthy,2.764837
+EE88143,deep_excluded,Healthy,9.447674
+EE88144,cohort,Healthy,3.155958
+EE88145,cohort,Healthy,3.342072
+EE88146,cohort,Healthy,2.938901
+EE88147,cohort,Healthy,2.988618
+EE88148,cohort,Healthy,2.516205
+EE88149,cohort,Healthy,2.237319
+EE88150,cohort,Healthy,2.461462
+EE88151,cohort,Healthy,3.387923
+EE88153,cohort,Healthy,3.641372
+EE88154,cohort,Healthy,3.263546
+EE88155,deep_excluded,Healthy,13.810761
+EE88156,cohort,Healthy,2.540681
+EE88157,deep_excluded,Healthy,12.743452
+EE88158,deep_excluded,Healthy,12.161584
+EE88159,deep_excluded,Healthy,8.893985
+EE88160,deep_excluded,Healthy,9.653566
+EE88161,deep_excluded,Healthy,10.969126
+EE88162,cohort,Healthy,1.743256
+EE88164,cohort,Healthy,2.721461
+EE88165,deep_excluded,Healthy,10.162203
+EE88166,cohort,Healthy,2.206482
+EE88167,deep_excluded,Healthy,9.06214
+EE88168,cohort,Healthy,2.268813
+EE88169,cohort,Healthy,2.080062
+EE88170,cohort,Healthy,2.234602
+EE88171,cohort,Healthy,1.952908
+EE88172,cohort,Healthy,2.162615
+EE88173,deep_excluded,Healthy,6.345781
+EE88174,deep_excluded,Healthy,8.681506
+EE88175,deep_excluded,Healthy,8.626575
+EE88176,deep_excluded,Healthy,8.758658
+EE88177,deep_excluded,Healthy,8.832691
+EE88178,deep_excluded,Healthy,9.304015
+EE88179,deep_excluded,Healthy,6.998056
+EE88180,deep_excluded,Healthy,8.111483
+EE88181,deep_excluded,Healthy,6.999287
+EE88182,deep_excluded,Healthy,7.090964
+EE88193,cohort,Lung cancer naive nsclc,1.408764
+EE88195,cohort,Lung cancer naive nsclc,2.54204
+EE88196,cohort,Lung cancer naive nsclc,2.649402
+EE88197,cohort,Lung cancer naive nsclc,2.521694
+EE88198,cohort,Lung cancer naive nsclc,1.127701
+EE88199,cohort,Lung cancer naive nsclc,1.568963
+EE88203,cohort,Lung cancer naive nsclc,1.060434
+EE88208,cohort,Lung cancer naive nsclc,3.030581
+EE88210,cohort,Lung cancer naive nsclc,3.090456
+EE88211,cohort,Lung cancer naive nsclc,2.194158
+EE88262,cohort,Ovarian cancer,2.48002
+EE88263,cohort,Ovarian cancer,2.71154
+EE88264,cohort,Ovarian cancer,2.952248
+EE88265,cohort,Ovarian cancer,2.343399
+EE88266,cohort,Ovarian cancer,3.172335
+EE88267,cohort,Ovarian cancer,2.477395
+EE88268,cohort,Ovarian cancer,2.423158
+EE88269,cohort,Ovarian cancer,2.955604
+EE88270,cohort,Ovarian cancer,2.874254
+EE88271,cohort,Ovarian cancer,3.046718
+EE88272,cohort,Ovarian cancer,1.954189
+EE88273,cohort,Ovarian cancer,2.25695
+EE88274,cohort,Ovarian cancer,3.42336
+EE88275,cohort,Ovarian cancer,2.639995
+EE88276,cohort,Ovarian cancer,2.582611
+EE88277,cohort,Ovarian cancer,2.567387
+EE88278,cohort,Ovarian cancer,2.534096
+EE88279,cohort,Ovarian cancer,2.475128
+EE88280,cohort,Ovarian cancer,2.794722
+EE88281,cohort,Ovarian cancer,2.521824
+EE88282,cohort,Ovarian cancer,3.085521
+EE88283,cohort,Ovarian cancer,2.719754
+EE88284,cohort,Ovarian cancer,2.837416
+EE88285,cohort,Ovarian cancer,2.4485
+EE88286,cohort,Ovarian cancer,2.712479
+EE88287,cohort,Ovarian cancer,2.676423
+EE88288,cohort,Ovarian cancer,2.561812
+EE88289,cohort,Ovarian cancer,2.923957
+EE88290,cohort,Pancreatic cancer,3.704057
+EE88291,cohort,Pancreatic cancer,2.422751
+EE88292,cohort,Pancreatic cancer,2.342143
+EE88293,cohort,Pancreatic cancer,2.825942
+EE88294,cohort,Pancreatic cancer,2.080547
+EE88295,cohort,Pancreatic cancer,2.719873
+EE88296,cohort,Pancreatic cancer,2.604982
+EE88297,cohort,Pancreatic cancer,2.370269
+EE88298,cohort,Pancreatic cancer,2.412267
+EE88299,cohort,Pancreatic cancer,1.990655
+EE88300,cohort,Pancreatic cancer,1.708319
+EE88301,cohort,Pancreatic cancer,3.652661
+EE88302,cohort,Pancreatic cancer,2.3241
+EE88303,cohort,Pancreatic cancer,2.909946
+EE88304,cohort,Pancreatic cancer,2.284424
+EE88305,cohort,Pancreatic cancer,1.619309
+EE88306,cohort,Pancreatic cancer,1.177609
+EE88307,cohort,Pancreatic cancer,1.962439
+EE88308,cohort,Pancreatic cancer,2.132347
+EE88309,cohort,Pancreatic cancer,1.559887
+EE88310,cohort,Pancreatic cancer,2.608146
+EE88311,cohort,Pancreatic cancer,2.17446
+EE88312,cohort,Pancreatic cancer,4.049417
+EE88313,cohort,Pancreatic cancer,2.197882
+EE88314,cohort,Pancreatic cancer,2.060898
+EE88315,cohort,Pancreatic cancer,2.037276
+EE88316,cohort,Pancreatic cancer,1.914986
+EE88317,cohort,Pancreatic cancer,2.655755
+EE88318,cohort,Pancreatic cancer,3.117033
+EE88319,cohort,Pancreatic cancer,2.272982
+EE88320,cohort,Pancreatic cancer,2.214731
+EE88321,cohort,Pancreatic cancer,2.974223
+EE88322,cohort,Pancreatic cancer,3.22118
+EE88323,cohort,Pancreatic cancer,3.072412

@@ -1,120 +1,157 @@
-# src/figures — manuscript figure notebooks (NARGAB-2026-181)
+# src/figures: figures and tables
 
-One notebook per manuscript figure. Every notebook:
+Every figure and supplementary table of the manuscript, and every figure in the response to the reviewers, is made in
+two steps:
 
-- reads **only** the committed source-data CSVs in `data/` — no result pickles,
-  no cluster paths, no network access;
-- regenerates the figure end to end in a fresh kernel (run top to bottom from
-  this directory: `jupyter nbconvert --to notebook --execute --inplace fig3.ipynb`,
-  or open and Run All);
-- writes the rendered figure to `output/` (git-ignored; the committed notebooks
-  carry the rendered outputs inline);
-- ends with a check cell comparing computed headline numbers against the
-  submitted manuscript values.
+1. an **exporter** in `export/` reads the model results, manifests and features, checks its numbers against the
+   stored pipeline results (recomputed AUROCs and confusion counts must equal the stored ones), and writes
+   source-data files to `data/no_deep/` (to `data/` for the three figures drawn from the panel of normals only);
+2. a **notebook** in this folder reads only those source-data files and draws the figure into `output/no_deep/`
+   (`output/` for the panel-of-normals figures).
 
-Requirements: `numpy`, `pandas`, `scipy`, `scikit-learn`, `matplotlib`,
-`matplotlib-venn` (figS2 only).
+The notebooks need no result pickles, cluster paths or network access, so they can be rerun from the committed
+source data alone. `output/` is git-ignored; the committed notebooks carry their rendered output.
 
-| Notebook | Figure | Source data (in `data/`) | Exporter |
-|---|---|---|---|
-| `fig1.ipynb` | Fig 1a–c (TSS coverage HK vs PAU; per-locus coverage; feature–expression correlations) | `fig1a_coverage_profiles.csv`, `fig1b_locus_coverage.csv`, `fig1c_expression_correlations.csv` | `export/export_fig1.py` |
-| — | Fig 2 | *(method overview drawn in BioRender — no code, no notebook)* | — |
-| `fig3.ipynb` | Fig 3a–c (nested-CV ROC; metrics at 95% specificity; posterior differences by stage) | `fig3_predictions.csv`, `fig3_config.csv` | `export/export_fig3.py` |
-| `fig4.ipynb` | Fig 4a–c (AUROC vs k by feature / classifier; locus-level vs aggregates) | `fig4_auc_sweep.csv`, `fig4c_aggregate_scores.csv` | `export/export_fig4.py` |
-| `fig5.ipynb` | Fig 5a–f (PANCAN; external validation on Jiang; within-dataset generalization) | `fig5a_predictions.csv` (+config), `fig5bc_external_predictions.csv` (+config), `fig5def_roc_curves.csv`, `fig5def_metrics.csv` | `export/export_fig5.py` |
-| — | Fig S1 | *(correlation vs WGS coverage — original generating code not present in the repository; per project decision the figure is not reconstructed)* | — |
-| `figS2.ipynb` | Fig S2a–c (blacklist coverage; venn; QC filter scatter) | `figS2a_blacklist_per_chrom.csv`, `figS2b_venn_counts.csv`, `figS2c_tss_qc.csv` | `export/export_figS2.py` |
-| `figS3.ipynb` | Fig S3 (metrics with ichorCNA at TF ≥ 0.03) | `fig3_predictions.csv`, `fig3_config.csv` (shared with Fig 3) | `export/export_fig3.py` |
-| `figS4.ipynb` | Fig S4 (AUROC vs k by ranking function) | `fig4_auc_sweep.csv` (shared with Fig 4) | `export/export_fig4.py` |
-| `figS5.ipynb` | Fig S5 (label-shuffle stability) | `figS5_label_shuffle.csv`, `figS5_config.csv` | `export/export_figS5.py` |
-| `figS6.ipynb` | Fig S6 (PANCAN per-cancer-type ROC grid) | `fig5a_predictions.csv` (shared with Fig 5a) | `export/export_fig5.py` |
-| `figS7.ipynb` | Fig S7 (external AUROC vs number of TSSs) | `figS7_auc_vs_k.csv` | `export/export_fig5.py` |
+## Running
 
-## The export layer (`export/`)
+Exporters run from the repository root, notebooks from this folder:
 
-The exporters are the only code that touches raw experiment outputs
-(`nested_cv_results_cris/`, `results/`, `accessory_files/`,
-`extracted_features/`). They run on the machine holding those outputs, from
-the repository root:
-
-```
+```bash
 python src/figures/export/export_fig3.py
+cd src/figures && python run_nb.py fig3.ipynb
 ```
 
-Each exporter **validates what it writes** against the stored pipeline
-results (recomputed AUCs and confusion matrices must equal the stored values;
-filter-category counts must equal the submitted panel's counts) and records
-the selected model configuration per method in a `*_config.csv`. The
-result-directory manifest lives in `export/_common.py`.
+`run_nb.py` executes a notebook in place (`jupyter nbconvert --execute --inplace`) and lets only one notebook run at a
+time, because concurrent writes to a network drive fail. The exporters that refit fold models or read the per-sample
+feature files need several cores and GB; on a Slurm cluster run them with
+`sbatch slurm/export_figures.sh src/figures/export/<exporter>.py [options]`, which uses the container of the model
+runs.
 
-After the planned post-fix cluster rerun, point the manifest at the new result
-directories, re-run the exporters, and re-execute the notebooks — the
-notebooks themselves need no changes (their final check cells compare against
-the *submitted* values and will flag any number that moved).
+**Cohort.** All models and figures use the Cristiano et al. cohort without the 30 high-coverage healthy controls
+(`accessory_files/cris_exclude_deep_healthy.txt`; Supplementary Figure "sample flow"). This is the default
+(`COHORT_VARIANT=no_deep` for the exporters, `COHORT = "no_deep"` in each notebook's setup cell).
+`COHORT_VARIANT=all` gives the cohort with them, which the manuscript does not use.
 
-## Extending for the revision
+## Manuscript figures
 
-New reviewer-driven experiments follow the same three-layer pattern — nothing
-goes back into monolithic notebooks:
+| Figure | Notebook | Exporters (source data) |
+|---|---|---|
+| Figure 1 (TSS features and gene expression) | `fig1.ipynb` | `export_fig1.py` |
+| Figure 2 (overview) | drawn by hand: `drawn/fig2_revised.pptx` | |
+| Figure 3 (BRCA/CRC versus healthy) | `fig3.ipynb` | `export_fig3.py`, `export_method_comparisons.py` |
+| Figure 4 (pan-cancer, Jiang cohort, leave one cancer type out) | `fig4.ipynb` | `export_fig4.py`, `export_fig4_loco.py`, `export_fig4_loco_rankings.py`, `export_figS16_jiang_arms.py --from_runs` |
+| Figure 5 (analysis of the pan-cancer model) | `fig5.ipynb` | `export_fig5.py`, `export_figS5_nested.py` |
+| Figure 6 (TSS ranking) | `fig6_tss_interpretation.ipynb` | `export_figS17_cohen_d.py`, `export_figS18_gene_sets.py`, `export_figS18_matched_10k.py`, `export_figS_loco_consistency.py`, `export_figS_loco_consistency_boot.py` |
 
-1. **Run** the experiment via a `slurm/` wrapper (new mode → new wrapper).
-2. **Export**: extend the relevant exporter (or add `export_figR<n>.py` for
-   response-letter figures) so the new numbers land as validated CSVs in
-   `data/`. All pickle-reading, model selection and cohort bookkeeping belongs
-   here, with assertions against the stored pipeline values.
-3. **Plot**: extend the figure notebook (or add `figR<n>.ipynb`). The check
-   cells then double as the record of what changed relative to the submission.
+## Supplementary figures
 
-The pre-revision originals of these figures live in `notebooks/archived/`
-(git-ignored, local only) and serve as a function library to lift from — most
-of their plotting code runs unmodified on the `data/` CSVs, because the CSVs
-carry per-sample predictions rather than pre-aggregated curves.
+| Supplementary figure | Notebook | Exporters (source data) |
+|---|---|---|
+| Sample flow | drawn by hand: `drawn/sample_flow.drawio` (draw.io) | |
+| Cristiano versus Jiang cohort | `figS_cohort_comparison.ipynb` | `export_figS12_cohorts.py`, `export_fig3.py`, `export_fig4.py`; `figS10.ipynb` (fragment-length halves) |
+| TSS quality filter | `figS2.ipynb` | `export_figS2.py` |
+| TSS ranking detail | `figS_tss_ranking_detail.ipynb` | `export_figS17.py`, `export_figS17_cohen_d.py`, `export_figS_loco_consistency.py` |
+| Gene expression and sequencing depth | `fig1_depth.ipynb` | `export_fig1_depth.py` |
+| Cancer type, stage and tumour fraction | `figS_strata.ipynb` | `export_fig3_baselines.py`, `export_figS13.py`; `figS10.ipynb` (stage and type table) |
+| Covariates | `figS_covariates.ipynb` | `export_fig3_baselines.py`, `export_fig4.py`, `export_figS10_tss_regression.py`, `export_figS14.py`, `export_figS16_jiang_arms.py`; `figS10.ipynb` (correlations, model versus panels, measures) |
+| Sequencing depth and cohort size | `figS_depth_size.ipynb` | `export_figS8.py`, `export_figS9.py` |
+| Model analysis, BRCA/CRC | `figS_model_analysis.ipynb` | `export_fig5.py`, `export_figS5_nested.py` |
+| Region-number sweep | `figS13.ipynb` | `export_figS13.py`, `export_fig3.py`, `export_fig4.py` |
+| Gene sets | `figS_gene_sets.ipynb` | `export_figS18_gene_sets.py`, `export_figS18_matched_10k.py`, `export_figS18_zhu_es.py` |
+| Pooled out-of-fold ROC and precision-recall curves | `figS_pooled_curves.ipynb` | `export_fig3.py`, `export_fig4.py`, `export_method_comparisons.py` |
 
-### Where un-ported legacy logic lives (the mining map)
+Where a notebook is listed among the sources, it writes source data that a later notebook reads: run `figS10.ipynb`
+before `figS_cohort_comparison`, `figS_strata` and `figS_covariates`, and `figS_strata.ipynb` (which writes
+`fig3b_calls.csv`) before `fig3.ipynb`.
 
-All in `notebooks/archived/` unless marked otherwise:
+## Supplementary tables
 
-| Legacy logic (not yet in this layer) | Original notebook |
+| Table | Made by |
 |---|---|
-| Full 4×3 comparison grids (ROC + PR + confusion matrices, per scenario: full / BRCA-only / CRC-only) | `hypo_nestedcv_plots.ipynb` (`compare_all_approaches_comprehensive`) |
-| Honest per-fold-selected variant of Fig 3 (`select_nested_cv_folds` + `plot_full_model_compact_nested`) | `hypo_nestedcv_plots.ipynb` |
-| Per-classifier comparison plots (`plot_profile_classifiers_comparison`) | `hypo_nestedcv_plots.ipynb` |
-| Posteriors-by-stage 5-panel supplement, detection-rate-by-stage lines, per-fold-threshold detection collectors | `stage_plot.ipynb` |
-| Per-cancer-type PR curves and metric panels (S6 shows ROC only) | `hypo_nestedcv_plots_pancan.ipynb` |
-| Overfitting diagnostics (`section33_overfit_diag`), optimal-gene-threshold analysis | `nested_cv_plots copy.ipynb` |
-| Fully-nested-CV / k-sweep analysis (no counterpart here yet) | `nested_full_plots.ipynb` — still active in `src/comp/` |
-| ichorCNA raw-params QC audit | `ichorcna_precision_audit.ipynb` — still active in `src/comp/` |
-| GSEA on best-model coefficients (null result, Discussion-adjacent) | `gsea_best_model.ipynb` |
+| Participants (Excel) | `export_tableS_folds_counts.py`, then `build_supplementary_tables.py` |
+| Cristiano versus Jiang cohort characteristics (printed) | `export_figS12_cohorts.py` (`tableS_cohorts.tex`) |
+| Features, data parameters, classifiers and hyperparameter grids (printed) | LaTeX tables in the manuscript; the grids are `CLF_PARAM_GRIDS` and `DATA_PARAM_GRIDS` in `src/comp/model_hpc.py` |
+| C8 cell-type signatures (Excel) | `export_tableS_c8_classes.py`, then `build_supplementary_tables.py` |
+| Selected configuration and confusion counts per outer fold (Excel) | `export_tableS_folds_counts.py`, then `build_supplementary_tables.py` |
 
-## Provenance notes and known deviations
+`build_supplementary_tables.py` writes the Excel files and their LaTeX entries to `submission/supplementary_tables/`
+(git-ignored, rebuilt from the CSVs).
+The statistical comparisons between methods quoted in the text (corrected resampled *t*-test, DeLong, bootstrap,
+Holm) are in `data/no_deep/stats_method_comparisons.csv`, from `export_method_comparisons.py`.
 
-- **Fig 3 / S3**: the data-driven arm is pinned to the post-fix `mean_diff`
-  run: at k = 14,224 (all TSSs) the ranking function selects nothing, so all
-  five ranking runs are the same model (asserted by the exporter); only the
-  post-fix run carries leak-free train-derived operating thresholds, and it
-  reproduces the submitted Fig 3b bars exactly.
-- **ichorCNA duplicates**: the ichorCNA tables contain 16 byte-identical
-  duplicate healthy rows; the original analysis used the files as-is, and the
-  `n_rows_in_source` column preserves that weighting (it is what reproduces
-  the submitted AUC of 0.600 ± 0.086; deduplicated it would read 0.602).
-- **Fig 4**: the submitted figure was assembled from two notebooks plus a
-  manual paste-in of panel c; `fig4.ipynb` draws all three panels directly.
-  Panel a/b AUCs for the four non-`mean_diff` ranking functions come from the
-  pre-fix run (their only source; AUC-identical except `fslr`,
-  max |Δ mean AUROC| = 0.0065).
-- **Fig 5a**: a pure argmax over the PANCAN grid selects Logistic Regression
-  (0.9468); the submitted legend (0.946 ± 0.032) corresponds to the SVM at
-  k = 14,224, which the exporter pins (consistent with the manuscript's model
-  description).
-- **Fig S5**: sourced from `label_shuffle_best_model_search_dd/` — its
-  observed CV AUC (0.9595 → "0.960") and shuffle distribution are the ones in
-  the submitted panel; the `*_currentlyinmsjune2026` snapshot carries an older
-  run (observed 0.9468) despite its name.
-- **Fig S2c**: the notebook that drew the submitted panel is not in the
-  repository; `figS2.ipynb` reconstructs it from the filter artifacts. All
-  category counts reproduce the submitted numbers exactly (asserted); the
-  "(<5kb)" in the legend is literal — overlapping TSSs are windows whose TSS
-  is within 5,000 bp of another. Panel a's ENCODE total differs from the
-  submitted annotation by ~0.02% (blacklist-file revision level).
-- **Fig S1**: generating code absent repo-wide; intentionally not
-  reconstructed (project decision).
+## Figures shown only in the response to the reviewers
+
+| Figure (comment) | Notebook | Exporters |
+|---|---|---|
+| Leave one cancer type out (R3.7) | `fig4_loco.ipynb` | `export_fig4_loco.py`, `export_fig4_loco_rankings.py` |
+| Jiang application per comparison group (R4.4) | `fig4.ipynb` (writes `figS16.png`) | `export_fig4.py`, `export_figS16_jiang_arms.py --from_runs` (also writes `figS16_jiang_arms.png`) |
+| Jiang comparison groups, tests (R3.3, R4.4) | `figS16_jiang_groups.ipynb` | `export_fig4.py`, `export_figS10_jiang.py --scalars_only`, `export_figS16_jiang_arms.py` |
+| Sequencing depth (R1.3) | `figS8.ipynb` | `export_figS8.py` |
+| Training-cohort size (R1.4) | `figS9.ipynb` | `export_figS9.py` |
+| Covariates and the model (R1.3, R4.1, R4.7) | `figS10.ipynb` | `export_fig3_baselines.py --task brca_crc` and `--task pancan`, `export_figS10_jiang.py`, `export_figS10_subgroup.py` (`COHORT_VARIANT=all`: it describes the 30 controls), `export_figS14.py`, `export_figS8.py` |
+| Cohort comparison (R1.2, R3.2) | `figS12.ipynb` | `export_figS12_cohorts.py` |
+| Covariates inside the model (R4.7) | `figS14_covariate_augmented.ipynb` | `export_figS14.py` |
+| Per-TSS covariate regression (R4.7) | `figS_tss_regression.ipynb` | `export_figS10_tss_regression.py`, `export_fig3_baselines.py`, `export_figS17.py` |
+| TSS ranking and its stability (R2.1, R4.7) | `figS17_tss_ranking.ipynb` | `export_figS17.py`, `export_figS17_cohen_d.py` |
+| Gene sets (R2.1, R3.1) | `figS18_gene_sets.ipynb` | `export_figS18_gene_sets.py`, `export_figS18_matched_10k.py`, `export_figS18_zhu_es.py`, `export_figS18_reactome_healthy.py` |
+| Agreement between cancer types (R3.1) | `figS_loco_consistency.ipynb` | `export_figS_loco_consistency.py` |
+| TSS sets: Hallmark and chromosome arms (R2.3, R3.4) | `figS_tss_sets.ipynb` | `export_figS_tss_sets.py`, `export_fig5.py` |
+
+`export_cohen_d_vs_rankings.py` is a check quoted in the letter (how close the interpretation ranking is to the four
+ranking functions); it draws no figure.
+
+## Order of the exporters
+
+Some exporters read the source data of others. From the repository root, after the model runs:
+
+```bash
+E=src/figures/export
+# panel-of-normals figures (data/; COHORT_VARIANT=all writes there)
+COHORT_VARIANT=all python $E/export_fig1.py
+COHORT_VARIANT=all python $E/export_fig1_depth.py
+COHORT_VARIANT=all python $E/export_figS2.py
+# predictions of the fully nested models and the baselines
+python $E/export_fig3.py; python $E/export_fig4.py
+python $E/export_fig3_baselines.py --task brca_crc; python $E/export_fig3_baselines.py --task pancan
+python $E/export_figS13.py; python $E/export_figS8.py; python $E/export_figS9.py; python $E/export_figS5_nested.py
+python $E/export_tableS_folds_counts.py             # also tableS_participants.csv, read by the next three
+python $E/export_fig5.py; python $E/export_fig4_loco.py; python $E/export_fig4_loco_rankings.py
+# cohorts and covariates
+python $E/export_figS12_cohorts.py
+python $E/export_figS10_jiang.py; python $E/export_figS10_tss_regression.py; python $E/export_figS14.py
+# full-cohort inputs (data/): the 30 deep-sequenced controls and the companion of export_figS18_gene_sets.py
+COHORT_VARIANT=all python $E/export_fig3_baselines.py --task brca_crc; COHORT_VARIANT=all python $E/export_fig3_baselines.py --task pancan
+COHORT_VARIANT=all python $E/export_figS10_subgroup.py
+COHORT_VARIANT=all python $E/export_figS10_tss_regression.py
+python $E/export_figS16_jiang_arms.py --from_runs
+python $E/export_figS_tss_sets.py
+python $E/export_method_comparisons.py              # needs fig3, fig4a and figS16 source data
+# TSS ranking and gene sets (the GD matrix is cached at the first call and reused)
+python $E/export_figS17.py --gd_cache results/gd_cache.npz
+python $E/export_figS_loco.py                       # caches the GD matrix for the next two
+python $E/export_figS17_cohen_d.py; python $E/export_figS_loco_consistency.py
+python $E/export_figS_loco_consistency_boot.py      # bootstrap intervals of Figure 6c
+python $E/export_figS18_gene_sets.py --gd_cache results/gd_cache.npz --pon_cache results/pon_cache.npz
+python $E/export_figS18_matched_10k.py; python $E/export_figS18_zhu_es.py
+python $E/export_figS18_reactome_healthy.py
+# supplementary tables
+python $E/export_tableS_c8_classes.py; python $E/build_supplementary_tables.py
+python $E/export_cohen_d_vs_rankings.py             # letter check
+```
+
+Then run the notebooks, `figS10.ipynb` first (see above). The gene-set exporters need `gseapy` (the published results
+were computed with 1.3.1; the locked environment has 1.3.2) and the MSigDB files in
+`accessory_files/annotations/msigdb/` (see `accessory_files/annotations/README.md`). Each exporter's docstring
+gives its inputs, outputs and runtime.
+
+## Notes
+
+- **Operating thresholds.** Every 95%-specificity threshold is the 0.95 quantile of the healthy training samples'
+  scores in the inner-loop predictions of the selected configuration (for a deployed model: of its own ten search
+  folds), applied unchanged to the outer test fold or the external cohort
+  (`model_hpc.inner_cv_operating_thresholds`). The exporters print `!!` for a result written before this rule
+  (no `threshold_source` field); `slurm/nested_full.sh refresh_thresholds` updates such a run without repeating the
+  search.
+- **Check cells.** Several notebooks end with a cell that compares computed numbers with those quoted in the
+  manuscript; a moved number shows up there.
+- `_figstyle.py` sets the journal style of the main figures (178 mm wide, 7 pt).

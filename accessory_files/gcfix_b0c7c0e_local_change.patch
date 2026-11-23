@@ -1,0 +1,21 @@
+diff --git a/single_sample_correction_factor.py b/single_sample_correction_factor.py
+index 0ab473b..5fcd797 100644
+--- a/single_sample_correction_factor.py
++++ b/single_sample_correction_factor.py
+@@ -49,6 +49,16 @@ def construct_GC_bias(sample_lengths, ref_lengths, X):
+     
+     GC_array = GC_array[lower_cnt: upper_cnt+1]
+     GC_array = remove_outlier(GC_array)
++    # A length group whose GC window has <3 populated bins is zeroed entirely
++    # by remove_outlier (97th percentile of 81 values is 0), so the mean below
++    # becomes 0 -> NaN -> lowess returns shape (0,) and the caller crashes.
++    # Fall back to a neutral factor of 1, matching the empty-row convention.
++    if np.sum(GC_array) == 0:
++        return np.ones(upper_cnt - lower_cnt + 1 - 2*lag)
++    print(np.mean(GC_array))
++    # count zeroes
++    zero_count = np.sum(GC_array == 0)
++    print("Number of zero elements:", zero_count)
+     GC_array = GC_array / np.mean(GC_array)
+     
+     lowess = sm.nonparametric.lowess(GC_array, X, frac=0.1)

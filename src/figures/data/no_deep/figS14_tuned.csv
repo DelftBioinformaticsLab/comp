@@ -1,0 +1,41 @@
+task,arm,fold,k_selected,inner_cv_auc,test_auc,test_aupr,classifier,feature,n_k_available,complete,source
+brca_crc,none,1,10000,0.9719387755102041,0.9117647058823528,0.8459145021645021,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,2,10000,0.9736394557823128,0.963235294117647,0.9381313131313131,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,3,10000,0.9614512471655329,0.9852941176470588,0.975,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,4,10000,0.9682539682539683,1.0,1.0,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,5,15000,0.9735487528344672,0.921875,0.9181985294117647,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,6,15000,0.9676814058956916,1.0,1.0,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,7,10000,0.956485260770975,0.96875,0.9583333333333333,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,8,10000,0.9601757369614513,0.984375,0.975,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,9,10000,0.9586054421768707,0.9453125,0.9208333333333334,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,none,10,15000,0.9700680272108845,0.9765625,0.9659090909090909,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,1,10000,0.9730725623582767,0.9117647058823528,0.8459145021645021,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,2,10000,0.9733560090702947,0.963235294117647,0.9381313131313131,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,3,10000,0.9617346938775512,0.9852941176470588,0.975,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,4,10000,0.9696712018140591,1.0,1.0,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,5,15000,0.9732653061224491,0.921875,0.9181985294117647,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,6,15000,0.9673979591836736,1.0,1.0,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,7,10000,0.9556462585034015,0.96875,0.9583333333333333,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,8,10000,0.9604421768707483,0.984375,0.975,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,9,10000,0.9602947845804989,0.9453125,0.9208333333333334,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+brca_crc,cov_techdemo5,10,15000,0.9697845804988662,0.9765625,0.9659090909090909,Support Vector Machine,griffin_diff,12,True,ksweep_tuned
+pancan,none,1,15000,0.9625292740046838,0.9794117647058822,0.9859615384615386,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,2,10000,0.9673246347719416,0.9735294117647059,0.9772408229119263,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,3,15000,0.9507081521133044,0.9705882352941175,0.9777724614566723,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,4,10000,0.9626407940225269,0.9382352941176471,0.9475188095339699,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,5,10000,0.9636685996803092,0.9821428571428572,0.9868928273063613,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,6,10000,0.974158841678748,0.9642857142857143,0.9764124764124766,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,7,15000,0.9632417382253449,0.9523809523809523,0.9639367072637752,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,8,15000,0.953667893386863,0.996875,0.9976190476190478,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,9,10000,0.9602765696442511,0.96875,0.980952380952381,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,none,10,15000,0.9654377160700345,0.96875,0.9791276803118909,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,1,15000,0.9626407940225269,0.9794117647058822,0.9859615384615386,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,2,15000,0.966432474629196,0.9764705882352941,0.9792171074969065,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,3,15000,0.9514887922382068,0.9705882352941175,0.9777724614566723,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,4,10000,0.9624177539868407,0.9441176470588235,0.9539793424650911,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,5,10000,0.9635574885691982,0.9791666666666666,0.9852261606396946,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,6,10000,0.974495037359206,0.9672619047619048,0.9783708355136929,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,7,10000,0.9627932047135793,0.9583333333333333,0.9684499065326617,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,8,15000,0.9534270101483217,0.996875,0.9976190476190478,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,9,10000,0.9605977472956395,0.975,0.9845370370370372,Logistic Regression,griffin_diff,12,True,ksweep_tuned
+pancan,cov_techdemo5,10,15000,0.9659997769599643,0.96875,0.9791276803118909,Logistic Regression,griffin_diff,12,True,ksweep_tuned

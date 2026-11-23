@@ -1,0 +1,36 @@
+# Deep-sequenced healthy samples of the Cristiano cohort (Fig S10 Section 2c):
+# role == 'model', disease == 'Healthy', mean_coverage > 6x
+# (results/cris_coverage_summary.csv). Written by src/comp/build_deep_healthy_exclusion.py.
+# Used by: model_hpc.py --exclude_samples, slurm wrappers with EXCLUDE_SAMPLES set,
+# and the figure exporters with COHORT_VARIANT=no_deep.
+# ID  # sample_name  mean_coverage
+EE87977  # CGPLH35  13.46x
+EE87987  # CGPLH36  10.62x
+EE87999  # CGPLH37  13.00x
+EE88046  # CGPLH42  10.57x
+EE88056  # CGPLH43  10.34x
+EE88076  # CGPLH45  10.31x
+EE88087  # CGPLH46  9.52x
+EE88097  # CGPLH47  10.20x
+EE88108  # CGPLH48  11.88x
+EE88118  # CGPLH49  8.98x
+EE88130  # CGPLH50  11.05x
+EE88143  # CGPLH51  9.45x
+EE88155  # CGPLH52  13.81x
+EE88157  # CGPLH54  12.74x
+EE88158  # CGPLH55  12.16x
+EE88159  # CGPLH56  8.89x
+EE88160  # CGPLH57  9.65x
+EE88161  # CGPLH59  10.97x
+EE88165  # CGPLH63  10.16x
+EE88167  # CGPLH64  9.06x
+EE88173  # CGPLH75  6.35x
+EE88174  # CGPLH76  8.68x
+EE88175  # CGPLH77  8.63x
+EE88176  # CGPLH78  8.76x
+EE88177  # CGPLH79  8.83x
+EE88178  # CGPLH80  9.30x
+EE88179  # CGPLH81  7.00x
+EE88180  # CGPLH82  8.11x
+EE88181  # CGPLH83  7.00x
+EE88182  # CGPLH84  7.09x

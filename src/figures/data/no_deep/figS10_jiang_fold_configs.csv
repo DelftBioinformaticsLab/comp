@@ -1,0 +1,11 @@
+method,fold,feature,selection_type,top_genes,classifier,hyperparameters,inner_cv_auc,test_auc
+bl_panel_transfer5,1,scalar_panel_transfer5,none,all,XGBoost,"{""colsample_bytree"": 1.0, ""learning_rate"": 0.05, ""max_depth"": 2, ""n_estimators"": 100, ""subsample"": 0.8}",0.8037262872628727,0.8412698412698412
+bl_panel_transfer5,2,scalar_panel_transfer5,none,all,Support Vector Machine,"{""C"": 0.001, ""gamma"": ""scale"", ""kernel"": ""rbf""}",0.7864197530864198,0.7698412698412699
+bl_panel_transfer5,3,scalar_panel_transfer5,none,all,K-Nearest Neighbors,"{""metric"": ""euclidean"", ""n_neighbors"": 15, ""weights"": ""distance""}",0.8096582354712436,0.6904761904761905
+bl_panel_transfer5,4,scalar_panel_transfer5,none,all,K-Nearest Neighbors,"{""metric"": ""euclidean"", ""n_neighbors"": 21, ""weights"": ""distance""}",0.8098313760915387,0.8174603174603174
+bl_panel_transfer5,5,scalar_panel_transfer5,none,all,XGBoost,"{""colsample_bytree"": 1.0, ""learning_rate"": 0.1, ""max_depth"": 2, ""n_estimators"": 100, ""subsample"": 0.8}",0.84985697079193,0.6587301587301587
+bl_panel_transfer5,6,scalar_panel_transfer5,none,all,XGBoost,"{""colsample_bytree"": 1.0, ""learning_rate"": 0.05, ""max_depth"": 2, ""n_estimators"": 100, ""subsample"": 0.8}",0.7888324299909666,0.7948717948717948
+bl_panel_transfer5,7,scalar_panel_transfer5,none,all,K-Nearest Neighbors,"{""metric"": ""euclidean"", ""n_neighbors"": 21, ""weights"": ""distance""}",0.8308115025594699,0.8205128205128205
+bl_panel_transfer5,8,scalar_panel_transfer5,none,all,Support Vector Machine,"{""C"": 100.0, ""gamma"": ""scale"", ""kernel"": ""linear""}",0.8049533273110508,0.8205128205128205
+bl_panel_transfer5,9,scalar_panel_transfer5,none,all,Support Vector Machine,"{""C"": 0.001, ""gamma"": ""scale"", ""kernel"": ""rbf""}",0.7845980126467932,0.905982905982906
+bl_panel_transfer5,10,scalar_panel_transfer5,none,all,XGBoost,"{""colsample_bytree"": 1.0, ""learning_rate"": 0.05, ""max_depth"": 2, ""n_estimators"": 300, ""subsample"": 0.8}",0.8054953327311051,0.735042735042735

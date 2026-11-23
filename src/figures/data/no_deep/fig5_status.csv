@@ -1,0 +1,13 @@
+task,source,path,rows,expected,state
+brca_crc,sweep,nested_cv_results_cris/brca_crc_dd_rev_nodeep,18000,18000,complete
+brca_crc,genome_griffin_diff,extracted_features/tss_sets/genome_pooled_griffin_diff.npy,244,244,complete
+brca_crc,genome_rcov,extracted_features/tss_sets/genome_pooled_rcov.npy,244,244,complete
+brca_crc,genome_mwh,extracted_features/tss_sets/genome_pooled_mwh.npy,244,244,complete
+brca_crc,genome_fslr,extracted_features/tss_sets/genome_pooled_fslr.npy,244,244,complete
+brca_crc,genome_fslr_coverage,extracted_features/tss_sets/genome_pooled_fslr_coverage.npy,244,244,complete
+pancan,sweep,nested_cv_results_cris/pancan_dd_rev_nodeep,18000,18000,complete
+pancan,genome_griffin_diff,extracted_features/tss_sets/genome_pooled_griffin_diff_pancan.npy,367,367,complete
+pancan,genome_rcov,extracted_features/tss_sets/genome_pooled_rcov_pancan.npy,367,367,complete
+pancan,genome_mwh,extracted_features/tss_sets/genome_pooled_mwh_pancan.npy,367,367,complete
+pancan,genome_fslr,extracted_features/tss_sets/genome_pooled_fslr_pancan.npy,367,367,complete
+pancan,genome_fslr_coverage,extracted_features/tss_sets/genome_pooled_fslr_coverage_pancan.npy,367,367,complete

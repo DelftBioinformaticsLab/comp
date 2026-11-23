@@ -1,0 +1,54 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the article below."
+title: "comp: cfDNA fragmentation profiling at transcription start sites"
+abstract: >-
+  Code of the analysis in "Genome-wide Cell-free DNA Fragmentation Profiling
+  at Transcription Start Sites Detects Cancer Without Cancer-Type-Specific
+  Region Selection": feature extraction from FinaleDB records, the nested
+  cross-validation of the cancer detection models, and the source data and
+  notebooks of every figure.
+type: software
+version: 1.0.0
+license: GPL-3.0-only
+repository-code: "https://github.com/DelftBioinformaticsLab/comp"
+keywords:
+  - cell-free DNA
+  - fragmentomics
+  - transcription start sites
+  - cancer detection
+  - liquid biopsy
+authors:
+  - family-names: Pronk
+    given-names: Bram
+    orcid: "https://orcid.org/0009-0001-8017-1066"
+    affiliation: "Delft Bioinformatics Lab, Delft University of Technology"
+  - family-names: Makrodimitris
+    given-names: Stavros
+    orcid: "https://orcid.org/0000-0002-3111-4268"
+    affiliation: "Swammerdam Institute for Life Sciences, University of Amsterdam; Delft Bioinformatics Lab, Delft University of Technology"
+  - family-names: Wilting
+    given-names: Saskia M.
+    orcid: "https://orcid.org/0000-0002-2838-841X"
+    affiliation: "Department of Medical Oncology, Erasmus MC Cancer Institute, University Medical Center Rotterdam"
+  - family-names: Reinders
+    given-names: Marcel J. T.
+    orcid: "https://orcid.org/0000-0002-1148-1562"
+    affiliation: "Delft Bioinformatics Lab, Delft University of Technology"
+preferred-citation:
+  type: article
+  title: "Genome-wide Cell-free DNA Fragmentation Profiling at Transcription Start Sites Detects Cancer Without Cancer-Type-Specific Region Selection"
+  journal: "NAR Genomics and Bioinformatics"
+  status: submitted
+  authors:
+    - family-names: Pronk
+      given-names: Bram
+      orcid: "https://orcid.org/0009-0001-8017-1066"
+    - family-names: Makrodimitris
+      given-names: Stavros
+      orcid: "https://orcid.org/0000-0002-3111-4268"
+    - family-names: Wilting
+      given-names: Saskia M.
+      orcid: "https://orcid.org/0000-0002-2838-841X"
+    - family-names: Reinders
+      given-names: Marcel J. T.
+      orcid: "https://orcid.org/0000-0002-1148-1562"

@@ -1,0 +1,62 @@
+{
+  "brca_crc": {
+    "cohen_d": {
+      "spearman_signed_fold_vs_full_median": 0.968575518043131,
+      "spearman_signed_fold_vs_fold_median": 0.9300840653130711,
+      "spearman_signed_half_vs_half_median": 0.27910678042777975,
+      "spearman_signed_permuted_median": -0.016633010613683764,
+      "jaccard_top1000_fold_vs_fold_median": 0.5209125475285171,
+      "jaccard_top1000_half_vs_half_median": 0.0582010582010582,
+      "jaccard_top1000_permuted_median": 0.035196687370600416,
+      "jaccard_top100_half_vs_half_median": 0.0,
+      "jaccard_top1000_chance": 0.03644049267546097,
+      "n_tss_top1000_in_all_folds": 347,
+      "median_abs": 0.1246444163012044,
+      "max_abs": 0.6684667787495009
+    },
+    "mean_diff": {
+      "spearman_signed_fold_vs_full_median": 0.9679720586046949,
+      "spearman_signed_fold_vs_fold_median": 0.9288301028516688,
+      "spearman_signed_half_vs_half_median": 0.2777869956908989,
+      "spearman_signed_permuted_median": -0.014614912999442276,
+      "jaccard_top1000_fold_vs_fold_median": 0.5420200462606014,
+      "jaccard_top1000_half_vs_half_median": 0.0819584237648056,
+      "jaccard_top1000_permuted_median": 0.06553010122535961,
+      "jaccard_top100_half_vs_half_median": 0.12359550561797752,
+      "jaccard_top1000_chance": 0.03644049267546097,
+      "n_tss_top1000_in_all_folds": 367,
+      "median_abs": 0.08481540488177658,
+      "max_abs": 3.6546283022506367
+    }
+  },
+  "pancan": {
+    "cohen_d": {
+      "spearman_signed_fold_vs_full_median": 0.972223102566024,
+      "spearman_signed_fold_vs_fold_median": 0.9392285761261062,
+      "spearman_signed_half_vs_half_median": 0.3448259699552359,
+      "spearman_signed_permuted_median": 0.0001049767208091217,
+      "jaccard_top1000_fold_vs_fold_median": 0.5408320493066255,
+      "jaccard_top1000_half_vs_half_median": 0.07440244119933671,
+      "jaccard_top1000_permuted_median": 0.035732780942516834,
+      "jaccard_top100_half_vs_half_median": 0.010101010101010102,
+      "jaccard_top1000_chance": 0.03644049267546097,
+      "n_tss_top1000_in_all_folds": 395,
+      "median_abs": 0.10248275807653429,
+      "max_abs": 0.563995845339224
+    },
+    "mean_diff": {
+      "spearman_signed_fold_vs_full_median": 0.9714332158130833,
+      "spearman_signed_fold_vs_fold_median": 0.9377758997545733,
+      "spearman_signed_half_vs_half_median": 0.3419595974222478,
+      "spearman_signed_permuted_median": 0.001020474317474668,
+      "jaccard_top1000_fold_vs_fold_median": 0.563721657544957,
+      "jaccard_top1000_half_vs_half_median": 0.09829763866007687,
+      "jaccard_top1000_permuted_median": 0.05708245243128964,
+      "jaccard_top100_half_vs_half_median": 0.11731843575418995,
+      "jaccard_top1000_chance": 0.03644049267546097,
+      "n_tss_top1000_in_all_folds": 395,
+      "median_abs": 0.07031195334557028,
+      "max_abs": 2.132234094486078
+    }
+  }
+}

@@ -1,0 +1,1201 @@
+task,arm,k,fold,covariate,weight,abs_rank,quantile_vs_tss,perm_drop,weight_kind,classifier
+brca_crc,cov_techdemo5,10,1,mean_coverage,0.06301970034837723,7.0,0.8,0.024632352941176466,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,1,total_fragments,0.07447598874568939,4.0,0.9,0.030882352941176465,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,1,plasma_volume,0.18610507249832153,1.0,1.0,0.18823529411764706,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,1,age,0.10356485098600388,2.0,1.0,0.07941176470588233,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,1,sex_female,0.07276443392038345,5.0,0.9,-0.015808823529411785,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,2,mean_coverage,0.056655071675777435,9.0,0.6,0.004411764705882304,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,2,total_fragments,0.07585234940052032,3.0,1.0,0.031617647058823486,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,2,plasma_volume,0.1841084361076355,1.0,1.0,0.1610294117647058,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,2,age,0.09464402496814728,2.0,1.0,0.07757352941176465,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,2,sex_female,0.06801489740610123,5.0,0.9,0.012867647058823501,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,3,mean_coverage,0.043164029717445374,15.0,0.0,0.02426470588235292,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,3,total_fragments,0.05710877850651741,8.0,0.5,0.03161764705882352,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,3,plasma_volume,0.11954093724489212,1.0,1.0,0.19999999999999998,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,3,age,0.09364034235477448,2.0,1.0,0.07205882352941176,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,3,sex_female,0.055116381496191025,10.0,0.4,0.09705882352941175,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,4,mean_coverage,0.05245416611433029,11.0,0.4,0.009558823529411804,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,4,total_fragments,0.07415346801280975,2.0,1.0,0.013235294117647112,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,4,plasma_volume,0.17009477317333221,1.0,1.0,0.11360294117647063,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,4,age,0.07130648195743561,4.0,0.9,0.07242647058823536,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,4,sex_female,0.0670364648103714,5.0,0.9,0.0025735294117647132,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,5,mean_coverage,0.06804237514734268,7.0,0.8,-0.0078125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,5,total_fragments,0.07184981554746628,5.0,0.9,-0.008203125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,5,plasma_volume,0.15080878138542175,1.0,1.0,0.312890625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,5,age,0.09638910740613937,2.0,1.0,0.128515625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,5,sex_female,0.07336463779211044,4.0,0.9,0.009375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,6,mean_coverage,0.05537459999322891,8.0,0.6,-0.01328125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,6,total_fragments,0.060743868350982666,7.0,0.6,-0.008203125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,6,plasma_volume,0.18266239762306213,1.0,1.0,0.109765625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,6,age,0.10011682659387589,2.0,1.0,0.06484375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,6,sex_female,0.04002246633172035,14.0,0.1,0.0015625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,7,mean_coverage,0.07034242898225784,5.0,1.0,-0.009765625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,7,total_fragments,0.07829872518777847,3.0,1.0,0.01875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,7,plasma_volume,0.18903212249279022,1.0,1.0,0.180078125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,7,age,0.08884280920028687,2.0,1.0,0.0984375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,7,sex_female,0.077252097427845,4.0,1.0,0.02109375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,8,mean_coverage,0.05216546729207039,7.0,0.8,-0.008984375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,8,total_fragments,0.08498331159353256,3.0,1.0,0.0015625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,8,plasma_volume,0.2244368940591812,1.0,1.0,0.166015625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,8,age,0.10385233163833618,2.0,1.0,0.061328125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,8,sex_female,0.0740535631775856,4.0,1.0,0.0234375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,9,mean_coverage,0.05067732557654381,11.0,0.4,-0.001171875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,9,total_fragments,0.07221201062202454,6.0,0.8,0.0015625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,9,plasma_volume,0.14717470109462738,1.0,1.0,0.18515625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,9,age,0.08628351986408234,3.0,0.9,-0.009765625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,9,sex_female,0.08317478001117706,4.0,0.9,0.0109375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,10,mean_coverage,0.0755903422832489,4.0,0.9,-0.021875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,10,total_fragments,0.05406777560710907,11.0,0.4,-0.019140625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,10,plasma_volume,0.15290121734142303,1.0,1.0,0.135546875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,10,age,0.08631177246570587,3.0,0.9,0.03828125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,10,10,sex_female,0.060463737696409225,5.0,0.9,0.0109375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,1,mean_coverage,0.019576463067411485,19.0,0.4,-0.007720588235294085,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,1,total_fragments,0.0271495423098197,14.0,0.56,0.0018382352941176572,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,1,plasma_volume,0.13514665138044235,1.0,1.0,0.12904411764705884,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,1,age,0.045510987955067216,7.0,0.8,0.04669117647058828,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,1,sex_female,0.0055300968353949815,30.0,0.0,-0.006617647058823506,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,2,mean_coverage,0.046516936272382736,4.0,1.0,0.021323529411764734,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,2,total_fragments,0.046582601964473724,3.0,1.0,0.0194852941176471,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,2,plasma_volume,0.0855107307434082,1.0,1.0,0.1779411764705882,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,2,age,0.06382601708173752,2.0,1.0,0.05220588235294119,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,2,sex_female,0.042364105582237244,7.0,0.92,0.0007352941176470784,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,3,mean_coverage,0.05218883603811264,4.0,0.96,0.04779411764705877,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,3,total_fragments,0.028806041926145554,19.0,0.44,0.027573529411764643,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,3,plasma_volume,0.08813395351171494,1.0,1.0,0.17389705882352935,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,3,age,0.055463142693042755,3.0,0.96,0.03566176470588229,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,3,sex_female,0.047175224870443344,5.0,0.96,0.026838235294117562,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,4,mean_coverage,0.02408657781779766,23.0,0.28,-0.002205882352941141,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,4,total_fragments,0.03196350112557411,14.0,0.6,0.0014705882352941458,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,4,plasma_volume,0.0612284392118454,2.0,0.96,0.17279411764705882,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,4,age,0.03839123621582985,8.0,0.8,0.13051470588235295,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,4,sex_female,0.03899902477860451,7.0,0.8,0.012132352941176521,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,5,mean_coverage,0.039671536403263166,7.0,0.88,-0.0046875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,5,total_fragments,0.048484071646484925,4.0,0.96,-0.020703125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,5,plasma_volume,0.17461823889477224,1.0,1.0,0.198046875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,5,age,0.0775841474672328,2.0,1.0,0.060546875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,5,sex_female,0.015639206705222484,24.0,0.24,0.002734375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,6,mean_coverage,0.03599107638001442,11.0,0.68,-0.00859375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,6,total_fragments,0.034991513937711716,13.0,0.64,-0.012890625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,6,plasma_volume,0.06463797390460968,1.0,1.0,0.09765625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,6,age,0.04397985339164734,5.0,0.88,-0.0046875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,6,sex_female,0.03189115226268768,17.0,0.52,0.000390625,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,7,mean_coverage,0.0399954654276371,8.0,0.88,-0.011328125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,7,total_fragments,0.04579310491681099,6.0,0.92,0.0046875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,7,plasma_volume,0.0891825333237648,1.0,1.0,0.127734375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,7,age,0.058826833963394165,2.0,1.0,0.04609375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,7,sex_female,0.047626566141843796,5.0,0.92,0.0421875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,8,mean_coverage,0.04980767145752907,3.0,1.0,-0.005859375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,8,total_fragments,0.046465206891298294,4.0,1.0,0.0125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,8,plasma_volume,0.08878707140684128,1.0,1.0,0.21796875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,8,age,0.07591919600963593,2.0,1.0,0.0328125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,8,sex_female,0.042672835290431976,7.0,0.92,0.03125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,9,mean_coverage,0.04026613384485245,6.0,0.88,-0.002734375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,9,total_fragments,0.037720486521720886,10.0,0.8,0.003125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,9,plasma_volume,0.07843324542045593,1.0,1.0,0.1796875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,9,age,0.06412156671285629,2.0,1.0,0.037109375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,9,sex_female,0.03900636360049248,8.0,0.84,0.016796875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,25,10,mean_coverage,0.023519678254631273,15.0,0.56,-0.013671875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,10,total_fragments,0.03286791161134421,9.0,0.76,-0.012109375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,10,plasma_volume,0.14475605773789454,1.0,1.0,0.112890625,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,10,age,0.05590793379510778,5.0,0.88,0.01953125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,25,10,sex_female,0.0019846513002999867,30.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,1,mean_coverage,0.01572561196339274,27.0,0.52,0.007352941176470557,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,1,total_fragments,0.014427914978379848,28.0,0.52,-0.0033088235294118197,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,1,plasma_volume,0.08777404953948653,1.0,1.0,0.02279411764705879,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,1,age,0.023482248160761762,16.0,0.72,0.031249999999999934,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,1,sex_female,0.0032424575251975662,54.0,0.02,-0.01139705882352946,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,2,mean_coverage,0.012202475344350873,32.0,0.42,0.013602941176470568,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,2,total_fragments,0.01199741132304979,33.0,0.42,0.012499999999999989,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,2,plasma_volume,0.0864019409815338,1.0,1.0,0.06323529411764703,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,2,age,0.02866256353463797,9.0,0.86,0.011764705882352938,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,2,sex_female,0.0011370366273060852,55.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,3,mean_coverage,0.01611532612102611,28.0,0.52,0.010661764705882332,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,3,total_fragments,0.019708449713293046,21.0,0.64,0.009558823529411753,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,3,plasma_volume,0.07883192051601196,1.0,1.0,0.10588235294117647,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,3,age,0.03479710005812201,8.0,0.88,0.005882352941176438,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,3,sex_female,0.001136728660716346,55.0,0.0,-0.0011029411764705843,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,4,mean_coverage,0.015364403171636036,27.0,0.52,-0.005882352941176466,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,4,total_fragments,0.012270775935606085,33.0,0.42,-0.0058823529411764445,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,4,plasma_volume,0.07613358402591139,1.0,1.0,0.08382352941176474,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,4,age,0.01956969552815725,19.0,0.66,0.04852941176470594,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,4,sex_female,0.0010359839235390372,55.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,5,mean_coverage,0.026349586400024272,7.0,0.94,0.015234375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,5,total_fragments,0.03731934834168245,4.0,0.98,0.015234375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,5,plasma_volume,0.11998480733941189,1.0,1.0,0.1546875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,5,age,0.06080857534073406,2.0,1.0,0.06015625,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,5,sex_female,0.004827371984174757,55.0,0.0,0.002734375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,6,mean_coverage,0.0274655744433403,7.0,0.92,0.009375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,6,total_fragments,0.03019295074045658,6.0,0.92,-0.008203125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,6,plasma_volume,0.05849931016564369,1.0,1.0,0.083984375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,6,age,0.025656428188085556,10.0,0.88,0.027734375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,6,sex_female,0.02129173092544079,17.0,0.76,0.003125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,7,mean_coverage,,,,0.03671875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,50,7,total_fragments,,,,0.045703125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,50,7,plasma_volume,,,,0.066796875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,50,7,age,,,,0.02890625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,50,7,sex_female,,,,0.072265625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,50,8,mean_coverage,0.016539943411186715,26.0,0.56,-0.001953125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,8,total_fragments,0.017103249121901015,25.0,0.56,0.004296875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,8,plasma_volume,0.07718720886650904,1.0,1.0,0.086328125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,8,age,0.023317389392439727,19.0,0.66,0.000390625,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,8,sex_female,0.002807768336837641,55.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,50,9,mean_coverage,,,,0.007421875,,Support Vector Machine
+brca_crc,cov_techdemo5,50,9,total_fragments,,,,0.01796875,,Support Vector Machine
+brca_crc,cov_techdemo5,50,9,plasma_volume,,,,0.088671875,,Support Vector Machine
+brca_crc,cov_techdemo5,50,9,age,,,,0.018359375,,Support Vector Machine
+brca_crc,cov_techdemo5,50,9,sex_female,,,,0.039453125,,Support Vector Machine
+brca_crc,cov_techdemo5,50,10,mean_coverage,0.03362839296460152,4.0,0.98,0.007421875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,10,total_fragments,0.040632352232933044,2.0,1.0,0.016796875,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,10,plasma_volume,0.053905028849840164,1.0,1.0,0.20859375,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,10,age,0.031373485922813416,7.0,0.94,0.02578125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,50,10,sex_female,0.029214421287178993,8.0,0.94,0.033203125,feature_importance,XGBoost
+brca_crc,cov_techdemo5,100,1,mean_coverage,,,,-0.0069852941176470505,,Support Vector Machine
+brca_crc,cov_techdemo5,100,1,total_fragments,,,,-0.0018382352941176405,,Support Vector Machine
+brca_crc,cov_techdemo5,100,1,plasma_volume,,,,0.06139705882352946,,Support Vector Machine
+brca_crc,cov_techdemo5,100,1,age,,,,0.004044117647058837,,Support Vector Machine
+brca_crc,cov_techdemo5,100,1,sex_female,,,,-0.016176470588235254,,Support Vector Machine
+brca_crc,cov_techdemo5,100,2,mean_coverage,,,,0.019485294117647028,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,2,total_fragments,,,,0.032720588235294105,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,2,plasma_volume,,,,0.004044117647058804,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,2,age,,,,0.01691176470588233,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,2,sex_female,,,,-0.005147058823529438,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,3,mean_coverage,0.007444641802415979,50.0,0.54,0.00588235294117645,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,3,total_fragments,0.015491635596731088,19.0,0.84,0.039338235294117625,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,3,plasma_volume,0.05075648899594421,1.0,1.0,0.0988970588235294,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,3,age,0.02611383647086345,7.0,0.95,0.006985294117647029,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,3,sex_female,0.0006766629857975761,105.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,4,mean_coverage,0.008856534951002748,52.0,0.52,-0.010661764705882404,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,4,total_fragments,0.011380929232332948,31.0,0.72,-0.003676470588235342,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,4,plasma_volume,0.05470725281691745,1.0,1.0,0.06874999999999995,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,4,age,0.01284601432197642,22.0,0.8,0.04080882352941172,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,4,sex_female,0.0006090829507169829,105.0,0.0,0.0011029411764705843,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,5,mean_coverage,,,,-0.013671875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,5,total_fragments,,,,-0.016796875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,5,plasma_volume,,,,0.02578125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,5,age,,,,0.00625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,5,sex_female,,,,-0.033203125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,6,mean_coverage,,,,0.0064453125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,6,total_fragments,,,,0.0408203125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,6,plasma_volume,,,,0.0115234375,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,6,age,,,,0.05625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,6,sex_female,,,,0.006640625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,100,7,mean_coverage,0.010345961156564248,36.0,0.68,-0.012109375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,7,total_fragments,0.010482185323745686,34.0,0.69,-0.02109375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,7,plasma_volume,0.07435318963689355,1.0,1.0,0.026171875,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,7,age,0.0258048436799527,3.0,0.99,0.05,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,7,sex_female,0.0009074828083328309,105.0,0.0,0.0,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,8,mean_coverage,0.008116543620792355,49.0,0.55,0.005859375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,8,total_fragments,0.011384590742252483,30.0,0.73,0.006640625,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,8,plasma_volume,0.075990950155151,1.0,1.0,0.124609375,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,8,age,0.026820524443319813,4.0,0.98,0.02578125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,8,sex_female,0.0012702864823363226,105.0,0.0,0.001953125,feature_importance,Random Forest
+brca_crc,cov_techdemo5,100,9,mean_coverage,,,,-0.00625,,Support Vector Machine
+brca_crc,cov_techdemo5,100,9,total_fragments,,,,0.003125,,Support Vector Machine
+brca_crc,cov_techdemo5,100,9,plasma_volume,,,,0.03203125,,Support Vector Machine
+brca_crc,cov_techdemo5,100,9,age,,,,0.009765625,,Support Vector Machine
+brca_crc,cov_techdemo5,100,9,sex_female,,,,0.013671875,,Support Vector Machine
+brca_crc,cov_techdemo5,100,10,mean_coverage,,,,0.000390625,,Support Vector Machine
+brca_crc,cov_techdemo5,100,10,total_fragments,,,,-0.014453125,,Support Vector Machine
+brca_crc,cov_techdemo5,100,10,plasma_volume,,,,0.002734375,,Support Vector Machine
+brca_crc,cov_techdemo5,100,10,age,,,,0.021875,,Support Vector Machine
+brca_crc,cov_techdemo5,100,10,sex_female,,,,0.006640625,,Support Vector Machine
+brca_crc,cov_techdemo5,250,1,mean_coverage,,,,0.015441176470588213,,Support Vector Machine
+brca_crc,cov_techdemo5,250,1,total_fragments,,,,0.02573529411764704,,Support Vector Machine
+brca_crc,cov_techdemo5,250,1,plasma_volume,,,,0.06874999999999998,,Support Vector Machine
+brca_crc,cov_techdemo5,250,1,age,,,,0.013602941176470573,,Support Vector Machine
+brca_crc,cov_techdemo5,250,1,sex_female,,,,-0.006985294117647117,,Support Vector Machine
+brca_crc,cov_techdemo5,250,2,mean_coverage,,,,0.009191176470588303,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,2,total_fragments,,,,0.012500000000000056,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,2,plasma_volume,,,,-0.00459558823529409,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,2,age,,,,0.0005514705882353532,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,2,sex_female,,,,0.003676470588235348,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,3,mean_coverage,,,,-0.04669117647058828,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,3,total_fragments,,,,-0.060845588235294165,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,3,plasma_volume,,,,-0.030330882352941162,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,3,age,,,,-0.018750000000000006,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,3,sex_female,,,,-0.0012867647058823373,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,4,mean_coverage,0.004151837365822057,84.0,0.68,-0.0022058823529411296,feature_importance,Random Forest
+brca_crc,cov_techdemo5,250,4,total_fragments,0.005190113431305059,56.0,0.788,-0.004411764705882337,feature_importance,Random Forest
+brca_crc,cov_techdemo5,250,4,plasma_volume,0.029607421311309355,2.0,0.996,0.0411764705882353,feature_importance,Random Forest
+brca_crc,cov_techdemo5,250,4,age,0.006701834590420056,35.0,0.868,0.0588235294117647,feature_importance,Random Forest
+brca_crc,cov_techdemo5,250,4,sex_female,0.0006011777298442942,240.0,0.06,-0.0007352941176470562,feature_importance,Random Forest
+brca_crc,cov_techdemo5,250,5,mean_coverage,,,,-0.004296875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,5,total_fragments,,,,-0.0013671875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,5,plasma_volume,,,,0.013671875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,5,age,,,,0.015625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,5,sex_female,,,,-0.0373046875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,6,mean_coverage,,,,-0.003515625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,6,total_fragments,,,,-0.00078125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,6,plasma_volume,,,,0.0005859375,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,6,age,,,,-0.0068359375,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,6,sex_female,,,,0.017578125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,7,mean_coverage,,,,0.021484375,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,7,total_fragments,,,,0.029296875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,7,plasma_volume,,,,0.016015625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,7,age,,,,0.001171875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,7,sex_female,,,,-0.013671875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,8,mean_coverage,,,,0.0078125,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,8,total_fragments,,,,0.01640625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,8,plasma_volume,,,,0.04296875,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,8,age,,,,-0.0015625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,8,sex_female,,,,0.006640625,,K-Nearest Neighbors
+brca_crc,cov_techdemo5,250,9,mean_coverage,,,,0.022265625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,250,9,total_fragments,,,,0.0015625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,250,9,plasma_volume,,,,0.037109375,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,250,9,age,,,,0.026171875,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,250,9,sex_female,,,,0.00390625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,250,10,mean_coverage,,,,0.000390625,,Support Vector Machine
+brca_crc,cov_techdemo5,250,10,total_fragments,,,,0.003515625,,Support Vector Machine
+brca_crc,cov_techdemo5,250,10,plasma_volume,,,,0.015234375,,Support Vector Machine
+brca_crc,cov_techdemo5,250,10,age,,,,0.01171875,,Support Vector Machine
+brca_crc,cov_techdemo5,250,10,sex_female,,,,0.023046875,,Support Vector Machine
+brca_crc,cov_techdemo5,500,1,mean_coverage,0.0,357.0,0.0,0.0,coef,Logistic Regression
+brca_crc,cov_techdemo5,500,1,total_fragments,0.0,356.0,0.0,0.0,coef,Logistic Regression
+brca_crc,cov_techdemo5,500,1,plasma_volume,0.07859011262786865,53.0,0.898,0.030514705882352965,coef,Logistic Regression
+brca_crc,cov_techdemo5,500,1,age,0.05517121568846245,114.0,0.778,0.007352941176470623,coef,Logistic Regression
+brca_crc,cov_techdemo5,500,1,sex_female,0.08000981348563421,49.0,0.904,-0.013970588235294058,coef,Logistic Regression
+brca_crc,cov_techdemo5,500,2,mean_coverage,,,,-0.0051470588235293935,,Support Vector Machine
+brca_crc,cov_techdemo5,500,2,total_fragments,,,,-0.0051470588235293935,,Support Vector Machine
+brca_crc,cov_techdemo5,500,2,plasma_volume,,,,-0.007352941176470562,,Support Vector Machine
+brca_crc,cov_techdemo5,500,2,age,,,,-0.005514705882352922,,Support Vector Machine
+brca_crc,cov_techdemo5,500,2,sex_female,,,,-0.004044117647058809,,Support Vector Machine
+brca_crc,cov_techdemo5,500,3,mean_coverage,0.014787706414320256,193.0,0.624,0.013970588235294068,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,3,total_fragments,0.015593661752258901,172.0,0.664,0.013970588235294073,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,3,plasma_volume,0.039399435197623046,1.0,1.0,-0.0025735294117647245,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,3,age,0.03159213896816115,6.0,0.992,0.007352941176470567,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,3,sex_female,0.01599447960490951,165.0,0.676,0.0003676470588235059,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,4,mean_coverage,,,,0.0025735294117646967,,Support Vector Machine
+brca_crc,cov_techdemo5,500,4,total_fragments,,,,0.004779411764705865,,Support Vector Machine
+brca_crc,cov_techdemo5,500,4,plasma_volume,,,,0.0022058823529411686,,Support Vector Machine
+brca_crc,cov_techdemo5,500,4,age,,,,-0.010294117647058797,,Support Vector Machine
+brca_crc,cov_techdemo5,500,4,sex_female,,,,0.012499999999999983,,Support Vector Machine
+brca_crc,cov_techdemo5,500,5,mean_coverage,0.011494794748148494,210.0,0.59,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,5,total_fragments,0.012439951169856588,188.0,0.632,0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,5,plasma_volume,0.02721779303505688,9.0,0.986,0.03984375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,5,age,0.02635698401928909,12.0,0.982,0.008203125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,5,sex_female,0.029430607699894352,3.0,0.996,-0.012890625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,6,mean_coverage,0.008392576847606047,317.0,0.376,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,6,total_fragments,0.009008482740828112,304.0,0.4,-0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,6,plasma_volume,0.028779365536970743,7.0,0.988,0.005859375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,6,age,0.018209944172453914,99.0,0.806,0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,6,sex_female,0.014372764670191959,184.0,0.638,0.002734375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,7,mean_coverage,0.002163441845158239,456.0,0.098,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,7,total_fragments,0.0027647226060263956,448.0,0.112,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,7,plasma_volume,0.034638288164624394,3.0,0.996,0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,7,age,0.020881657760991216,69.0,0.866,0.015234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,7,sex_female,0.018723582657249306,104.0,0.798,-0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,500,8,mean_coverage,,,,0.001171875,,Support Vector Machine
+brca_crc,cov_techdemo5,500,8,total_fragments,,,,0.000390625,,Support Vector Machine
+brca_crc,cov_techdemo5,500,8,plasma_volume,,,,0.00234375,,Support Vector Machine
+brca_crc,cov_techdemo5,500,8,age,,,,0.00703125,,Support Vector Machine
+brca_crc,cov_techdemo5,500,8,sex_female,,,,0.00390625,,Support Vector Machine
+brca_crc,cov_techdemo5,500,9,mean_coverage,,,,-0.01015625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,500,9,total_fragments,,,,-0.00078125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,500,9,plasma_volume,,,,0.001953125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,500,9,age,,,,0.000390625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,500,9,sex_female,,,,0.00703125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,500,10,mean_coverage,,,,-0.005859375,,Support Vector Machine
+brca_crc,cov_techdemo5,500,10,total_fragments,,,,-0.00546875,,Support Vector Machine
+brca_crc,cov_techdemo5,500,10,plasma_volume,,,,0.03046875,,Support Vector Machine
+brca_crc,cov_techdemo5,500,10,age,,,,0.00234375,,Support Vector Machine
+brca_crc,cov_techdemo5,500,10,sex_female,,,,0.00859375,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,1,mean_coverage,0.0027383506125482487,783.0,0.222,0.002941176470588225,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,1,total_fragments,0.0031002104211347737,753.0,0.251,0.003676470588235281,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,1,plasma_volume,0.012586520561963277,50.0,0.952,0.017279411764705828,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,1,age,0.009107909244165081,217.0,0.786,-0.004779411764705932,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,1,sex_female,0.013900433798166033,23.0,0.978,-0.01029411764705886,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,2,mean_coverage,,,,-0.0007352941176470673,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,2,total_fragments,,,,-0.0007352941176470673,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,2,plasma_volume,,,,0.0,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,2,age,,,,-1.1102230246251566e-17,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,2,sex_female,,,,0.0,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,3,mean_coverage,0.005645214342143047,536.0,0.469,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,3,total_fragments,0.006031344098597381,491.0,0.513,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,3,plasma_volume,0.023621932022225445,1.0,1.0,-0.0011029411764705843,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,3,age,0.014426475222085589,44.0,0.958,-0.0018382352941176238,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,3,sex_female,0.006371015014622394,460.0,0.543,0.002205882352941202,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,4,mean_coverage,0.0017021331244172484,890.0,0.115,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,4,total_fragments,0.001996997461088963,866.0,0.138,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,4,plasma_volume,0.016545759464069693,2.0,0.999,0.0025735294117646967,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,4,age,0.00981956801505083,149.0,0.853,-0.0014705882352941124,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,4,sex_female,0.009131237076008348,194.0,0.809,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,5,mean_coverage,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,5,total_fragments,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,5,plasma_volume,,,,0.007421875,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,5,age,,,,-0.00078125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,5,sex_female,,,,-0.001953125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,6,mean_coverage,0.005070838390033325,576.0,0.429,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,6,total_fragments,0.005432947968071435,541.0,0.463,0.0015625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,6,plasma_volume,0.017791562626018383,5.0,0.996,-0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,6,age,0.008071697280403405,302.0,0.7,0.006640625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,6,sex_female,0.005925339548139183,498.0,0.505,0.005859375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,7,mean_coverage,,,,0.00234375,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,7,total_fragments,,,,0.003125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,7,plasma_volume,,,,-0.003125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,7,age,,,,-0.00703125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,7,sex_female,,,,0.0015625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,8,mean_coverage,0.006366661645199203,473.0,0.532,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,8,total_fragments,0.006755029824867821,450.0,0.554,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,8,plasma_volume,0.020168789003457085,4.0,0.997,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,8,age,0.011047433829507087,157.0,0.845,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,8,sex_female,0.010569394030170272,186.0,0.817,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1000,9,mean_coverage,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,9,total_fragments,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,9,plasma_volume,,,,-0.00078125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,9,age,,,,-0.002734375,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,9,sex_female,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1000,10,mean_coverage,,,,-0.008984375,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,10,total_fragments,,,,-0.01015625,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,10,plasma_volume,,,,0.013671875,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,10,age,,,,0.014453125,,Support Vector Machine
+brca_crc,cov_techdemo5,1000,10,sex_female,,,,0.003125,,Support Vector Machine
+brca_crc,cov_techdemo5,1500,1,mean_coverage,0.0039866326401316815,753.0,0.5013333333333333,-0.0036764705882352975,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,1,total_fragments,0.004254271725302764,710.0,0.5293333333333333,-0.00036764705882351146,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,1,plasma_volume,0.009505766810171607,70.0,0.9546666666666667,0.017647058823529425,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,1,age,0.007199485023786583,259.0,0.8293333333333334,0.005147058823529416,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,1,sex_female,0.010824435745325614,23.0,0.9853333333333333,-0.01911764705882355,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,2,mean_coverage,0.003796473976383833,790.0,0.4766666666666667,0.003860294117647045,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,2,total_fragments,0.004047876729022038,726.0,0.5186666666666667,0.005147058823529388,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,2,plasma_volume,0.012137483611058552,2.0,0.9993333333333333,-0.004044117647058809,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,2,age,0.006124654360543813,357.0,0.764,0.003308823529411753,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,2,sex_female,0.006637017453197365,283.0,0.8126666666666666,-0.0011029411764705843,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,3,mean_coverage,0.004168322114090265,706.0,0.5326666666666666,-0.0033088235294117365,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,3,total_fragments,0.004444788567890197,664.0,0.56,0.0007352941176470729,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,3,plasma_volume,0.01612165917584499,1.0,1.0,-0.014705882352941124,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,3,age,0.008234110420566978,158.0,0.896,-0.010294117647058777,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,3,sex_female,0.004960619760950066,581.0,0.6146666666666667,-0.0014705882352940957,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,4,mean_coverage,0.003342281847024058,922.0,0.38866666666666666,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,4,total_fragments,0.003574778116362352,869.0,0.42333333333333334,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,4,plasma_volume,0.013399927867000202,3.0,0.9986666666666667,0.01580882352941182,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,4,age,0.007831716848330703,150.0,0.902,0.008088235294117646,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,4,sex_female,0.00797611620646505,137.0,0.91,0.01360294117647055,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,5,mean_coverage,,,,-0.002734375,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,5,total_fragments,,,,-0.0015625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,5,plasma_volume,,,,-0.000390625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,5,age,,,,-0.004296875,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,5,sex_female,,,,-0.007421875,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,6,mean_coverage,0.003101193151190172,947.0,0.372,-0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,6,total_fragments,0.0033688278962015292,898.0,0.404,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,6,plasma_volume,0.012494546542917722,5.0,0.9973333333333333,-0.0078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,6,age,0.005355480519505961,513.0,0.6593333333333333,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,6,sex_female,0.00500676673728849,571.0,0.6213333333333333,0.003125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,7,mean_coverage,,,,0.006640625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,7,total_fragments,,,,0.008203125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,7,plasma_volume,,,,0.001953125,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,7,age,,,,0.008984375,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,7,sex_female,,,,0.003515625,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,8,mean_coverage,0.003980586434830574,804.0,0.4673333333333333,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,8,total_fragments,0.004239583929948067,750.0,0.5026666666666667,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,8,plasma_volume,0.012272900446953434,9.0,0.9946666666666667,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,8,age,0.006851024996700281,294.0,0.8053333333333333,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,8,sex_female,0.006606336951115862,324.0,0.786,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,9,mean_coverage,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,9,total_fragments,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,9,plasma_volume,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,9,age,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,9,sex_female,,,,0.0,,Multi-Layer Perceptron
+brca_crc,cov_techdemo5,1500,10,mean_coverage,0.008431242362886301,202.0,0.8673333333333333,-0.00703125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,10,total_fragments,0.008808924414147178,174.0,0.8853333333333333,-0.00703125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,10,plasma_volume,0.013506086807666573,12.0,0.9926666666666667,0.0078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,10,age,0.006175453241537236,440.0,0.7093333333333334,0.003515625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,1500,10,sex_female,0.0045672118686115185,695.0,0.54,0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,1,mean_coverage,0.004862570144599681,572.0,0.7732,0.004411764705882332,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,1,total_fragments,0.0051500252291510965,488.0,0.8064,0.004044117647058804,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,1,plasma_volume,0.009415210787181827,27.0,0.99,0.008455882352941152,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,1,age,0.006077347098005533,304.0,0.8796,0.006617647058823506,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,1,sex_female,0.010286506741675557,10.0,0.9964,-0.015441176470588264,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,2,mean_coverage,0.0030516590666444304,965.0,0.616,-0.01727941176470585,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,2,total_fragments,0.003220953346196031,889.0,0.646,-0.014705882352941142,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,2,plasma_volume,0.008125545743649942,2.0,0.9996,-0.016176470588235254,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,2,age,0.003970896194346921,551.0,0.7808,-0.00955882352941173,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,2,sex_female,0.004453688375929927,387.0,0.846,-0.009191176470588192,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,3,mean_coverage,0.0030985759158039215,968.0,0.6144,0.007352941176470562,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,3,total_fragments,0.0032796944010687005,895.0,0.6432,0.010661764705882315,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,3,plasma_volume,0.00869493029031895,2.0,0.9996,-0.004044117647058876,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,3,age,0.004598051802063038,390.0,0.8448,-0.0014705882352941512,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,3,sex_female,0.0030009671275875328,1021.0,0.5936,0.0018382352941176405,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,4,mean_coverage,0.001000172444831002,2129.0,0.1504,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,4,total_fragments,0.0011471366665518883,2060.0,0.1776,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,4,plasma_volume,0.007582183885239289,8.0,0.9972,0.006617647058823511,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,4,age,0.004818006179098785,247.0,0.902,-0.0007352941176470562,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,4,sex_female,0.004040616534529769,495.0,0.8032,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,5,mean_coverage,0.0009155880400504052,2134.0,0.1484,-0.003125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,5,total_fragments,0.0010656048813874465,2061.0,0.1772,-0.004296875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,5,plasma_volume,0.006319466090589018,39.0,0.9848,0.0015625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,5,age,0.004250309447276896,424.0,0.8316,-0.003515625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,5,sex_female,0.005837218855298897,74.0,0.9712,-0.0109375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,6,mean_coverage,0.003119898611424687,1016.0,0.5956,0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,6,total_fragments,0.003293224193628553,932.0,0.6284,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,6,plasma_volume,0.008982549976596602,2.0,0.9996,-0.00703125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,6,age,0.0032056387783934953,975.0,0.6116,0.003125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,6,sex_female,0.004234337969732862,517.0,0.794,0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,7,mean_coverage,0.0038829976793150834,731.0,0.7096,0.00703125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,7,total_fragments,0.004074873204816803,653.0,0.7404,0.006640625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,7,plasma_volume,0.009339298783910313,6.0,0.998,0.0015625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,7,age,0.005256681278302887,322.0,0.872,0.002734375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,7,sex_female,0.004442209296763125,524.0,0.7916,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,8,mean_coverage,0.0021037843759099104,1498.0,0.4028,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,8,total_fragments,0.0022610995310376578,1420.0,0.4336,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,8,plasma_volume,0.006908329886327947,30.0,0.9884,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,8,age,0.0036280231815437845,745.0,0.7032,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,8,sex_female,0.004788320110685255,330.0,0.8688,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,9,mean_coverage,0.0036561573791722294,767.0,0.6952,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,9,total_fragments,0.0038674219079653433,685.0,0.7276,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,9,plasma_volume,0.009120976369579398,3.0,0.9992,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,9,age,0.004699509478118627,407.0,0.838,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,9,sex_female,0.003899049760353944,673.0,0.732,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,10,mean_coverage,0.006045674304887317,175.0,0.9312,0.003515625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,10,total_fragments,0.006291106314074222,144.0,0.9432,0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,10,plasma_volume,0.00877281233597357,9.0,0.9968,0.0140625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,10,age,0.0038557639184368495,742.0,0.7048,0.009765625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,2500,10,sex_female,0.0028448254332916136,1169.0,0.5344,0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,1,mean_coverage,0.0012356307484879309,2816.0,0.4378,0.0007352941176470673,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,1,total_fragments,0.0013495463305804208,2596.0,0.4816,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,1,plasma_volume,0.0038938858748818837,66.0,0.9872,0.019485294117647194,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,1,age,0.002485777991344797,844.0,0.8318,0.004779411764705937,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,1,sex_female,0.004101008859733307,38.0,0.9926,-0.008088235294117618,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,2,mean_coverage,0.001811502872851736,1790.0,0.643,0.0007352941176470562,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,2,total_fragments,0.0019210553693490046,1594.0,0.682,0.0007352941176470562,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,2,plasma_volume,0.0047487947708324514,5.0,0.9992,0.0003676470588235281,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,2,age,0.0027957572136693806,539.0,0.8928,0.0018382352941176405,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,2,sex_female,0.003043046979190982,364.0,0.9276,0.0022058823529411743,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,3,mean_coverage,0.0012355434552865623,2849.0,0.4312,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,3,total_fragments,0.0013416663761721302,2639.0,0.473,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,3,plasma_volume,0.004840093966128501,9.0,0.9984,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,3,age,0.002669356786684807,637.0,0.873,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,3,sex_female,0.0022300456684316416,1167.0,0.7672,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,4,mean_coverage,0.0023814124607923837,1301.0,0.7408,0.0014705882352941345,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,4,total_fragments,0.0025232716345815966,1120.0,0.7768,0.004411764705882398,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,4,plasma_volume,0.004964578913072301,23.0,0.9956,0.001102941176470601,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,4,age,0.004107186921780397,136.0,0.9732,0.002205882352941202,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,4,sex_female,0.003217981193714542,482.0,0.9042,0.004411764705882376,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,5,mean_coverage,0.0007934075013968837,3703.0,0.2604,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,5,total_fragments,0.0008973697668443427,3523.0,0.2962,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,5,plasma_volume,0.004202107562517271,26.0,0.995,0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,5,age,0.0031092553456856507,299.0,0.9408,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,5,sex_female,0.003636457781311554,105.0,0.9794,0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,6,mean_coverage,0.0011338867652435857,3121.0,0.3768,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,6,total_fragments,0.0012487695935152238,2906.0,0.4196,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,6,plasma_volume,0.004872607615939249,8.0,0.9986,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,6,age,0.001950947219659693,1605.0,0.6796,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,6,sex_female,0.0021344212735555806,1324.0,0.7356,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,7,mean_coverage,0.0015983994720081725,2281.0,0.5448,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,7,total_fragments,0.0017132583773962712,2106.0,0.5796,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,7,plasma_volume,0.005268912690080697,10.0,0.9982,-0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,7,age,0.0032834526610805766,373.0,0.9258,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,7,sex_female,0.002908582032450432,607.0,0.8792,-0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,8,mean_coverage,0.001230720258745092,2891.0,0.4228,0.00390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,8,total_fragments,0.001340018909177819,2682.0,0.4644,0.004296875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,8,plasma_volume,0.004592811636815798,17.0,0.9968,0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,8,age,0.0025610939835910744,805.0,0.8396,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,8,sex_female,0.0032171908947985195,319.0,0.9366,0.001171875,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,9,mean_coverage,0.0027363542931645897,779.0,0.845,-0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,9,total_fragments,0.0028715103213904636,674.0,0.8658,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,9,plasma_volume,0.004622976113408374,41.0,0.992,-0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,9,age,0.003045206259647686,532.0,0.894,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,9,sex_female,0.002302955129859236,1261.0,0.7488,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,10,mean_coverage,0.004008694305247556,189.0,0.9628,-0.003515625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,10,total_fragments,0.004172233329933158,159.0,0.9686,-0.005859375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,10,plasma_volume,0.005332647325822007,18.0,0.9966,0.009375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,10,age,0.00238535083210862,1248.0,0.7512,-0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,5000,10,sex_female,0.002271018545834504,1371.0,0.7268,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,1,mean_coverage,0.0012548053605163003,2771.0,0.7234,-0.0011029411764705954,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,1,total_fragments,0.001347101165160497,2404.0,0.76,-0.0018382352941176683,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,1,plasma_volume,0.0023088757863744627,313.0,0.9689,0.004779411764705843,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,1,age,0.0018474907226721919,905.0,0.9098,-0.0062500000000000385,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,1,sex_female,0.0030811913117795523,27.0,0.9974,-0.003676470588235331,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,2,mean_coverage,0.0011862753987062673,2913.0,0.7092,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,2,total_fragments,0.0012719676157478426,2516.0,0.7488,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,2,plasma_volume,0.0031304786928903284,8.0,0.9993,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,2,age,0.0018170498064034588,793.0,0.921,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,2,sex_female,0.0021797715414586163,327.0,0.9675,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,3,mean_coverage,0.0011797087839172035,3176.0,0.6829,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,3,total_fragments,0.0012692313885105746,2760.0,0.7244,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,3,plasma_volume,0.0032528554935511,22.0,0.9979,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,3,age,0.0019994692474043798,680.0,0.9322,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,3,sex_female,0.0019215933175232762,812.0,0.9191,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,4,mean_coverage,0.0010517328335028528,3818.0,0.6187,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,4,total_fragments,0.0011443003629345134,3351.0,0.6653,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,4,plasma_volume,0.002743113107623482,90.0,0.9911,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,4,age,0.0023009775066998384,311.0,0.9691,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,4,sex_female,0.0021241995488720084,472.0,0.9531,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,5,mean_coverage,0.001025195536667209,3929.0,0.6076,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,5,total_fragments,0.0011155104778398344,3457.0,0.6547,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,5,plasma_volume,0.002497340400932483,161.0,0.9841,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,5,age,0.0021220271630591056,461.0,0.9542,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,5,sex_female,0.0028186638553159946,59.0,0.9942,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,6,mean_coverage,0.0007336857380095086,5519.0,0.4486,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,6,total_fragments,0.0008171811499847074,4967.0,0.5037,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,6,plasma_volume,0.0031711974674705225,16.0,0.9985,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,6,age,0.0014010621593087483,2065.0,0.7938,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,6,sex_female,0.001588271486280408,1403.0,0.8599,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,7,mean_coverage,0.0010950138467399812,3566.0,0.6439,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,7,total_fragments,0.0011779520740120076,3186.0,0.6818,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,7,plasma_volume,0.002869427873443003,70.0,0.9931,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,7,age,0.001995129471327379,704.0,0.9299,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,7,sex_female,0.0023380879254669127,307.0,0.9695,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,8,mean_coverage,0.0013241506116519037,2523.0,0.7482,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,8,total_fragments,0.0014148293751488922,2181.0,0.7823,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,8,plasma_volume,0.002593082242842534,155.0,0.9846,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,8,age,0.001771348617095638,1123.0,0.888,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,8,sex_female,0.0024118460355768857,254.0,0.9748,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,9,mean_coverage,0.0014263321128917296,2209.0,0.7796,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,9,total_fragments,0.0015231145449814247,1855.0,0.8149,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,9,plasma_volume,0.0029569204863209267,54.0,0.9947,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,9,age,0.002063129180004332,620.0,0.9382,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,9,sex_female,0.0018632202800584522,966.0,0.9037,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,10,mean_coverage,0.0017153914537934329,1210.0,0.8794,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,10,total_fragments,0.001818219030409052,981.0,0.9021,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,10,plasma_volume,0.0030324971739910714,36.0,0.9965,0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,10,age,0.0013652651609921853,2351.0,0.7654,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,10000,10,sex_female,0.0017437565128914437,1133.0,0.887,0.001953125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,1,mean_coverage,0.0005720179059734673,7163.0,0.49665986920751004,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,1,total_fragments,0.0006486978163978684,6355.0,0.5534069334083398,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,1,plasma_volume,0.0019541888459498604,297.0,0.9792560298150622,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,1,age,0.0015667874695430414,895.0,0.9372758596441881,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,1,sex_female,0.0024144120428403683,43.0,0.9970466211940089,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,2,mean_coverage,0.0010061835207457754,3412.0,0.7604247239997187,-0.0007352941176470562,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,2,total_fragments,0.0010868661278390815,2918.0,0.7950917656986147,-0.0022058823529411686,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,2,plasma_volume,0.0026372403003649997,25.0,0.9983123549680051,-0.0051470588235293935,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,2,age,0.001680516005906628,692.0,0.9515505238731453,-0.0025735294117646967,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,2,sex_female,0.0019065921403377528,363.0,0.9746150059770762,-0.0014705882352941124,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,3,mean_coverage,0.0006743280390614986,6111.0,0.5706349764432881,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,3,total_fragments,0.0007491651262287909,5455.0,0.6166936221081499,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,3,plasma_volume,0.002751234841592182,15.0,0.999015540398003,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,3,age,0.0017396304906302578,597.0,0.9581604669151255,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,3,sex_female,0.0016122990525166087,854.0,0.9401589199071795,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,4,mean_coverage,0.0006342116639987313,6633.0,0.5339286969973982,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,4,total_fragments,0.0007116523117696177,5912.0,0.5845580479572463,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,4,plasma_volume,0.0022958914078509305,98.0,0.9931791013290204,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,4,age,0.0020140289435020306,271.0,0.9810843119330568,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,4,sex_female,0.001735153181921358,609.0,0.9573869629421279,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,5,mean_coverage,0.0007310086393516598,5644.0,0.6034737360241896,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,5,total_fragments,0.0008077845053074061,4981.0,0.65002461149005,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,5,plasma_volume,0.0021324378421279555,158.0,0.9890303072920329,-0.00078125,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,5,age,0.001863299070339985,407.0,0.9715913086280852,-0.0015625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,5,sex_female,0.002316191863560995,77.0,0.994655790732016,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,6,mean_coverage,0.0007466949593738594,5608.0,0.606005203572182,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,6,total_fragments,0.0008253044059282481,4905.0,0.6553688207580339,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,6,plasma_volume,0.0024966143566444708,48.0,0.9966950284790099,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,6,age,0.0012079554738597393,2376.0,0.8331340974615006,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,6,sex_female,0.0014406660520600969,1355.0,0.9048590113212854,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,7,mean_coverage,0.0006234422381795041,6653.0,0.5325223261374025,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,7,total_fragments,0.000691924268666832,5997.0,0.5785809718022643,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,7,plasma_volume,0.002272820621072741,104.0,0.9927571900710217,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,7,age,0.0016280029677374032,804.0,0.943674847057169,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,7,sex_female,0.0019471193551507608,303.0,0.9788341185570635,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,8,mean_coverage,0.0008496687945793859,4718.0,0.6685887068419942,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,8,total_fragments,0.0009254502079081543,4078.0,0.7135222558188594,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,8,plasma_volume,0.002213517579315062,130.0,0.9909289079530272,-0.000390625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,8,age,0.0015880574296656058,928.0,0.9349553477251952,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,8,sex_female,0.0019803815821081757,282.0,0.9803108079600591,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,9,mean_coverage,0.0008703121180525173,4520.0,0.6825117783559524,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,9,total_fragments,0.0009504820502201721,3929.0,0.723999718725828,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,9,plasma_volume,0.0024109905301301676,65.0,0.9954996132480135,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,9,age,0.00173506045919123,636.0,0.9554180437381338,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,9,sex_female,0.001571756600504383,996.0,0.9301736868012095,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,10,mean_coverage,0.001124623732952797,2685.0,0.8115463047605653,-0.00234375,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,10,total_fragments,0.001209885414257706,2226.0,0.8437521974544687,-0.003515625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,10,plasma_volume,0.002475099061482653,51.0,0.9964840728500105,-0.0015625,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,10,age,0.0012421264235434797,2065.0,0.855003164334435,0.0,coef,Support Vector Machine
+brca_crc,cov_techdemo5,15000,10,sex_female,0.0014049704770546089,1397.0,0.9019056325152943,0.0,coef,Support Vector Machine
+pancan,cov_techdemo5,10,1,mean_coverage,0.04546041786670685,10.0,0.4,-0.014117647058823578,feature_importance,XGBoost
+pancan,cov_techdemo5,10,1,total_fragments,0.06699594110250473,6.0,0.7,-0.01911764705882358,feature_importance,XGBoost
+pancan,cov_techdemo5,10,1,plasma_volume,0.25035637617111206,1.0,1.0,0.18617647058823522,feature_importance,XGBoost
+pancan,cov_techdemo5,10,1,age,0.11225903779268265,2.0,1.0,0.058088235294117586,feature_importance,XGBoost
+pancan,cov_techdemo5,10,1,sex_female,0.025233913213014603,15.0,0.0,-0.0016176470588235236,feature_importance,XGBoost
+pancan,cov_techdemo5,10,2,mean_coverage,0.05341786891222,7.0,0.7,0.0014705882352941124,feature_importance,XGBoost
+pancan,cov_techdemo5,10,2,total_fragments,0.10111808776855469,3.0,1.0,0.008676470588235313,feature_importance,XGBoost
+pancan,cov_techdemo5,10,2,plasma_volume,0.2359144240617752,1.0,1.0,0.21808823529411764,feature_importance,XGBoost
+pancan,cov_techdemo5,10,2,age,0.12462431937456131,2.0,1.0,0.08926470588235295,feature_importance,XGBoost
+pancan,cov_techdemo5,10,2,sex_female,0.03537305071949959,13.0,0.2,-0.002499999999999991,feature_importance,XGBoost
+pancan,cov_techdemo5,10,3,mean_coverage,0.053650207817554474,6.0,0.8,0.005441176470588222,feature_importance,XGBoost
+pancan,cov_techdemo5,10,3,total_fragments,0.08179658651351929,3.0,1.0,0.006617647058823495,feature_importance,XGBoost
+pancan,cov_techdemo5,10,3,plasma_volume,0.18142658472061157,1.0,1.0,0.30441176470588227,feature_importance,XGBoost
+pancan,cov_techdemo5,10,3,age,0.13994447886943817,2.0,1.0,0.06382352941176465,feature_importance,XGBoost
+pancan,cov_techdemo5,10,3,sex_female,0.05010262504220009,9.0,0.6,0.010735294117647055,feature_importance,XGBoost
+pancan,cov_techdemo5,10,4,mean_coverage,0.05488660931587219,8.0,0.6,0.00014705882352932241,feature_importance,XGBoost
+pancan,cov_techdemo5,10,4,total_fragments,0.08052369952201843,6.0,0.7,0.006617647058823428,feature_importance,XGBoost
+pancan,cov_techdemo5,10,4,plasma_volume,0.1919344663619995,1.0,1.0,0.20117647058823515,feature_importance,XGBoost
+pancan,cov_techdemo5,10,4,age,0.08408273011445999,2.0,1.0,0.11029411764705865,feature_importance,XGBoost
+pancan,cov_techdemo5,10,4,sex_female,0.03314407169818878,14.0,0.1,0.0024999999999999354,feature_importance,XGBoost
+pancan,cov_techdemo5,10,5,mean_coverage,0.04310770332813263,12.0,0.3,-0.0007440476190475609,feature_importance,XGBoost
+pancan,cov_techdemo5,10,5,total_fragments,0.09011537581682205,3.0,1.0,0.009672619047619124,feature_importance,XGBoost
+pancan,cov_techdemo5,10,5,plasma_volume,0.21449491381645203,1.0,1.0,0.33005952380952386,feature_importance,XGBoost
+pancan,cov_techdemo5,10,5,age,0.12431539595127106,2.0,1.0,0.0581845238095239,feature_importance,XGBoost
+pancan,cov_techdemo5,10,5,sex_female,0.060098838061094284,6.0,0.8,0.0071428571428571955,feature_importance,XGBoost
+pancan,cov_techdemo5,10,6,mean_coverage,0.04056724160909653,13.0,0.1,0.004166666666666657,feature_importance,XGBoost
+pancan,cov_techdemo5,10,6,total_fragments,0.0579654723405838,4.0,0.9,0.02708333333333333,feature_importance,XGBoost
+pancan,cov_techdemo5,10,6,plasma_volume,0.276355117559433,1.0,1.0,0.06636904761904765,feature_importance,XGBoost
+pancan,cov_techdemo5,10,6,age,0.11608961224555969,2.0,1.0,0.11532738095238097,feature_importance,XGBoost
+pancan,cov_techdemo5,10,6,sex_female,0.03186244145035744,15.0,0.0,0.00029761904761904656,feature_importance,XGBoost
+pancan,cov_techdemo5,10,7,mean_coverage,0.03866603225469589,12.0,0.3,0.004613095238095189,feature_importance,XGBoost
+pancan,cov_techdemo5,10,7,total_fragments,0.06219359114766121,4.0,0.9,0.022767857142857107,feature_importance,XGBoost
+pancan,cov_techdemo5,10,7,plasma_volume,0.23420381546020508,1.0,1.0,0.20505952380952377,feature_importance,XGBoost
+pancan,cov_techdemo5,10,7,age,0.1296265572309494,2.0,1.0,0.0872023809523809,feature_importance,XGBoost
+pancan,cov_techdemo5,10,7,sex_female,0.05461624264717102,7.0,0.7,0.004017857142857062,feature_importance,XGBoost
+pancan,cov_techdemo5,10,8,mean_coverage,0.05246402323246002,9.0,0.5,0.0035937500000000067,feature_importance,XGBoost
+pancan,cov_techdemo5,10,8,total_fragments,0.06808388978242874,3.0,1.0,0.0035937499999999845,feature_importance,XGBoost
+pancan,cov_techdemo5,10,8,plasma_volume,0.2519535720348358,1.0,1.0,0.13468750000000002,feature_importance,XGBoost
+pancan,cov_techdemo5,10,8,age,0.12304374575614929,2.0,1.0,0.04390624999999999,feature_importance,XGBoost
+pancan,cov_techdemo5,10,8,sex_female,0.0,15.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,10,9,mean_coverage,0.04043872654438019,12.0,0.3,-0.0026562499999999434,feature_importance,XGBoost
+pancan,cov_techdemo5,10,9,total_fragments,0.07309938967227936,4.0,0.9,-0.006874999999999937,feature_importance,XGBoost
+pancan,cov_techdemo5,10,9,plasma_volume,0.25549280643463135,1.0,1.0,0.2828125,feature_importance,XGBoost
+pancan,cov_techdemo5,10,9,age,0.15493182837963104,2.0,1.0,0.08265625000000003,feature_importance,XGBoost
+pancan,cov_techdemo5,10,9,sex_female,0.045372430235147476,6.0,0.8,0.0025000000000000356,feature_importance,XGBoost
+pancan,cov_techdemo5,10,10,mean_coverage,0.052743539214134216,8.0,0.6,-0.005156250000000062,feature_importance,XGBoost
+pancan,cov_techdemo5,10,10,total_fragments,0.06647422909736633,3.0,1.0,0.0007812499999999723,feature_importance,XGBoost
+pancan,cov_techdemo5,10,10,plasma_volume,0.25001469254493713,1.0,1.0,0.21765624999999994,feature_importance,XGBoost
+pancan,cov_techdemo5,10,10,age,0.10953572392463684,2.0,1.0,0.09781249999999993,feature_importance,XGBoost
+pancan,cov_techdemo5,10,10,sex_female,0.038343578577041626,14.0,0.1,-0.004531250000000042,feature_importance,XGBoost
+pancan,cov_techdemo5,25,1,mean_coverage,0.03500396013259888,7.0,0.84,0.013676470588235285,feature_importance,XGBoost
+pancan,cov_techdemo5,25,1,total_fragments,0.03131307661533356,11.0,0.72,0.006617647058823534,feature_importance,XGBoost
+pancan,cov_techdemo5,25,1,plasma_volume,0.12731115520000458,1.0,1.0,0.21191176470588236,feature_importance,XGBoost
+pancan,cov_techdemo5,25,1,age,0.08385085314512253,2.0,1.0,0.03147058823529413,feature_importance,XGBoost
+pancan,cov_techdemo5,25,1,sex_female,0.017393063753843307,27.0,0.12,-0.0013235294117647013,feature_importance,XGBoost
+pancan,cov_techdemo5,25,2,mean_coverage,0.05772082507610321,3.0,1.0,0.005441176470588255,feature_importance,XGBoost
+pancan,cov_techdemo5,25,2,total_fragments,0.051714155822992325,5.0,0.96,-0.005588235294117616,feature_importance,XGBoost
+pancan,cov_techdemo5,25,2,plasma_volume,0.11749178171157837,1.0,1.0,0.261764705882353,feature_importance,XGBoost
+pancan,cov_techdemo5,25,2,age,0.08470255881547928,2.0,1.0,0.09338235294117651,feature_importance,XGBoost
+pancan,cov_techdemo5,25,2,sex_female,0.030370647087693214,12.0,0.72,0.0005882352941176672,feature_importance,XGBoost
+pancan,cov_techdemo5,25,3,mean_coverage,0.04263123869895935,4.0,0.96,-0.003382352941176453,feature_importance,XGBoost
+pancan,cov_techdemo5,25,3,total_fragments,0.03543223440647125,5.0,0.96,-0.004117647058823504,feature_importance,XGBoost
+pancan,cov_techdemo5,25,3,plasma_volume,0.10990932583808899,1.0,1.0,0.2823529411764706,feature_importance,XGBoost
+pancan,cov_techdemo5,25,3,age,0.0750371590256691,2.0,1.0,0.04411764705882355,feature_importance,XGBoost
+pancan,cov_techdemo5,25,3,sex_female,0.023355044424533844,26.0,0.16,0.00985294117647063,feature_importance,XGBoost
+pancan,cov_techdemo5,25,4,mean_coverage,0.039903923869132996,8.0,0.84,-0.021470588235294054,feature_importance,XGBoost
+pancan,cov_techdemo5,25,4,total_fragments,0.0599985271692276,3.0,1.0,-0.012941176470588156,feature_importance,XGBoost
+pancan,cov_techdemo5,25,4,plasma_volume,0.11409253627061844,1.0,1.0,0.15764705882352947,feature_importance,XGBoost
+pancan,cov_techdemo5,25,4,age,0.06411910057067871,2.0,1.0,0.081764705882353,feature_importance,XGBoost
+pancan,cov_techdemo5,25,4,sex_female,0.0020787965040653944,30.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,25,5,mean_coverage,0.05687194690108299,3.0,1.0,0.004464285714285721,feature_importance,XGBoost
+pancan,cov_techdemo5,25,5,total_fragments,0.05101720243692398,4.0,1.0,0.006845238095238104,feature_importance,XGBoost
+pancan,cov_techdemo5,25,5,plasma_volume,0.10950744897127151,1.0,1.0,0.3190476190476191,feature_importance,XGBoost
+pancan,cov_techdemo5,25,5,age,0.07522992789745331,2.0,1.0,0.02916666666666668,feature_importance,XGBoost
+pancan,cov_techdemo5,25,5,sex_female,0.0352218821644783,10.0,0.8,0.0014880952380952328,feature_importance,XGBoost
+pancan,cov_techdemo5,25,6,mean_coverage,0.038497619330883026,8.0,0.84,0.0019345238095237471,feature_importance,XGBoost
+pancan,cov_techdemo5,25,6,total_fragments,0.03853215277194977,7.0,0.84,0.008928571428571369,feature_importance,XGBoost
+pancan,cov_techdemo5,25,6,plasma_volume,0.13451138138771057,1.0,1.0,0.046874999999999944,feature_importance,XGBoost
+pancan,cov_techdemo5,25,6,age,0.07114716619253159,2.0,1.0,0.05119047619047614,feature_importance,XGBoost
+pancan,cov_techdemo5,25,6,sex_female,0.033055778592824936,10.0,0.8,-0.0005952380952381597,feature_importance,XGBoost
+pancan,cov_techdemo5,25,7,mean_coverage,0.038064733147621155,7.0,0.84,0.002380952380952378,feature_importance,XGBoost
+pancan,cov_techdemo5,25,7,total_fragments,0.03405425325036049,10.0,0.76,0.003720238095238082,feature_importance,XGBoost
+pancan,cov_techdemo5,25,7,plasma_volume,0.1452772617340088,1.0,1.0,0.14955357142857142,feature_importance,XGBoost
+pancan,cov_techdemo5,25,7,age,0.0927698090672493,2.0,1.0,0.045982142857142874,feature_importance,XGBoost
+pancan,cov_techdemo5,25,7,sex_female,0.007884896360337734,30.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,25,8,mean_coverage,0.05088914930820465,4.0,0.96,0.007499999999999968,feature_importance,XGBoost
+pancan,cov_techdemo5,25,8,total_fragments,0.042082469910383224,7.0,0.88,0.0039062499999999666,feature_importance,XGBoost
+pancan,cov_techdemo5,25,8,plasma_volume,0.12459949404001236,1.0,1.0,0.18281249999999996,feature_importance,XGBoost
+pancan,cov_techdemo5,25,8,age,0.07476548850536346,3.0,0.96,0.019687499999999962,feature_importance,XGBoost
+pancan,cov_techdemo5,25,8,sex_female,0.0,30.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,25,9,mean_coverage,0.04613706097006798,5.0,0.96,0.012343749999999981,feature_importance,XGBoost
+pancan,cov_techdemo5,25,9,total_fragments,0.0469297356903553,4.0,0.96,0.011249999999999982,feature_importance,XGBoost
+pancan,cov_techdemo5,25,9,plasma_volume,0.1132383942604065,1.0,1.0,0.2684375,feature_importance,XGBoost
+pancan,cov_techdemo5,25,9,age,0.07689233869314194,2.0,1.0,0.03734374999999997,feature_importance,XGBoost
+pancan,cov_techdemo5,25,9,sex_female,0.0,30.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,25,10,mean_coverage,0.04431183263659477,6.0,0.92,0.01546874999999997,feature_importance,XGBoost
+pancan,cov_techdemo5,25,10,total_fragments,0.047977693378925323,4.0,0.96,0.01578124999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,25,10,plasma_volume,0.10861128568649292,1.0,1.0,0.2734374999999999,feature_importance,XGBoost
+pancan,cov_techdemo5,25,10,age,0.06855331361293793,2.0,1.0,0.05437499999999995,feature_importance,XGBoost
+pancan,cov_techdemo5,25,10,sex_female,0.039378996938467026,9.0,0.84,0.00406249999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,50,1,mean_coverage,0.027316763997077942,4.0,0.98,-0.004852941176470571,feature_importance,XGBoost
+pancan,cov_techdemo5,50,1,total_fragments,0.026497239246964455,5.0,0.98,-0.00014705882352941124,feature_importance,XGBoost
+pancan,cov_techdemo5,50,1,plasma_volume,0.08311932533979416,1.0,1.0,0.19558823529411765,feature_importance,XGBoost
+pancan,cov_techdemo5,50,1,age,0.041136980056762695,2.0,1.0,0.04985294117647058,feature_importance,XGBoost
+pancan,cov_techdemo5,50,1,sex_female,0.0,55.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,50,2,mean_coverage,0.04515719786286354,2.0,1.0,0.004852941176470521,feature_importance,XGBoost
+pancan,cov_techdemo5,50,2,total_fragments,0.031907904893159866,6.0,0.98,0.010735294117646992,feature_importance,XGBoost
+pancan,cov_techdemo5,50,2,plasma_volume,0.07856443524360657,1.0,1.0,0.25044117647058817,feature_importance,XGBoost
+pancan,cov_techdemo5,50,2,age,0.04394027590751648,3.0,1.0,0.1085294117647058,feature_importance,XGBoost
+pancan,cov_techdemo5,50,2,sex_female,0.035984933376312256,4.0,1.0,-0.0020588235294117575,feature_importance,XGBoost
+pancan,cov_techdemo5,50,3,mean_coverage,0.025148270651698112,4.0,0.98,0.007352941176470623,feature_importance,XGBoost
+pancan,cov_techdemo5,50,3,total_fragments,0.024753311648964882,5.0,0.98,0.007352941176470657,feature_importance,XGBoost
+pancan,cov_techdemo5,50,3,plasma_volume,0.0910416841506958,1.0,1.0,0.24191176470588244,feature_importance,XGBoost
+pancan,cov_techdemo5,50,3,age,0.04942967742681503,2.0,1.0,0.020882352941176536,feature_importance,XGBoost
+pancan,cov_techdemo5,50,3,sex_female,0.014464717358350754,31.0,0.48,-0.0008823529411764342,feature_importance,XGBoost
+pancan,cov_techdemo5,50,4,mean_coverage,0.021482747048139572,11.0,0.86,0.0019117647058824795,feature_importance,XGBoost
+pancan,cov_techdemo5,50,4,total_fragments,0.0298289991915226,6.0,0.94,0.005735294117647188,feature_importance,XGBoost
+pancan,cov_techdemo5,50,4,plasma_volume,0.0905681774020195,1.0,1.0,0.14147058823529418,feature_importance,XGBoost
+pancan,cov_techdemo5,50,4,age,0.03140969201922417,5.0,0.94,0.08485294117647069,feature_importance,XGBoost
+pancan,cov_techdemo5,50,4,sex_female,0.008486505597829819,52.0,0.06,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,50,5,mean_coverage,0.03672495856881142,4.0,1.0,0.001488095238095294,feature_importance,XGBoost
+pancan,cov_techdemo5,50,5,total_fragments,0.03815576434135437,3.0,1.0,0.00029761904761908543,feature_importance,XGBoost
+pancan,cov_techdemo5,50,5,plasma_volume,0.08102447539567947,1.0,1.0,0.2793154761904762,feature_importance,XGBoost
+pancan,cov_techdemo5,50,5,age,0.0473463349044323,2.0,1.0,0.012797619047619103,feature_importance,XGBoost
+pancan,cov_techdemo5,50,5,sex_female,0.016857793554663658,27.0,0.56,-0.0011904761904761529,feature_importance,XGBoost
+pancan,cov_techdemo5,50,6,mean_coverage,0.015187247656285763,33.0,0.42,0.009375000000000078,feature_importance,XGBoost
+pancan,cov_techdemo5,50,6,total_fragments,0.017139077186584473,24.0,0.58,0.017261904761904846,feature_importance,XGBoost
+pancan,cov_techdemo5,50,6,plasma_volume,0.10698240995407104,1.0,1.0,0.08437500000000006,feature_importance,XGBoost
+pancan,cov_techdemo5,50,6,age,0.03819539397954941,2.0,1.0,0.06502976190476197,feature_importance,XGBoost
+pancan,cov_techdemo5,50,6,sex_female,0.0,55.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,50,7,mean_coverage,0.026620514690876007,7.0,0.94,0.00044642857142860313,feature_importance,XGBoost
+pancan,cov_techdemo5,50,7,total_fragments,0.032922182232141495,4.0,0.98,0.010119047619047705,feature_importance,XGBoost
+pancan,cov_techdemo5,50,7,plasma_volume,0.08917059749364853,1.0,1.0,0.23660714285714293,feature_importance,XGBoost
+pancan,cov_techdemo5,50,7,age,0.045310843735933304,2.0,1.0,0.06458333333333341,feature_importance,XGBoost
+pancan,cov_techdemo5,50,7,sex_female,0.0,55.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,50,8,mean_coverage,0.02597719058394432,8.0,0.92,0.005156249999999973,feature_importance,XGBoost
+pancan,cov_techdemo5,50,8,total_fragments,0.04200371354818344,3.0,1.0,0.005781249999999988,feature_importance,XGBoost
+pancan,cov_techdemo5,50,8,plasma_volume,0.10009478777647018,1.0,1.0,0.16374999999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,50,8,age,0.048481665551662445,2.0,1.0,0.06390624999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,50,8,sex_female,0.016515647992491722,29.0,0.52,-1.6653345369377347e-17,feature_importance,XGBoost
+pancan,cov_techdemo5,50,9,mean_coverage,0.03313713148236275,3.0,1.0,-0.0034374999999999935,feature_importance,XGBoost
+pancan,cov_techdemo5,50,9,total_fragments,0.029296375811100006,5.0,0.98,-0.008124999999999999,feature_importance,XGBoost
+pancan,cov_techdemo5,50,9,plasma_volume,0.08484923839569092,1.0,1.0,0.27265625,feature_importance,XGBoost
+pancan,cov_techdemo5,50,9,age,0.042370691895484924,2.0,1.0,0.035468750000000014,feature_importance,XGBoost
+pancan,cov_techdemo5,50,9,sex_female,0.0,55.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,50,10,mean_coverage,0.020113950595259666,18.0,0.72,0.00640624999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,50,10,total_fragments,0.028101660311222076,7.0,0.92,0.0178125,feature_importance,XGBoost
+pancan,cov_techdemo5,50,10,plasma_volume,0.08289401978254318,1.0,1.0,0.24984374999999998,feature_importance,XGBoost
+pancan,cov_techdemo5,50,10,age,0.03285081684589386,3.0,0.98,0.055781250000000004,feature_importance,XGBoost
+pancan,cov_techdemo5,50,10,sex_female,0.0,55.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,1,mean_coverage,0.014354541897773743,23.0,0.81,-0.0066176470588235285,feature_importance,XGBoost
+pancan,cov_techdemo5,100,1,total_fragments,0.01834077574312687,12.0,0.91,-0.0008823529411764619,feature_importance,XGBoost
+pancan,cov_techdemo5,100,1,plasma_volume,0.043032415211200714,1.0,1.0,0.2197058823529412,feature_importance,XGBoost
+pancan,cov_techdemo5,100,1,age,0.028793158009648323,2.0,1.0,0.04882352941176474,feature_importance,XGBoost
+pancan,cov_techdemo5,100,1,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,2,mean_coverage,0.022419169545173645,7.0,0.96,0.00014705882352942235,feature_importance,XGBoost
+pancan,cov_techdemo5,100,2,total_fragments,0.021916693076491356,8.0,0.96,0.011029411764705899,feature_importance,XGBoost
+pancan,cov_techdemo5,100,2,plasma_volume,0.04493151977658272,1.0,1.0,0.2576470588235294,feature_importance,XGBoost
+pancan,cov_techdemo5,100,2,age,0.02508084662258625,4.0,0.98,0.0989705882352941,feature_importance,XGBoost
+pancan,cov_techdemo5,100,2,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,3,mean_coverage,0.015919290482997894,10.0,0.93,0.003970588235294092,feature_importance,XGBoost
+pancan,cov_techdemo5,100,3,total_fragments,0.013660931959748268,20.0,0.84,0.0054411764705882045,feature_importance,XGBoost
+pancan,cov_techdemo5,100,3,plasma_volume,0.03836730122566223,1.0,1.0,0.2744117647058823,feature_importance,XGBoost
+pancan,cov_techdemo5,100,3,age,0.024722762405872345,2.0,1.0,0.010882352941176426,feature_importance,XGBoost
+pancan,cov_techdemo5,100,3,sex_female,0.004636554978787899,90.0,0.15,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,4,mean_coverage,0.010839845053851604,31.0,0.73,-0.014705882352941175,feature_importance,XGBoost
+pancan,cov_techdemo5,100,4,total_fragments,0.02358803153038025,4.0,0.98,-0.01779411764705886,feature_importance,XGBoost
+pancan,cov_techdemo5,100,4,plasma_volume,0.03925526887178421,1.0,1.0,0.13808823529411762,feature_importance,XGBoost
+pancan,cov_techdemo5,100,4,age,0.022098716348409653,6.0,0.97,0.033823529411764676,feature_importance,XGBoost
+pancan,cov_techdemo5,100,4,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,5,mean_coverage,0.007661176341997695,61.0,0.42,0.00431547619047617,feature_importance,Random Forest
+pancan,cov_techdemo5,100,5,total_fragments,0.007564534848020962,63.0,0.41,0.0010416666666666242,feature_importance,Random Forest
+pancan,cov_techdemo5,100,5,plasma_volume,0.10055560015077124,1.0,1.0,0.19732142857142854,feature_importance,Random Forest
+pancan,cov_techdemo5,100,5,age,0.015735167318776163,5.0,0.97,0.0025297619047618845,feature_importance,Random Forest
+pancan,cov_techdemo5,100,5,sex_female,0.00017796993576323046,105.0,0.0,-0.0026785714285714355,feature_importance,Random Forest
+pancan,cov_techdemo5,100,6,mean_coverage,0.015848437324166298,10.0,0.93,0.006398809523809501,feature_importance,XGBoost
+pancan,cov_techdemo5,100,6,total_fragments,0.008883409202098846,49.0,0.55,0.00982142857142857,feature_importance,XGBoost
+pancan,cov_techdemo5,100,6,plasma_volume,0.03481490910053253,1.0,1.0,0.06815476190476186,feature_importance,XGBoost
+pancan,cov_techdemo5,100,6,age,0.018429262563586235,6.0,0.96,0.038839285714285667,feature_importance,XGBoost
+pancan,cov_techdemo5,100,6,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,7,mean_coverage,0.006414923546636247,79.0,0.25,-0.006398809523809506,feature_importance,Random Forest
+pancan,cov_techdemo5,100,7,total_fragments,0.007773457434746913,61.0,0.42,-0.0043154761904762255,feature_importance,Random Forest
+pancan,cov_techdemo5,100,7,plasma_volume,0.11380282910536729,1.0,1.0,0.17723214285714278,feature_importance,Random Forest
+pancan,cov_techdemo5,100,7,age,0.021234854816672807,4.0,0.98,0.01741071428571423,feature_importance,Random Forest
+pancan,cov_techdemo5,100,7,sex_female,0.0001746961166866218,105.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,100,8,mean_coverage,0.015304818749427795,30.0,0.74,0.0020312500000000512,feature_importance,XGBoost
+pancan,cov_techdemo5,100,8,total_fragments,0.019098546355962753,12.0,0.91,0.01078125000000007,feature_importance,XGBoost
+pancan,cov_techdemo5,100,8,plasma_volume,0.04752394184470177,1.0,1.0,0.17453125000000003,feature_importance,XGBoost
+pancan,cov_techdemo5,100,8,age,0.02854018658399582,2.0,1.0,0.052656250000000036,feature_importance,XGBoost
+pancan,cov_techdemo5,100,8,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,9,mean_coverage,0.011541932821273804,20.0,0.84,0.006875000000000048,feature_importance,XGBoost
+pancan,cov_techdemo5,100,9,total_fragments,0.03286126255989075,2.0,1.0,0.003906250000000033,feature_importance,XGBoost
+pancan,cov_techdemo5,100,9,plasma_volume,0.039995577186346054,1.0,1.0,0.29781250000000004,feature_importance,XGBoost
+pancan,cov_techdemo5,100,9,age,0.0244947150349617,3.0,1.0,0.06265625000000005,feature_importance,XGBoost
+pancan,cov_techdemo5,100,9,sex_female,0.0,105.0,0.0,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,100,10,mean_coverage,0.014691537246108055,16.0,0.88,-0.0035937499999999347,feature_importance,XGBoost
+pancan,cov_techdemo5,100,10,total_fragments,0.026713669300079346,2.0,1.0,-0.00921874999999996,feature_importance,XGBoost
+pancan,cov_techdemo5,100,10,plasma_volume,0.042183082550764084,1.0,1.0,0.31703125,feature_importance,XGBoost
+pancan,cov_techdemo5,100,10,age,0.022716665640473366,3.0,1.0,0.08421875000000005,feature_importance,XGBoost
+pancan,cov_techdemo5,100,10,sex_female,0.011413301341235638,30.0,0.75,0.0,feature_importance,XGBoost
+pancan,cov_techdemo5,250,1,mean_coverage,0.0025082121915541485,169.0,0.34,-0.002647058823529419,feature_importance,Random Forest
+pancan,cov_techdemo5,250,1,total_fragments,0.003920609527924479,92.0,0.644,-0.0004411764705882615,feature_importance,Random Forest
+pancan,cov_techdemo5,250,1,plasma_volume,0.07111812125329903,1.0,1.0,0.10735294117647058,feature_importance,Random Forest
+pancan,cov_techdemo5,250,1,age,0.008375083613206252,17.0,0.94,0.0027941176470587968,feature_importance,Random Forest
+pancan,cov_techdemo5,250,1,sex_female,0.0,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,2,mean_coverage,0.0047635069648276,59.0,0.78,-0.0022058823529411686,feature_importance,Random Forest
+pancan,cov_techdemo5,250,2,total_fragments,0.005859001708323863,26.0,0.908,-0.00602941176470585,feature_importance,Random Forest
+pancan,cov_techdemo5,250,2,plasma_volume,0.06240928996774005,1.0,1.0,0.1025,feature_importance,Random Forest
+pancan,cov_techdemo5,250,2,age,0.005903688897627598,25.0,0.908,0.007352941176470567,feature_importance,Random Forest
+pancan,cov_techdemo5,250,2,sex_female,0.0,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,3,mean_coverage,0.002797042564143687,168.0,0.344,0.00044117647058823374,feature_importance,Random Forest
+pancan,cov_techdemo5,250,3,total_fragments,0.00346613001577045,120.0,0.532,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,3,plasma_volume,0.056437713915425944,1.0,1.0,0.12411764705882353,feature_importance,Random Forest
+pancan,cov_techdemo5,250,3,age,0.009065138709701584,5.0,0.988,0.0026470588235294077,feature_importance,Random Forest
+pancan,cov_techdemo5,250,3,sex_female,0.00020533290059436795,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,4,mean_coverage,0.004495040449564126,65.0,0.752,0.011176470588235283,feature_importance,Random Forest
+pancan,cov_techdemo5,250,4,total_fragments,0.0031817003475296513,162.0,0.368,0.009264705882352963,feature_importance,Random Forest
+pancan,cov_techdemo5,250,4,plasma_volume,0.03664213442525466,1.0,1.0,0.0579411764705882,feature_importance,Random Forest
+pancan,cov_techdemo5,250,4,age,0.006526272600385961,14.0,0.952,0.01352941176470584,feature_importance,Random Forest
+pancan,cov_techdemo5,250,4,sex_female,0.00022176479245335836,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,5,mean_coverage,0.0032445842116608607,137.0,0.468,-0.0047619047619047675,feature_importance,Random Forest
+pancan,cov_techdemo5,250,5,total_fragments,0.005676732349107744,36.0,0.868,-0.0013392857142856985,feature_importance,Random Forest
+pancan,cov_techdemo5,250,5,plasma_volume,0.05479910461348345,1.0,1.0,0.1174107142857143,feature_importance,Random Forest
+pancan,cov_techdemo5,250,5,age,0.009204296342853377,9.0,0.972,0.0019345238095238248,feature_importance,Random Forest
+pancan,cov_techdemo5,250,5,sex_female,8.387035796903834e-05,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,6,mean_coverage,0.003990798138463454,98.0,0.62,-0.0005952380952380931,feature_importance,Random Forest
+pancan,cov_techdemo5,250,6,total_fragments,0.0032715884018010735,156.0,0.392,0.0028273809523809423,feature_importance,Random Forest
+pancan,cov_techdemo5,250,6,plasma_volume,0.03712184338727187,1.0,1.0,0.008184523809523803,feature_importance,Random Forest
+pancan,cov_techdemo5,250,6,age,0.004538384866017073,62.0,0.76,0.010863095238095232,feature_importance,Random Forest
+pancan,cov_techdemo5,250,6,sex_female,0.00010491400515383575,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,7,mean_coverage,0.00401917258215993,79.0,0.696,-0.0007440476190476164,feature_importance,Random Forest
+pancan,cov_techdemo5,250,7,total_fragments,0.003503330598893588,115.0,0.556,0.00044642857142856984,feature_importance,Random Forest
+pancan,cov_techdemo5,250,7,plasma_volume,0.05768125654669773,1.0,1.0,0.11607142857142858,feature_importance,Random Forest
+pancan,cov_techdemo5,250,7,age,0.004900173997099237,47.0,0.82,0.007738095238095211,feature_importance,Random Forest
+pancan,cov_techdemo5,250,7,sex_female,0.0002455513260145917,255.0,0.0,0.001041666666666663,feature_importance,Random Forest
+pancan,cov_techdemo5,250,8,mean_coverage,0.004379078930128414,75.0,0.712,-0.0007812500000000556,feature_importance,Random Forest
+pancan,cov_techdemo5,250,8,total_fragments,0.003733106014881779,105.0,0.596,0.00093749999999993,feature_importance,Random Forest
+pancan,cov_techdemo5,250,8,plasma_volume,0.07347700671236766,1.0,1.0,0.07031249999999992,feature_importance,Random Forest
+pancan,cov_techdemo5,250,8,age,0.008112889634081496,14.0,0.952,0.005156249999999913,feature_importance,Random Forest
+pancan,cov_techdemo5,250,8,sex_female,0.0,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,9,mean_coverage,0.0034757651020678806,118.0,0.544,0.00124999999999994,feature_importance,Random Forest
+pancan,cov_techdemo5,250,9,total_fragments,0.005967816734174562,27.0,0.904,0.005312499999999931,feature_importance,Random Forest
+pancan,cov_techdemo5,250,9,plasma_volume,0.05515499465885036,1.0,1.0,0.10656249999999994,feature_importance,Random Forest
+pancan,cov_techdemo5,250,9,age,0.009438734564361938,5.0,0.988,0.007968749999999941,feature_importance,Random Forest
+pancan,cov_techdemo5,250,9,sex_female,0.0,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,250,10,mean_coverage,0.004718062949483061,63.0,0.764,0.0001562499999999911,feature_importance,Random Forest
+pancan,cov_techdemo5,250,10,total_fragments,0.006807051978772025,22.0,0.924,0.00968750000000002,feature_importance,Random Forest
+pancan,cov_techdemo5,250,10,plasma_volume,0.033268478543441164,1.0,1.0,0.08546875,feature_importance,Random Forest
+pancan,cov_techdemo5,250,10,age,0.00781722814316654,13.0,0.956,0.0017187499999999855,feature_importance,Random Forest
+pancan,cov_techdemo5,250,10,sex_female,0.0,255.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,1,mean_coverage,0.0011855785416852356,397.0,0.214,-0.002499999999999991,feature_importance,Random Forest
+pancan,cov_techdemo5,500,1,total_fragments,0.0014267395722186481,339.0,0.328,-0.0020588235294117575,feature_importance,Random Forest
+pancan,cov_techdemo5,500,1,plasma_volume,0.025917947156247696,1.0,1.0,0.03970588235294126,feature_importance,Random Forest
+pancan,cov_techdemo5,500,1,age,0.0046711709247643654,8.0,0.988,0.0014705882352941291,feature_importance,Random Forest
+pancan,cov_techdemo5,500,1,sex_female,0.0,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,2,mean_coverage,0.00362381201065345,32.0,0.942,0.003970588235294076,feature_importance,Random Forest
+pancan,cov_techdemo5,500,2,total_fragments,0.002247549800001286,133.0,0.742,0.0004411764705881782,feature_importance,Random Forest
+pancan,cov_techdemo5,500,2,plasma_volume,0.035107204654288536,1.0,1.0,0.06911764705882342,feature_importance,Random Forest
+pancan,cov_techdemo5,500,2,age,0.004497941279219381,12.0,0.98,0.004117647058823515,feature_importance,Random Forest
+pancan,cov_techdemo5,500,2,sex_female,0.0,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,3,mean_coverage,,,,0.004852941176470671,,Support Vector Machine
+pancan,cov_techdemo5,500,3,total_fragments,,,,0.006029411764705961,,Support Vector Machine
+pancan,cov_techdemo5,500,3,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,500,3,age,,,,0.004411764705882432,,Support Vector Machine
+pancan,cov_techdemo5,500,3,sex_female,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,500,4,mean_coverage,,,,0.0016176470588235182,,Support Vector Machine
+pancan,cov_techdemo5,500,4,total_fragments,,,,0.0017647058823529293,,Support Vector Machine
+pancan,cov_techdemo5,500,4,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,500,4,age,,,,0.001470588235294079,,Support Vector Machine
+pancan,cov_techdemo5,500,4,sex_female,,,,0.00044117647058822815,,Support Vector Machine
+pancan,cov_techdemo5,500,5,mean_coverage,0.003963005315583108,26.0,0.954,0.0007440476190477164,feature_importance,Random Forest
+pancan,cov_techdemo5,500,5,total_fragments,0.003940611558872887,28.0,0.952,0.0026785714285714967,feature_importance,Random Forest
+pancan,cov_techdemo5,500,5,plasma_volume,0.036007267930563594,1.0,1.0,0.07752976190476193,feature_importance,Random Forest
+pancan,cov_techdemo5,500,5,age,0.006609459904225146,3.0,0.998,0.005357142857142905,feature_importance,Random Forest
+pancan,cov_techdemo5,500,5,sex_female,0.0,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,6,mean_coverage,0.00202097326171204,166.0,0.676,0.012202380952380947,feature_importance,Random Forest
+pancan,cov_techdemo5,500,6,total_fragments,0.002147510370852395,143.0,0.72,0.014434523809523814,feature_importance,Random Forest
+pancan,cov_techdemo5,500,6,plasma_volume,0.04662626583723535,1.0,1.0,0.02291666666666667,feature_importance,Random Forest
+pancan,cov_techdemo5,500,6,age,0.004920496423944072,10.0,0.984,0.02023809523809525,feature_importance,Random Forest
+pancan,cov_techdemo5,500,6,sex_female,0.00012185894233955318,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,7,mean_coverage,0.0017086507095515238,240.0,0.528,0.0016369047619047116,feature_importance,Random Forest
+pancan,cov_techdemo5,500,7,total_fragments,0.002593852277697088,89.0,0.828,0.002827380952380898,feature_importance,Random Forest
+pancan,cov_techdemo5,500,7,plasma_volume,0.04230247334881766,1.0,1.0,0.08869047619047615,feature_importance,Random Forest
+pancan,cov_techdemo5,500,7,age,0.00440098537145604,17.0,0.97,0.016964285714285675,feature_importance,Random Forest
+pancan,cov_techdemo5,500,7,sex_female,0.0,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,8,mean_coverage,0.0021984454479796055,151.0,0.706,0.0009374999999999467,feature_importance,Random Forest
+pancan,cov_techdemo5,500,8,total_fragments,0.002918330988729946,72.0,0.862,0.0001562499999999134,feature_importance,Random Forest
+pancan,cov_techdemo5,500,8,plasma_volume,0.04228557218869557,1.0,1.0,0.03874999999999988,feature_importance,Random Forest
+pancan,cov_techdemo5,500,8,age,0.004977178681648395,16.0,0.972,-0.0025000000000000465,feature_importance,Random Forest
+pancan,cov_techdemo5,500,8,sex_female,0.0,505.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,500,9,mean_coverage,,,,-0.0014062499999999757,,Support Vector Machine
+pancan,cov_techdemo5,500,9,total_fragments,,,,-0.001718749999999969,,Support Vector Machine
+pancan,cov_techdemo5,500,9,plasma_volume,,,,-0.0034374999999999545,,Support Vector Machine
+pancan,cov_techdemo5,500,9,age,,,,-0.0003124999999999767,,Support Vector Machine
+pancan,cov_techdemo5,500,9,sex_female,,,,-0.00499999999999996,,Support Vector Machine
+pancan,cov_techdemo5,500,10,mean_coverage,0.002795503550392872,92.0,0.822,-0.0010937499999999767,feature_importance,Random Forest
+pancan,cov_techdemo5,500,10,total_fragments,0.0032102229401912777,55.0,0.894,-0.0006249999999999922,feature_importance,Random Forest
+pancan,cov_techdemo5,500,10,plasma_volume,0.023349120577221324,1.0,1.0,0.04078125000000002,feature_importance,Random Forest
+pancan,cov_techdemo5,500,10,age,0.002481128850969519,124.0,0.76,0.00015625000000000223,feature_importance,Random Forest
+pancan,cov_techdemo5,500,10,sex_female,7.093877551472049e-05,505.0,0.0,-0.0017187499999999634,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,1,mean_coverage,0.0008797718484761755,488.0,0.516,0.0026470588235294632,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,1,total_fragments,0.001051924524962303,355.0,0.648,0.001764705882352946,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,1,plasma_volume,0.02684583154281046,1.0,1.0,0.032205882352941174,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,1,age,0.0019165401127730249,72.0,0.93,0.0026470588235294745,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,1,sex_female,5.035740864796696e-05,1002.0,0.003,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,2,mean_coverage,,,,-0.0001470588235294279,,Support Vector Machine
+pancan,cov_techdemo5,1000,2,total_fragments,,,,-0.0008823529411765008,,Support Vector Machine
+pancan,cov_techdemo5,1000,2,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1000,2,age,,,,0.0005882352941176284,,Support Vector Machine
+pancan,cov_techdemo5,1000,2,sex_female,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1000,3,mean_coverage,,,,0.007205882352941051,,Support Vector Machine
+pancan,cov_techdemo5,1000,3,total_fragments,,,,0.007794117647058685,,Support Vector Machine
+pancan,cov_techdemo5,1000,3,plasma_volume,,,,0.00014705882352941124,,Support Vector Machine
+pancan,cov_techdemo5,1000,3,age,,,,0.003970588235294048,,Support Vector Machine
+pancan,cov_techdemo5,1000,3,sex_female,,,,0.00235294117647058,,Support Vector Machine
+pancan,cov_techdemo5,1000,4,mean_coverage,,,,0.0026470588235294025,,Support Vector Machine
+pancan,cov_techdemo5,1000,4,total_fragments,,,,0.003088235294117636,,Support Vector Machine
+pancan,cov_techdemo5,1000,4,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1000,4,age,,,,0.010882352941176444,,Support Vector Machine
+pancan,cov_techdemo5,1000,4,sex_female,,,,0.000588235294117645,,Support Vector Machine
+pancan,cov_techdemo5,1000,5,mean_coverage,,,,-0.003422619047619135,,Support Vector Machine
+pancan,cov_techdemo5,1000,5,total_fragments,,,,-0.004389880952381048,,Support Vector Machine
+pancan,cov_techdemo5,1000,5,plasma_volume,,,,0.00014880952380951217,,Support Vector Machine
+pancan,cov_techdemo5,1000,5,age,,,,0.003199404761904673,,Support Vector Machine
+pancan,cov_techdemo5,1000,5,sex_female,,,,0.0005952380952380709,,Support Vector Machine
+pancan,cov_techdemo5,1000,6,mean_coverage,0.0013479403299240635,219.0,0.785,0.0034226190476191244,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,6,total_fragments,0.002223792104268585,72.0,0.931,0.013244047619047728,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,6,plasma_volume,0.039451838091702274,1.0,1.0,0.010267857142857223,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,6,age,0.002494437268351789,55.0,0.947,0.00505952380952388,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,6,sex_female,0.0,1005.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,7,mean_coverage,0.09555145210236934,197.0,0.806,0.001041666666666663,coef,Logistic Regression
+pancan,cov_techdemo5,1000,7,total_fragments,0.10044204742123011,169.0,0.833,0.0019345238095238027,coef,Logistic Regression
+pancan,cov_techdemo5,1000,7,plasma_volume,-0.01287211018576573,819.0,0.185,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1000,7,age,0.13463600557057556,53.0,0.948,0.010119047619047583,coef,Logistic Regression
+pancan,cov_techdemo5,1000,7,sex_female,-0.00892215921919605,850.0,0.155,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1000,8,mean_coverage,0.0005324722032947753,815.0,0.189,0.0006250000000000089,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,8,total_fragments,0.0015996360286530712,120.0,0.883,0.0035937500000000067,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,8,plasma_volume,0.010955563094667244,1.0,1.0,0.01968749999999997,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,8,age,0.002454394480016322,25.0,0.977,0.0015625000000000055,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,8,sex_female,3.446123171764561e-05,1005.0,0.0,0.0,feature_importance,Random Forest
+pancan,cov_techdemo5,1000,9,mean_coverage,,,,-0.0015625000000000333,,Support Vector Machine
+pancan,cov_techdemo5,1000,9,total_fragments,,,,-0.00125000000000004,,Support Vector Machine
+pancan,cov_techdemo5,1000,9,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1000,9,age,,,,0.0012499999999999734,,Support Vector Machine
+pancan,cov_techdemo5,1000,9,sex_female,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1000,10,mean_coverage,,,,0.0007812500000000056,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1000,10,total_fragments,,,,0.00031249999999999887,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1000,10,plasma_volume,,,,0.002187500000000031,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1000,10,age,,,,-0.0006250000000000089,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1000,10,sex_female,,,,0.0018750000000000266,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,1,mean_coverage,0.08470685217841672,133.0,0.9133333333333333,-0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,1500,1,total_fragments,0.0882719466414593,106.0,0.9306666666666666,0.00044117647058823374,coef,Logistic Regression
+pancan,cov_techdemo5,1500,1,plasma_volume,0.0,1504.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,1,age,0.10672271432388979,36.0,0.9766666666666667,0.0002941176470588225,coef,Logistic Regression
+pancan,cov_techdemo5,1500,1,sex_female,0.0,1386.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,2,mean_coverage,,,,0.0010294117647058787,,Support Vector Machine
+pancan,cov_techdemo5,1500,2,total_fragments,,,,0.0014705882352941124,,Support Vector Machine
+pancan,cov_techdemo5,1500,2,plasma_volume,,,,0.00044117647058823374,,Support Vector Machine
+pancan,cov_techdemo5,1500,2,age,,,,0.0008823529411764675,,Support Vector Machine
+pancan,cov_techdemo5,1500,2,sex_female,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1500,3,mean_coverage,0.06412109400262753,322.0,0.7873333333333333,0.0007352941176470617,coef,Logistic Regression
+pancan,cov_techdemo5,1500,3,total_fragments,0.06759080753301945,285.0,0.8113333333333334,0.0007352941176470729,coef,Logistic Regression
+pancan,cov_techdemo5,1500,3,plasma_volume,-0.00726842104117715,1258.0,0.16466666666666666,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,3,age,0.13420675791990608,5.0,0.9973333333333333,0.0010294117647058842,coef,Logistic Regression
+pancan,cov_techdemo5,1500,3,sex_female,-0.018903216761353606,1059.0,0.2966666666666667,0.0007352941176470562,coef,Logistic Regression
+pancan,cov_techdemo5,1500,4,mean_coverage,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1500,4,total_fragments,,,,0.0002941176470588225,,Support Vector Machine
+pancan,cov_techdemo5,1500,4,plasma_volume,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1500,4,age,,,,0.0002941176470588336,,Support Vector Machine
+pancan,cov_techdemo5,1500,4,sex_female,,,,0.0,,Support Vector Machine
+pancan,cov_techdemo5,1500,5,mean_coverage,0.10871743183638279,49.0,0.9686666666666667,-0.0032738095238095287,coef,Logistic Regression
+pancan,cov_techdemo5,1500,5,total_fragments,0.11219824902434714,45.0,0.9706666666666667,-0.0019345238095238193,coef,Logistic Regression
+pancan,cov_techdemo5,1500,5,plasma_volume,-0.013197267157139389,1131.0,0.24933333333333332,0.002232142857142849,coef,Logistic Regression
+pancan,cov_techdemo5,1500,5,age,0.10802429924209156,52.0,0.9673333333333334,-0.004017857142857151,coef,Logistic Regression
+pancan,cov_techdemo5,1500,5,sex_female,0.013630760436298333,1120.0,0.256,0.0011904761904761862,coef,Logistic Regression
+pancan,cov_techdemo5,1500,6,mean_coverage,0.08186245937503016,154.0,0.8993333333333333,-0.0013392857142856985,coef,Logistic Regression
+pancan,cov_techdemo5,1500,6,total_fragments,0.08573078686819041,135.0,0.9113333333333333,-0.002380952380952367,coef,Logistic Regression
+pancan,cov_techdemo5,1500,6,plasma_volume,0.0020018542756301163,1346.0,0.106,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,6,age,0.13827109527251383,8.0,0.9953333333333333,0.0002976190476190688,coef,Logistic Regression
+pancan,cov_techdemo5,1500,6,sex_female,-0.02331553639712094,996.0,0.33866666666666667,-0.0038690476190476053,coef,Logistic Regression
+pancan,cov_techdemo5,1500,7,mean_coverage,0.07329264545028309,224.0,0.8526666666666667,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,7,total_fragments,0.07686741434199318,196.0,0.8706666666666667,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,7,plasma_volume,-0.010026487555353562,1214.0,0.19333333333333333,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,7,age,0.08551928298670206,127.0,0.916,0.0019345238095238027,coef,Logistic Regression
+pancan,cov_techdemo5,1500,7,sex_female,-0.002090204812580889,1348.0,0.10466666666666667,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,8,mean_coverage,,,,0.0031250000000000444,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,8,total_fragments,,,,0.0020312500000000287,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,8,plasma_volume,,,,0.0007812500000000111,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,8,age,,,,0.0003125000000000211,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,8,sex_female,,,,0.0007812500000000111,,Multi-Layer Perceptron
+pancan,cov_techdemo5,1500,9,mean_coverage,0.09475902907410631,100.0,0.9353333333333333,0.0021874999999999868,coef,Logistic Regression
+pancan,cov_techdemo5,1500,9,total_fragments,0.09834226154784427,85.0,0.9446666666666667,0.00093749999999998,coef,Logistic Regression
+pancan,cov_techdemo5,1500,9,plasma_volume,0.0020535828113207,1341.0,0.10933333333333334,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,1500,9,age,0.09977219385013832,79.0,0.948,0.0017187499999999744,coef,Logistic Regression
+pancan,cov_techdemo5,1500,9,sex_female,-0.019386257871060658,1041.0,0.30866666666666664,-0.0020312499999999567,coef,Logistic Regression
+pancan,cov_techdemo5,1500,10,mean_coverage,0.06617760110208279,273.0,0.82,0.002656250000000038,coef,Logistic Regression
+pancan,cov_techdemo5,1500,10,total_fragments,0.06938428607535825,243.0,0.8393333333333334,0.0023437500000000333,coef,Logistic Regression
+pancan,cov_techdemo5,1500,10,plasma_volume,0.004559689318989138,1323.0,0.12066666666666667,-0.0026562499999999434,coef,Logistic Regression
+pancan,cov_techdemo5,1500,10,age,0.11000265811327951,24.0,0.9846666666666667,-0.004374999999999951,coef,Logistic Regression
+pancan,cov_techdemo5,1500,10,sex_female,0.0,1500.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,1,mean_coverage,0.05326813954942684,241.0,0.9048,-0.0007352941176470784,coef,Logistic Regression
+pancan,cov_techdemo5,2500,1,total_fragments,0.05569690631942404,207.0,0.918,-0.0013235294117647511,coef,Logistic Regression
+pancan,cov_techdemo5,2500,1,plasma_volume,-0.005363546203356863,2051.0,0.1812,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,1,age,0.058028725123298874,168.0,0.9332,-0.0002941176470588336,coef,Logistic Regression
+pancan,cov_techdemo5,2500,1,sex_female,0.001211219051455576,2242.0,0.1052,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,2,mean_coverage,0.047858143394817955,366.0,0.8548,0.00044117647058823374,coef,Logistic Regression
+pancan,cov_techdemo5,2500,2,total_fragments,0.050371305814198346,298.0,0.8816,0.000588235294117645,coef,Logistic Regression
+pancan,cov_techdemo5,2500,2,plasma_volume,0.0,2505.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,2,age,0.06398559205365899,108.0,0.9572,0.0020588235294117575,coef,Logistic Regression
+pancan,cov_techdemo5,2500,2,sex_female,0.0006481692268623335,2269.0,0.094,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,3,mean_coverage,0.041501895536322414,544.0,0.7836,-0.0002941176470588225,coef,Logistic Regression
+pancan,cov_techdemo5,2500,3,total_fragments,0.04405674454630536,463.0,0.8156,-0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,2500,3,plasma_volume,-0.012810117422666816,1684.0,0.328,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,3,age,0.07850595182363124,24.0,0.9908,-0.0013235294117647013,coef,Logistic Regression
+pancan,cov_techdemo5,2500,3,sex_female,-0.012182498738022025,1711.0,0.3176,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,4,mean_coverage,0.04103298674970768,540.0,0.7852,-0.0008823529411764897,coef,Logistic Regression
+pancan,cov_techdemo5,2500,4,total_fragments,0.043584767715512125,448.0,0.8216,-0.0008823529411764897,coef,Logistic Regression
+pancan,cov_techdemo5,2500,4,plasma_volume,0.0021331366725212326,2206.0,0.1196,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,4,age,0.05239332061831142,242.0,0.9036,0.0002941176470588003,coef,Logistic Regression
+pancan,cov_techdemo5,2500,4,sex_female,-0.011399401498325926,1791.0,0.2852,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,5,mean_coverage,0.06659670866025741,106.0,0.9588,0.0014880952380952328,coef,Logistic Regression
+pancan,cov_techdemo5,2500,5,total_fragments,0.06904186876163164,85.0,0.9668,0.0008928571428571397,coef,Logistic Regression
+pancan,cov_techdemo5,2500,5,plasma_volume,-0.01611862753136249,1526.0,0.3912,0.00044642857142856984,coef,Logistic Regression
+pancan,cov_techdemo5,2500,5,age,0.06965079959643114,76.0,0.97,0.002083333333333326,coef,Logistic Regression
+pancan,cov_techdemo5,2500,5,sex_female,0.010343551215364753,1758.0,0.2988,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,6,mean_coverage,0.05126833500581067,298.0,0.882,0.001041666666666663,coef,Logistic Regression
+pancan,cov_techdemo5,2500,6,total_fragments,0.05381702144880694,241.0,0.9044,0.0011904761904761862,coef,Logistic Regression
+pancan,cov_techdemo5,2500,6,plasma_volume,0.0,2275.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,6,age,0.08231214044118786,15.0,0.9944,0.005059523809523797,coef,Logistic Regression
+pancan,cov_techdemo5,2500,6,sex_female,-0.00856575988215306,1876.0,0.2512,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,7,mean_coverage,0.0519412805297142,279.0,0.8892,-0.0023809523809523725,coef,Logistic Regression
+pancan,cov_techdemo5,2500,7,total_fragments,0.054377787603634105,225.0,0.9104,-0.002232142857142855,coef,Logistic Regression
+pancan,cov_techdemo5,2500,7,plasma_volume,-0.01182128280018334,1749.0,0.302,-0.005357142857142838,coef,Logistic Regression
+pancan,cov_techdemo5,2500,7,age,0.05145112440512483,290.0,0.8852,0.0037202380952380985,coef,Logistic Regression
+pancan,cov_techdemo5,2500,7,sex_female,0.0049837080486523164,2064.0,0.1764,-0.0005952380952380931,coef,Logistic Regression
+pancan,cov_techdemo5,2500,8,mean_coverage,0.03978288887406756,569.0,0.7736,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,8,total_fragments,0.04218627483774515,488.0,0.8056,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,8,plasma_volume,0.0,2499.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,8,age,0.060206131966268825,121.0,0.952,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,8,sex_female,0.0,2501.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,9,mean_coverage,0.06183425210532792,145.0,0.9428,-0.0004687500000000233,coef,Logistic Regression
+pancan,cov_techdemo5,2500,9,total_fragments,0.06435534491800225,124.0,0.9508,-0.0010937500000000155,coef,Logistic Regression
+pancan,cov_techdemo5,2500,9,plasma_volume,0.0,2505.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,9,age,0.059017629011998064,182.0,0.9284,0.00265624999999996,coef,Logistic Regression
+pancan,cov_techdemo5,2500,9,sex_female,-0.01590019679268625,1559.0,0.378,-0.002656250000000038,coef,Logistic Regression
+pancan,cov_techdemo5,2500,10,mean_coverage,0.04105805327752929,490.0,0.8052,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,10,total_fragments,0.04323354801305041,431.0,0.8284,0.00015624999999999667,coef,Logistic Regression
+pancan,cov_techdemo5,2500,10,plasma_volume,0.0,2315.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,2500,10,age,0.07319616818414815,25.0,0.9904,-0.0025000000000000356,coef,Logistic Regression
+pancan,cov_techdemo5,2500,10,sex_female,0.0,2502.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,1,mean_coverage,0.03069892234967749,449.0,0.9108,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,1,total_fragments,0.0322375412363169,360.0,0.9284,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,1,plasma_volume,-0.006575339219014306,3467.0,0.3076,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,1,age,0.032908389111400364,326.0,0.935,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,1,sex_female,0.006886870255713064,3403.0,0.3202,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,2,mean_coverage,0.02631803153184448,720.0,0.8566,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,2,total_fragments,0.02796261542522461,605.0,0.8794,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,2,plasma_volume,0.0,4573.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,2,age,0.03336585164689679,278.0,0.9446,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,2,sex_female,0.0007718197707531323,4450.0,0.1108,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,3,mean_coverage,0.025044541070662618,1036.0,0.7934,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,3,total_fragments,0.027124602114593947,877.0,0.825,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,3,plasma_volume,-0.014853380086418727,2203.0,0.5602,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,3,age,0.04772802576337839,64.0,0.9874,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,3,sex_female,-0.0028012595485142006,4030.0,0.195,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,4,mean_coverage,0.021928583203783065,1161.0,0.7684,0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,5000,4,total_fragments,0.023601269369588958,984.0,0.8036,0.0010294117647058787,coef,Logistic Regression
+pancan,cov_techdemo5,5000,4,plasma_volume,0.0,5000.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,4,age,0.0314628026906086,388.0,0.9226,0.004411764705882337,coef,Logistic Regression
+pancan,cov_techdemo5,5000,4,sex_female,-0.004545128820277663,3843.0,0.2322,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,5,mean_coverage,0.03229461169869829,357.0,0.9292,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,5,total_fragments,0.03391819379485943,288.0,0.9428,-0.00014880952380952328,coef,Logistic Regression
+pancan,cov_techdemo5,5000,5,plasma_volume,-0.012783200869035595,2394.0,0.522,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,5,age,0.03738943481174191,172.0,0.9658,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,5,sex_female,0.006613056641238435,3400.0,0.321,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,6,mean_coverage,0.02342140451387962,1056.0,0.7894,0.002678571428571519,coef,Logistic Regression
+pancan,cov_techdemo5,5000,6,total_fragments,0.02511326322021983,880.0,0.8244,0.0028273809523810477,coef,Logistic Regression
+pancan,cov_techdemo5,5000,6,plasma_volume,-0.0056465574654331295,3553.0,0.2902,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,6,age,0.03919869663981059,136.0,0.973,0.0019345238095238749,coef,Logistic Regression
+pancan,cov_techdemo5,5000,6,sex_female,-0.003695643343852175,3889.0,0.2232,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,7,mean_coverage,0.028950180676270483,611.0,0.8784,0.0019345238095237528,coef,Logistic Regression
+pancan,cov_techdemo5,5000,7,total_fragments,0.030719845794143063,495.0,0.9014,0.0016369047619047062,coef,Logistic Regression
+pancan,cov_techdemo5,5000,7,plasma_volume,-0.012921087446435203,2477.0,0.5054,0.0005952380952380821,coef,Logistic Regression
+pancan,cov_techdemo5,5000,7,age,0.032113330539566165,402.0,0.9198,0.007142857142857073,coef,Logistic Regression
+pancan,cov_techdemo5,5000,7,sex_female,0.0036747433341165195,3937.0,0.2136,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,8,mean_coverage,0.02570532024175807,818.0,0.837,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,8,total_fragments,0.02732152174881807,688.0,0.8628,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,8,plasma_volume,-0.0006506376997103192,4484.0,0.104,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,8,age,0.035893308719249784,204.0,0.9594,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,8,sex_female,0.0,5002.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,9,mean_coverage,0.02826206182308999,625.0,0.8756,-0.00015625000000000223,coef,Logistic Regression
+pancan,cov_techdemo5,5000,9,total_fragments,0.029864040141816144,493.0,0.9018,-0.00046875000000000665,coef,Logistic Regression
+pancan,cov_techdemo5,5000,9,plasma_volume,0.0,5000.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,9,age,0.03148187884544449,415.0,0.9172,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,9,sex_female,-0.0048458118588467535,3703.0,0.2602,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,10,mean_coverage,0.019511692305839542,1427.0,0.7152,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,10,total_fragments,0.02100440909111702,1210.0,0.7584,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,10,plasma_volume,-0.0014778449813464688,4404.0,0.12,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,5000,10,age,0.04330236491883849,27.0,0.9948,-0.00046874999999999,coef,Logistic Regression
+pancan,cov_techdemo5,5000,10,sex_female,0.0,4981.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,1,mean_coverage,0.016174552723840815,1246.0,0.8757,0.0007352941176470562,coef,Logistic Regression
+pancan,cov_techdemo5,10000,1,total_fragments,0.01729490128272429,980.0,0.9022,0.0010294117647058787,coef,Logistic Regression
+pancan,cov_techdemo5,10000,1,plasma_volume,-0.007981446346959166,4404.0,0.56,0.003088235294117636,coef,Logistic Regression
+pancan,cov_techdemo5,10000,1,age,0.02204156514222448,349.0,0.9652,0.003823529411764692,coef,Logistic Regression
+pancan,cov_techdemo5,10000,1,sex_female,0.004855837963065625,6179.0,0.3826,0.00044117647058823374,coef,Logistic Regression
+pancan,cov_techdemo5,10000,2,mean_coverage,0.015191586569221453,1486.0,0.8517,-0.0026470588235294025,coef,Logistic Regression
+pancan,cov_techdemo5,10000,2,total_fragments,0.016371484639200667,1178.0,0.8824,-0.0016176470588235236,coef,Logistic Regression
+pancan,cov_techdemo5,10000,2,plasma_volume,-0.004038233161067053,6681.0,0.3323,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,2,age,0.021908845391313714,342.0,0.9659,-0.0002941176470588225,coef,Logistic Regression
+pancan,cov_techdemo5,10000,2,sex_female,0.002893782660158091,7352.0,0.2653,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,3,mean_coverage,0.00936562019288544,3717.0,0.6287,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,3,total_fragments,0.010573204861714538,3143.0,0.6859,0.0007352941176470562,coef,Logistic Regression
+pancan,cov_techdemo5,10000,3,plasma_volume,-0.010530901479156472,3162.0,0.6841,-0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,10000,3,age,0.02621223363393064,110.0,0.9891,0.0002941176470588225,coef,Logistic Regression
+pancan,cov_techdemo5,10000,3,sex_female,-0.0016818595934467847,8022.0,0.1983,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,4,mean_coverage,0.009458748130777824,3648.0,0.6355,0.0008823529411764675,coef,Logistic Regression
+pancan,cov_techdemo5,10000,4,total_fragments,0.01061817355125472,3085.0,0.6917,0.00235294117647058,coef,Logistic Regression
+pancan,cov_techdemo5,10000,4,plasma_volume,-0.004701756097687648,6264.0,0.374,0.0027941176470588137,coef,Logistic Regression
+pancan,cov_techdemo5,10000,4,age,0.022474458352854953,290.0,0.9711,0.005588235294117627,coef,Logistic Regression
+pancan,cov_techdemo5,10000,4,sex_female,-0.0007759005173824603,8638.0,0.1367,0.00044117647058823374,coef,Logistic Regression
+pancan,cov_techdemo5,10000,5,mean_coverage,0.015959719344588508,1303.0,0.87,-0.00014880952380952884,coef,Logistic Regression
+pancan,cov_techdemo5,10000,5,total_fragments,0.017135302945680515,1073.0,0.8929,-0.0004464285714285865,coef,Logistic Regression
+pancan,cov_techdemo5,10000,5,plasma_volume,-0.012321724958603742,2421.0,0.7583,-0.0002976190476190632,coef,Logistic Regression
+pancan,cov_techdemo5,10000,5,age,0.021618966335779335,368.0,0.9633,0.00029761904761904656,coef,Logistic Regression
+pancan,cov_techdemo5,10000,5,sex_female,0.004751199247543462,6103.0,0.3902,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,6,mean_coverage,0.011482867154972182,2836.0,0.7167,0.00014880952380952328,coef,Logistic Regression
+pancan,cov_techdemo5,10000,6,total_fragments,0.012659575215087742,2340.0,0.7662,0.0008928571428571397,coef,Logistic Regression
+pancan,cov_techdemo5,10000,6,plasma_volume,-0.009405525536188421,3680.0,0.6324,0.0007440476190476164,coef,Logistic Regression
+pancan,cov_techdemo5,10000,6,age,0.023579601621452465,246.0,0.9755,0.002232142857142849,coef,Logistic Regression
+pancan,cov_techdemo5,10000,6,sex_female,-0.0008913236405102955,8497.0,0.1508,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,7,mean_coverage,0.01204151596884075,2517.0,0.7487,-0.0002976190476190688,coef,Logistic Regression
+pancan,cov_techdemo5,10000,7,total_fragments,0.013173350434793625,2094.0,0.7909,-0.0010416666666667074,coef,Logistic Regression
+pancan,cov_techdemo5,10000,7,plasma_volume,-0.013370810619861444,2024.0,0.7978,-0.0026785714285715136,coef,Logistic Regression
+pancan,cov_techdemo5,10000,7,age,0.01883227117999727,713.0,0.9288,-0.00044642857142859207,coef,Logistic Regression
+pancan,cov_techdemo5,10000,7,sex_female,0.0017065660835873598,8022.0,0.1983,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,8,mean_coverage,,,,-0.00015625000000000223,,Multi-Layer Perceptron
+pancan,cov_techdemo5,10000,8,total_fragments,,,,-0.00015625000000000223,,Multi-Layer Perceptron
+pancan,cov_techdemo5,10000,8,plasma_volume,,,,0.0,,Multi-Layer Perceptron
+pancan,cov_techdemo5,10000,8,age,,,,0.0,,Multi-Layer Perceptron
+pancan,cov_techdemo5,10000,8,sex_female,,,,0.0,,Multi-Layer Perceptron
+pancan,cov_techdemo5,10000,9,mean_coverage,0.014110975136540424,1873.0,0.813,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,9,total_fragments,0.015247247059502535,1520.0,0.8482,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,9,plasma_volume,-0.00537772434886097,5756.0,0.4248,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,9,age,0.021266834826877214,409.0,0.9592,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,9,sex_female,-0.003079083267855597,7174.0,0.2831,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,10,mean_coverage,0.013153788399145184,2045.0,0.7958,-0.0015624999999999667,coef,Logistic Regression
+pancan,cov_techdemo5,10000,10,total_fragments,0.01425289618371974,1651.0,0.8351,-0.0017187499999999634,coef,Logistic Regression
+pancan,cov_techdemo5,10000,10,plasma_volume,-0.006441712485830137,5317.0,0.4687,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,10000,10,age,0.02851284198486881,45.0,0.9956,-0.00312499999999995,coef,Logistic Regression
+pancan,cov_techdemo5,10000,10,sex_female,0.0,9215.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,1,mean_coverage,0.01218006474869686,1930.0,0.8644961676394065,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,1,total_fragments,0.013192786240665865,1528.0,0.8926939033823219,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,1,plasma_volume,-0.009941638597342954,3017.0,0.7881302299416356,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,1,age,0.018460924007254263,400.0,0.9719429013430841,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,1,sex_female,0.003892524007303905,8187.0,0.42465368117572605,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,2,mean_coverage,0.0112279451367284,2011.0,0.8588003656564236,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,2,total_fragments,0.013399785859943697,1578.0,0.8891779762323324,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,2,plasma_volume,0.0,14222.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,2,age,0.025764362041023645,311.0,0.9782012516700654,0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,15000,2,sex_female,0.0,14224.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,3,mean_coverage,0.006070984990710722,5922.0,0.5838548625272484,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,3,total_fragments,0.007137507932106582,5003.0,0.6484072850010548,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,3,plasma_volume,-0.010471349940506504,2692.0,0.8108431193305675,0.00014705882352941124,coef,Logistic Regression
+pancan,cov_techdemo5,15000,3,age,0.021703977930553436,150.0,0.9895225370930314,0.0002941176470588225,coef,Logistic Regression
+pancan,cov_techdemo5,15000,3,sex_female,-0.0015343840438392072,10901.0,0.23380915547429856,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,4,mean_coverage,0.0011229629679895452,5318.0,0.6262569439561212,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,4,total_fragments,0.003158510663306805,4412.0,0.6898952253709303,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,4,plasma_volume,0.0,14222.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,4,age,0.025743758145779623,298.0,0.9791153927290627,0.000588235294117645,coef,Logistic Regression
+pancan,cov_techdemo5,15000,4,sex_female,0.0,14224.0,0.0,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,5,mean_coverage,0.012654922598659015,1712.0,0.8798959285563603,-0.002083333333333326,coef,Logistic Regression
+pancan,cov_techdemo5,15000,5,total_fragments,0.013698945765114467,1382.0,0.9029604106602911,-0.002678571428571419,coef,Logistic Regression
+pancan,cov_techdemo5,15000,5,plasma_volume,-0.01269980866969869,1700.0,0.880669432529358,-0.002678571428571419,coef,Logistic Regression
+pancan,cov_techdemo5,15000,5,age,0.017940569009040827,457.0,0.9679347443920961,-0.0005952380952380821,coef,Logistic Regression
+pancan,cov_techdemo5,15000,5,sex_female,0.003660899417520676,8351.0,0.4131214401237606,-0.0025297619047618958,coef,Logistic Regression
+pancan,cov_techdemo5,15000,6,mean_coverage,0.007875007590927366,4382.0,0.6921454187469236,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,6,total_fragments,0.008920696334183116,3659.0,0.7429154067927712,0.00014880952380952328,coef,Logistic Regression
+pancan,cov_techdemo5,15000,6,plasma_volume,-0.011091460203715186,2455.0,0.8275086140215174,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,6,age,0.01939464000372873,316.0,0.9778496589550665,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,6,sex_female,-0.0013193956638685245,11157.0,0.21580760846635258,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,7,mean_coverage,0.009067154894868232,3554.0,0.7503691723507488,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,7,total_fragments,0.010065180493501486,2958.0,0.7922087054356234,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,7,plasma_volume,-0.01325626964965922,1493.0,0.8951550523873145,-0.00029761904761904656,coef,Logistic Regression
+pancan,cov_techdemo5,15000,7,age,0.016684100581161713,649.0,0.9544335841361367,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,7,sex_female,0.001618733018449575,10784.0,0.2420364250052739,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,8,mean_coverage,0.01095239091146766,2505.0,0.8240630054145278,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,8,total_fragments,0.011994219693676393,2033.0,0.8571830391674284,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,8,plasma_volume,-0.008515237878056943,3943.0,0.7230152591238309,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,8,age,0.019181482176256568,338.0,0.9763026510090711,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,8,sex_female,0.0011188103914384277,11458.0,0.19464172702341606,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,9,mean_coverage,0.01060406135726551,2706.0,0.8099289782715702,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,9,total_fragments,0.011625949789394062,2202.0,0.8452992054004641,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,9,plasma_volume,-0.007181081856508475,4963.0,0.6512903452640462,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,9,age,0.017820908195583556,490.0,0.9656142324731032,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,9,sex_female,-0.0031353132120968087,8962.0,0.37015681035088954,0.0,coef,Logistic Regression
+pancan,cov_techdemo5,15000,10,mean_coverage,0.008203382707211,2688.0,0.8111947120455664,0.00015625000000000223,coef,Logistic Regression
+pancan,cov_techdemo5,15000,10,total_fragments,0.010189427675650892,2221.0,0.8439631530834681,0.0006250000000000089,coef,Logistic Regression
+pancan,cov_techdemo5,15000,10,plasma_volume,-0.002531279883100486,4609.0,0.6761831094859715,0.00015625000000000223,coef,Logistic Regression
+pancan,cov_techdemo5,15000,10,age,0.03556173984156062,59.0,0.9959215245060122,0.00046875000000000665,coef,Logistic Regression
+pancan,cov_techdemo5,15000,10,sex_female,0.0,14225.0,0.0,0.0,coef,Logistic Regression

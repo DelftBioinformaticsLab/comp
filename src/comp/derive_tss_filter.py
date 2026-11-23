@@ -3,7 +3,7 @@
 This replaces the lost derivation step for
 accessory_files/final_tss_indices_to_remove_hg38.npy (and its hg19 twin,
 consumed by model_hpc.py). Composition, as verified against the submitted
-filter and figure S2c during the Sep 2026 audit:
+filter and figure S2c:
 
   blacklist    biomart windows overlapping the centromere exclusion list
                (precomputed 'overlap' column in
@@ -11,17 +11,19 @@ filter and figure S2c during the Sep 2026 audit:
   chrX         all chrX windows                                      [geometric]
   overlapping  another TSS (window center) within < 5,000 bp         [geometric]
   high-var     per-TSS std of mean_coverage across the panel of
-               normals >= its 95th percentile (the rule stated and
-               printed in notebooks/gsea.ipynb), minus the
+               normals >= its 99.5th percentile, minus the
                geometric sets                                  [panel-dependent]
 
 Provenance notes from the audit:
   * The submitted final filter (5,152) = geometric union (5,080) + 72
-    high-variability windows. Those 72 are a subset of the 95th-percentile
-    std-outliers of the historical panel (48 records, iloc[2:50], with the
-    then-missing EE87934 phantom-matched to another file), but the exact
-    sub-selection of 72 from ~800 candidates is recorded nowhere in the
-    repo. This script applies the notebook's stated rule cleanly instead.
+    high-variability windows. The exact derivation of the 72 was recorded
+    nowhere, but a check showed they behave
+    like SD >= 99.5th percentile on the historical panel (48 records,
+    iloc[2:50], EE87934 phantom-matched to EE87930's file): 75 candidates,
+    70/72 recovered, matching the submitted S2c legend
+    (">=99.5th percentile"). A 95th-percentile rule selects ~10x more
+    windows and does not describe the submitted set. This script applies the 99.5th-percentile rule cleanly
+    on the clean 50-participant panel.
   * blacklist_and_std_outlier_indices.npy historically contained ONLY the
     blacklist set (the notebook unioned the blacklist with an
     *intersection* of the std outliers and the blacklist); it is
@@ -29,8 +31,7 @@ Provenance notes from the audit:
   * The hg19 files are exact gene-name mappings of their hg38 twins onto
     beds/biomart_10kb_hg19.bed (verified equal for the submitted files).
   * Panel = manifest role == 'panel_of_normals': 50 unique healthy
-    participants, base sequencing runs only (no replicates — Sep 2026
-    policy), loaded by exact ID; a missing feature file is an error.
+    participants, base sequencing runs only (no replicates), loaded by exact ID; a missing feature file is an error.
 
 The submitted originals are backed up once to
 accessory_files/submitted_backup/ before overwriting, and a delta report
@@ -61,7 +62,14 @@ OUTPUTS = {
     "final_hg19": ACC / "final_tss_indices_to_remove_hg19.npy",
 }
 
-STD_PERCENTILE = 0.95      # notebooks/gsea.ipynb: upper_quantile = 0.95
+STD_PERCENTILE = 0.995
+# 0.995 per that check:
+# the submitted 72-window set behaves like SD >= 99.5th percentile
+# (historical panel: 75 candidates, 70/72 recovered; the submitted S2c
+# legend also said ">=99.5th percentile"), NOT a 95th percentile, which
+# selects ~10x more windows. On the clean
+# 50-participant panel this yields ~70 extra windows and a final removal
+# set of ~5,150 (submitted: 5,152) - submission-faithful in scale.
 TSS_DISTANCE_BP = 5000     # S2c "(<5kb)": another TSS center within 5,000 bp
 
 
@@ -123,7 +131,7 @@ def main() -> None:
     thr = pd.Series(std).quantile(STD_PERCENTILE)
     outlier_std = set(np.where(std >= thr)[0].tolist())
     high_var = outlier_std - geometric
-    print(f"std >= {STD_PERCENTILE:.0%} percentile ({thr:.4f}): "
+    print(f"std >= {STD_PERCENTILE:.1%} percentile ({thr:.4f}): "
           f"{len(outlier_std)} windows; {len(high_var)} outside the geometric sets")
 
     # --- assemble ----------------------------------------------------------

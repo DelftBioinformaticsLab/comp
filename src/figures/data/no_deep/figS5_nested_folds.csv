@@ -1,0 +1,41 @@
+task,run,fold,feature,selection_type,n_top_genes,classifier,inner_best_score,test_auc
+pancan,true_labels,1,griffin_diff,mean_diff,15000,Logistic Regression,0.9625292740046838,0.9794117647058822
+pancan,true_labels,2,griffin_diff,mean_diff,10000,Logistic Regression,0.9673246347719416,0.9735294117647059
+pancan,true_labels,3,griffin_diff,mean_diff,15000,Logistic Regression,0.9507081521133044,0.9705882352941175
+pancan,true_labels,4,griffin_diff,p_value,10000,Logistic Regression,0.9626407940225269,0.9382352941176471
+pancan,true_labels,5,griffin_diff,mean_diff,10000,Logistic Regression,0.9636685996803092,0.9821428571428572
+pancan,true_labels,6,griffin_diff,mean_diff,10000,Logistic Regression,0.974158841678748,0.9642857142857143
+pancan,true_labels,7,griffin_diff,mean_diff,15000,Logistic Regression,0.9632417382253449,0.9523809523809523
+pancan,true_labels,8,griffin_diff,mean_diff,15000,Logistic Regression,0.953667893386863,0.996875
+pancan,true_labels,9,griffin_diff,p_value,10000,Logistic Regression,0.9602765696442511,0.96875
+pancan,true_labels,10,griffin_diff,mean_diff,15000,Logistic Regression,0.9654377160700345,0.96875
+pancan,perm1,1,griffin_diff,mean_diff,10000,Random Forest,0.5988624958179992,0.45294117647058824
+pancan,perm1,2,fslr_coverage,mean_diff,10000,Random Forest,0.6023196163711387,0.3823529411764706
+pancan,perm1,3,fslr_coverage,mean_diff,15000,Multi-Layer Perceptron,0.6173748187799709,0.6147058823529412
+pancan,perm1,4,fslr_coverage,weighted,10000,Multi-Layer Perceptron,0.6124267871082859,0.5446428571428572
+pancan,perm1,5,griffin_diff,p_value,10000,Multi-Layer Perceptron,0.5931876881900301,0.5505952380952381
+pancan,perm1,6,mwh,fold_change,10000,XGBoost,0.5938887030221925,0.6934523809523809
+pancan,perm1,7,fslr,fold_change,15000,Multi-Layer Perceptron,0.6107106427270361,0.30505952380952384
+pancan,perm1,8,fslr,weighted,15000,Multi-Layer Perceptron,0.6234620094468247,0.6
+pancan,perm1,9,fslr,p_value,10000,Multi-Layer Perceptron,0.6332817631194906,0.46562499999999996
+pancan,perm1,10,mwh,p_value,10000,Logistic Regression,0.6326008986354986,0.4520123839009288
+brca_crc,true_labels,1,griffin_diff,fold_change,10000,Support Vector Machine,0.9719387755102041,0.9117647058823528
+brca_crc,true_labels,2,griffin_diff,p_value,10000,Support Vector Machine,0.9736394557823128,0.963235294117647
+brca_crc,true_labels,3,griffin_diff,fold_change,10000,Support Vector Machine,0.9614512471655329,0.9852941176470588
+brca_crc,true_labels,4,griffin_diff,fold_change,10000,Support Vector Machine,0.9682539682539683,1.0
+brca_crc,true_labels,5,griffin_diff,mean_diff,15000,Support Vector Machine,0.9735487528344672,0.921875
+brca_crc,true_labels,6,griffin_diff,mean_diff,15000,Support Vector Machine,0.9676814058956916,1.0
+brca_crc,true_labels,7,griffin_diff,fold_change,10000,Support Vector Machine,0.956485260770975,0.96875
+brca_crc,true_labels,8,griffin_diff,fold_change,10000,Support Vector Machine,0.9601757369614513,0.984375
+brca_crc,true_labels,9,griffin_diff,fold_change,10000,Support Vector Machine,0.9586054421768707,0.9453125
+brca_crc,true_labels,10,griffin_diff,mean_diff,15000,Support Vector Machine,0.9700680272108845,0.9765625
+brca_crc,perm1,1,rcov,mean_diff,5000,Multi-Layer Perceptron,0.6388888888888888,0.3382352941176471
+brca_crc,perm1,2,griffin_diff,fold_change,1000,Multi-Layer Perceptron,0.6558956916099773,0.1985294117647059
+brca_crc,perm1,3,griffin_diff,p_value,15000,Multi-Layer Perceptron,0.6462585034013606,0.5073529411764706
+brca_crc,perm1,4,griffin_diff,mean_diff,15000,Multi-Layer Perceptron,0.6982709750566894,0.4779411764705883
+brca_crc,perm1,5,fslr,mean_diff,100,Multi-Layer Perceptron,0.6267290249433106,0.484375
+brca_crc,perm1,6,griffin_diff,fold_change,1500,Multi-Layer Perceptron,0.6771768707482994,0.6015625
+brca_crc,perm1,7,griffin_diff,weighted,250,XGBoost,0.6441836734693878,0.296875
+brca_crc,perm1,8,griffin_diff,fold_change,2500,XGBoost,0.6406462585034013,0.703125
+brca_crc,perm1,9,griffin_diff,weighted,1000,XGBoost,0.6508616780045352,0.703125
+brca_crc,perm1,10,fslr,mean_diff,10,Multi-Layer Perceptron,0.6398469387755102,0.359375

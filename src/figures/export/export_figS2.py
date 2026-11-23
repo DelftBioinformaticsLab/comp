@@ -1,29 +1,16 @@
-"""Export source data for Supplementary Figure S2 (TSS filtering / QC).
+"""Source data for Supplementary Figure S2 (TSS filtering / QC):
+  a) bp covered by the ENCODE blacklist and the GC-correction exclusion list per chromosome;
+  b) Venn counts of 10 kb TSS windows overlapping each list;
+  c) per-TSS mean vs SD of coverage across the panel of normals, by filter category.
 
-S2: a) genomic bp covered by the ENCODE blacklist vs the GC-correction
-exclusion list, per chromosome; b) Venn counts of 10 kb TSS windows
-overlapping each blacklist; c) per-TSS mean vs SD of coverage across the
-panel-of-normals, colored by filter category (retained / overlapping TSS /
-chromosome X / high variability / blacklist).
+Reads the filter .npy files in accessory_files/ (written by src/comp/derive_tss_filter.py,
+tracked in git), beds/biomart_10kb.bed and the two blacklist BEDs; writes
+src/figures/data/figS2a_blacklist_per_chrom.csv, figS2b_venn_counts.csv and figS2c_tss_qc.csv
+(one row per TSS window). Plotted by figS2.ipynb.
 
-Writes:
-  src/figures/data/figS2a_blacklist_per_chrom.csv
-  src/figures/data/figS2b_venn_counts.csv
-  src/figures/data/figS2c_tss_qc.csv   (one row per TSS window)
-
-Prerequisite: the filter .npy files in accessory_files/ are produced by
-src/comp/derive_tss_filter.py (tracked in git, so this exporter runs without
-rederiving them). The exporter derives the plotting categories from those
-same artifacts (accessory_files/*.npy, beds/biomart_10kb.bed, the two
-blacklist BEDs) and prints each count next to the submitted panel's numbers
-(total 19,376; blacklist 1,311; overlapping 3,398; chrX 842; high
-variability 72; removed 5,152 / retained 14,224). With the regenerated
-filter the full removal set is 5,806 — see derive_tss_filter.py's docstring.
-
-NOTE: the notebook that drew the submitted S2c panel was not found in the
-repository (only the component analyses in notebooks/blacklist_analysis.ipynb
-and notebooks/gsea.ipynb survive); figS2.ipynb is a reconstruction from these
-validated artifacts.
+Run from the repository root; COHORT_VARIANT=all writes to data/ (the panel of normals is the same in
+every cohort variant):
+    COHORT_VARIANT=all python src/figures/export/export_figS2.py
 """
 
 import os
@@ -39,16 +26,14 @@ ENCODE_BED = "accessory_files/hg38-blacklist.v2.bed"
 GC_BED = "accessory_files/hg38_GCcorrection_ExclusionList.merged.sorted.bed"
 BIOMART_BED = "beds/biomart_10kb.bed"
 FINAL_NPY = "accessory_files/final_tss_indices_to_remove_hg38.npy"
+SUBMITTED_FINAL_NPY = "accessory_files/submitted_backup/final_tss_indices_to_remove_hg38.npy"
 BLACKLIST_NPY = "accessory_files/blacklist_and_std_outlier_indices.npy"
 FEATURES_DIR = "extracted_features/biomart_10kb"
 METADATA = "accessory_files/cris_metadata.csv"
-PON_CSV = "accessory_files/cris_pon.csv"
 
 
 def bp_per_chrom(bed: pd.DataFrame) -> pd.Series:
-    """Total bp per chromosome as the raw sum of interval lengths (no interval
-    merging) — matching notebooks/blacklist_analysis.ipynb, which sums
-    end - start directly."""
+    """Total bp per chromosome as the raw sum of interval lengths (no interval merging)."""
     lengths = bed["end"] - bed["start"]
     return lengths.groupby(bed["chrom"]).sum()
 
@@ -100,8 +85,7 @@ def main() -> None:
           f"(panel: 195,195,200 / 352,006,422)")
 
     # ------------------------------------------------------------- S2b: venn
-    # Sets of overlapping biomart *entry names* (not window indices), matching
-    # the venn2 call in notebooks/blacklist_analysis.ipynb.
+    # sets of overlapping biomart entry names (not window indices)
     hit_enc = windows_overlapping(biomart, encode)
     hit_gc = windows_overlapping(biomart, gc)
     gc_names = set(biomart.loc[hit_gc, "gene_name"])
@@ -119,10 +103,7 @@ def main() -> None:
     blacklist_idx = set(np.load(rp(BLACKLIST_NPY)).tolist())
     chrx_idx = set(biomart.index[biomart["chrom"] == "chrX"].tolist())
 
-    # overlapping-TSS category: another TSS within < 5,000 bp (the "(<5kb)"
-    # in the panel legend is literal; TSS = window center). Verified: exactly
-    # 3,398 windows, all inside the final removal set, and the derived
-    # high-variability remainder is exactly 72.
+    # overlapping-TSS category: another TSS (window center) within < 5,000 bp
     overlap_idx = set()
     for chrom, g in biomart.groupby("chrom"):
         g = g.sort_values("start")
@@ -145,17 +126,11 @@ def main() -> None:
     print(f"S2c removed by multiple filters: {in_multiple} (panel: 452); "
           f"removed {len(final_removed)} / retained {19376 - len(final_removed)}")
 
-    # per-TSS mean/std of mean_coverage across the panel-of-normals.
-    # Panel from the canonical manifest (50 unique participants, Sep 2026
-    # policy); falls back to the legacy cris_pon.csv if no manifest exists.
-    manifest_path = rp("accessory_files/cris_manifest.csv")
-    if os.path.exists(manifest_path):
-        mf = pd.read_csv(manifest_path)
-        pon_ids = mf.loc[mf["role"] == "panel_of_normals", "ID"].tolist()
-        pon_src = "cris_manifest.csv (role == panel_of_normals)"
-    else:
-        pon_ids = pd.read_csv(rp(PON_CSV))["ID"].tolist()
-        pon_src = PON_CSV
+    # per-TSS mean/std of mean_coverage across the panel of normals (50 samples, from the manifest)
+    mf = pd.read_csv(rp("accessory_files/cris_manifest.csv"))
+    pon_ids = mf.loc[mf["role"] == "panel_of_normals", "ID"].tolist()
+    assert len(pon_ids) == 50, len(pon_ids)
+    pon_src = "cris_manifest.csv (role == panel_of_normals)"
     mats, used = [], []
     for sid in pon_ids:
         p = rp(f"{FEATURES_DIR}/{sid}.hg38.frag.tsv_BIN.csv")
@@ -185,6 +160,19 @@ def main() -> None:
         "in_high_variability": biomart.index.isin(list(high_var_idx)),
         "removed": biomart.index.isin(list(final_removed)),
     })
+
+    # filter membership of the backup written by derive_tss_filter.py; all-False if the backup is absent
+    if os.path.exists(rp(SUBMITTED_FINAL_NPY)):
+        submitted_removed = set(np.load(rp(SUBMITTED_FINAL_NPY)).tolist())
+        submitted_hv = submitted_removed - (blacklist_idx | chrx_idx | overlap_idx)
+        print(f"S2c submitted filter: removed {len(submitted_removed)}, "
+              f"high-variability remainder {len(submitted_hv)} (panel: 5,152 / 72)")
+    else:
+        submitted_removed, submitted_hv = set(), set()
+        print(f"S2c WARNING: {SUBMITTED_FINAL_NPY} not found; "
+              f"in_submitted_* columns written as all-False")
+    s2c["in_submitted_removed"] = biomart.index.isin(list(submitted_removed))
+    s2c["in_submitted_high_variability"] = biomart.index.isin(list(submitted_hv))
     s2c.to_csv(os.path.join(DATA_DIR, "figS2c_tss_qc.csv"), index=False)
     print(f"wrote figS2c_tss_qc.csv ({len(s2c)} rows) + figS2a/figS2b CSVs")
 

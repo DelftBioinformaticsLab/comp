@@ -1,0 +1,27 @@
+% Supplementary Table S5, written by src/figures/export/export_figS12_cohorts.py
+\begin{tabular}{p{0.22\linewidth}p{0.37\linewidth}p{0.37\linewidth}}
+\hline
+ & Cristiano et al. 2019 & Jiang et al. 2015 \\
+\hline
+Study & Cristiano et al. 2019, Nature 570:385 (DELFI) & Jiang et al. 2015, PNAS 112:E1317 \\
+Data source & FinaleDB, hg38 fragment files (EGA EGAS00001003611) & FinaleDB, hg38 fragment files \\
+Samples analysed & Healthy 164, BRCA/CRC 80, other cancer types 123 & Healthy 32, chronic hepatitis B 67, HBV cirrhosis 36, HCC 90 \\
+Comparison group & Healthy individuals & 135 non-HCC: 32 healthy, 67 chronic hepatitis B carriers, 36 HBV-associated cirrhosis \\
+Blood collection and plasma processing & EDTA tubes, processed within 1 day; 800 g 10 min at 4~$^\circ$C, then 18,000 g at room temperature; plasma at $-$80~$^\circ$C & EDTA tubes; 1,600 g 10 min at 4~$^\circ$C, then 16,000 g 10 min at 4~$^\circ$C; plasma at $-$80~$^\circ$C \\
+cfDNA extraction & Qiagen Circulating Nucleic Acids Kit & QIAamp DSP DNA Blood Mini Kit (3--4.8 mL plasma) \\
+Library preparation & NEBNext DNA Library Prep Kit for Illumina (modified), Phusion Hot Start amplification; PCR cycles not reported & KAPA Library Preparation Kit, 14 PCR cycles (KAPA HiFi HotStart ReadyMix) \\
+Size selection & None reported (AMPure XP clean-up only) & None reported \\
+Sequencing & HiSeq 2000, 100 bp paired-end & HiSeq 2000, 75 bp paired-end \\
+Age (years) & Healthy 54 [50--75], BRCA/CRC 59 [36--83], other cancer types 64 [14--83] (not reported for 6 bile duct cancer, 5 colorectal cancer, 4 breast cancer) & Not reported \\
+Female, inferred from the reads (\%) & Healthy 68, BRCA/CRC 84, other cancer types 57 & Healthy 47, chronic hepatitis B 33, HBV cirrhosis 31, HCC 17 \\
+Genome-wide coverage ($\times$) & 2.42 [1.06--5.25] & 2.02 [1.20--4.84] \\
+Fragments per sample (millions) & 39.9 [17.5--85.6] & 33.3 [19.6--79.0] \\
+Mean fragment length (bp) & 165.0 [153.5--171.5] & 169.9 [153.8--177.9] \\
+Modal fragment length (bp) & 166 [164--168] & 166 [165--175] \\
+Short/long fragment ratio (100--150 / 151--220 bp) & 0.250 [0.105--0.674] & 0.140 [0.063--0.806] \\
+Mean fragment GC (\%) & 38.3 [35.8--45.7] & 41.7 [38.2--44.4] \\
+ichorCNA tumour fraction, cancer samples & 0.008 [0.000--0.577] & 0.024 [0.011--0.368] \\
+\hline
+\end{tabular}
+
+% Note: Protocol rows follow the Methods of both studies. Computed rows are the median [minimum--maximum] over the samples analysed, from our pipeline: coverage from the BAM files, fragment statistics in the 100--220 bp window, sex from the reads on chromosomes X and Y. Jiang et al. report a median tumour fraction of 2.1\% in HCC with their own method.

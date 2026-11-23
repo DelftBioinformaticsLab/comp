@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
+import copy
 import multiprocessing as mp
 import os
 import sys
 from pathlib import Path
 
 from src.comp.bin import calculate_bin
+from src.comp.compute_mean_coverage import extract_sample_name
 from src.comp.em import calculate_em
 from src.comp.wps import calculate_wps
 
@@ -85,6 +87,28 @@ def get_args():
     general_group.add_argument("--job_index", type=int, default=None, help="Job index for splitting BED file processing across multiple jobs (0-based). Default: [None] (process all)")
     general_group.add_argument("--total_jobs", type=int, default=1, help="Total number of jobs to split BED file processing. Default: [1]")
 
+    # --- Downsampling options ---
+    ds_group = parser.add_argument_group("Options for in-code depth downsampling (no downsampled BAMs are written)")
+    ds_group.add_argument(
+        "--downsample_frac",
+        type=float,
+        default=None,
+        help="Keep this fraction (0-1, exclusive) of fragments from every BAM, decided per fragment by a seeded hash of the read name.\nOutput is redirected to <output_dir>/downsampled/frac<frac>_seed<seed>/. Default: [None] (no downsampling)",
+    )
+    ds_group.add_argument(
+        "--target_coverage",
+        type=float,
+        default=None,
+        help="Downsample every BAM to this mean genome-wide coverage (e.g. 0.1). Requires --coverage_file to look up each sample's\nnative coverage; the per-sample keep-fraction is target/native (capped at 1).\nOutput is redirected to <output_dir>/downsampled/cov<target>x_seed<seed>/. Default: [None] (no downsampling)",
+    )
+    ds_group.add_argument(
+        "--coverage_file",
+        type=str,
+        default=None,
+        help="CSV with columns sample_name,mean_coverage listing native genome-wide coverage per sample\n(output of src/comp/summarize_coverage.py). Required with --target_coverage.",
+    )
+    ds_group.add_argument("--downsample_seed", type=int, default=42, help="Seed mixed into the read-name hash that decides which fragments are kept. Default: [42]")
+
     # --- CNA specific options ---
     cna_group = parser.add_argument_group("Options specific for Copy Number Alterations (CNA)")
     cna_group.add_argument(
@@ -143,6 +167,78 @@ def get_args():
     return parser.parse_args()
 
 
+def resolve_downsampling(bam_files, args):
+    """
+    Resolve an in-code downsampling request into one fragment keep-fraction per BAM.
+
+    Two mutually exclusive modes:
+      --downsample_frac F   the same fraction F for every BAM
+      --target_coverage T   per-sample fraction T / native_coverage (capped at 1.0),
+                            with native coverages looked up in --coverage_file
+                            (sample_name,mean_coverage CSV from src/comp/summarize_coverage.py)
+
+    Returns (tag, fractions, native_coverages):
+      tag               subdirectory name identifying this downsampling run,
+                        or None when no downsampling was requested
+      fractions         list with one keep-fraction per BAM (None when no downsampling)
+      native_coverages  list with each sample's native coverage (entries are None in
+                        --downsample_frac mode, where no coverage lookup happens)
+    """
+    if args.downsample_frac is None and args.target_coverage is None:
+        return None, None, None
+    if args.downsample_frac is not None and args.target_coverage is not None:
+        print("Error: --downsample_frac and --target_coverage are mutually exclusive.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.downsample_frac is not None:
+        if not 0.0 < args.downsample_frac < 1.0:
+            print(f"Error: --downsample_frac must be between 0 and 1 (exclusive), got {args.downsample_frac}.", file=sys.stderr)
+            sys.exit(1)
+        tag = f"frac{args.downsample_frac:g}_seed{args.downsample_seed}"
+        return tag, [args.downsample_frac] * len(bam_files), [None] * len(bam_files)
+
+    # --target_coverage mode
+    if args.target_coverage <= 0:
+        print(f"Error: --target_coverage must be positive, got {args.target_coverage}.", file=sys.stderr)
+        sys.exit(1)
+    if not args.coverage_file:
+        print("Error: --target_coverage requires --coverage_file (sample_name,mean_coverage CSV, see src/comp/summarize_coverage.py).", file=sys.stderr)
+        sys.exit(1)
+    if not Path(args.coverage_file).is_file():
+        print(f"Error: coverage file not found: {args.coverage_file}", file=sys.stderr)
+        sys.exit(1)
+
+    native_by_sample = {}
+    with open(args.coverage_file) as f:
+        for line in f.read().splitlines()[1:]:  # skip header
+            line = line.strip()
+            if not line:
+                continue
+            sample_name, mean_cov = line.split(",", 1)
+            native_by_sample[sample_name] = float(mean_cov)
+
+    fractions = []
+    native_coverages = []
+    for bam_file in bam_files:
+        sample_name = extract_sample_name(os.path.basename(bam_file))
+        native = native_by_sample.get(sample_name)
+        if native is None:
+            print(f"Error: sample '{sample_name}' not found in coverage file {args.coverage_file}.", file=sys.stderr)
+            sys.exit(1)
+        if native <= 0.0:
+            print(f"Error: sample '{sample_name}' has non-positive native coverage ({native}) in {args.coverage_file}.", file=sys.stderr)
+            sys.exit(1)
+        fraction = args.target_coverage / native
+        if fraction >= 1.0:
+            print(f"Warning: {sample_name} native coverage ({native:.4f}x) is at or below the target ({args.target_coverage:g}x); keeping all fragments.")
+            fraction = 1.0
+        fractions.append(fraction)
+        native_coverages.append(native)
+
+    tag = f"cov{args.target_coverage:g}x_seed{args.downsample_seed}"
+    return tag, fractions, native_coverages
+
+
 def run_analysis(args):
     """
     Main function to run the feature extraction analysis.
@@ -179,6 +275,37 @@ def run_analysis(args):
     if not bam_files:
         print("Error: No BAM files listed in the input file.", file=sys.stderr)
         sys.exit(1)
+
+    # Resolve in-code downsampling (if requested) into one keep-fraction per BAM
+    ds_tag, ds_fractions, ds_native_coverages = resolve_downsampling(bam_files, args)
+    if ds_tag is not None and ds_fractions is not None and ds_native_coverages is not None:
+        # Redirect all output below a downsampling-specific subdirectory so the
+        # full-depth features in <output_dir> can never be overwritten
+        output_path = output_path / "downsampled" / ds_tag
+        output_path.mkdir(parents=True, exist_ok=True)
+        print(f"Downsampling active: output redirected to {output_path.resolve()}")
+        # One log file per sample (rather than one shared CSV) so parallel array jobs never race
+        log_dir = output_path / "downsample_log"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        for i, bam_file in enumerate(bam_files):
+            sample_name = extract_sample_name(os.path.basename(bam_file))
+            native = "" if ds_native_coverages[i] is None else f"{ds_native_coverages[i]:.6f}"
+            target = "" if args.target_coverage is None else f"{args.target_coverage:g}"
+            with open(log_dir / f"{sample_name}.csv", "w") as f:
+                f.write("sample_name,bam,native_coverage,target_coverage,downsample_frac,downsample_seed\n")
+                f.write(f"{sample_name},{bam_file},{native},{target},{ds_fractions[i]:.8f},{args.downsample_seed}\n")
+            print(f"  {sample_name}: keeping {ds_fractions[i]:.2%} of fragments" + (f" ({native}x -> target {target}x)" if native else ""))
+
+    # Per-BAM args namespaces so each worker sees its own keep-fraction
+    # (util.get_filtered_alignments reads args.downsample_frac / args.downsample_seed)
+    if ds_fractions is None:
+        per_bam_args = [args] * len(bam_files)
+    else:
+        per_bam_args = []
+        for fraction in ds_fractions:
+            bam_args = copy.copy(args)
+            bam_args.downsample_frac = fraction
+            per_bam_args.append(bam_args)
 
     # Check for GC
     if args.gc:
@@ -271,7 +398,7 @@ def run_analysis(args):
             print(f"Processing BED file: {bed_file}")
             starmap_args = []
             for i in range(len(bam_files)):
-                starmap_args.append((bam_files[i], output_path_bed, bed_file, gc_files[i], args))
+                starmap_args.append((bam_files[i], output_path_bed, bed_file, gc_files[i], per_bam_args[i]))
 
             print(f"Using {nr_of_processes} threads for processing.")
 
@@ -300,7 +427,7 @@ def run_analysis(args):
 
         starmap_args = []
         for i in range(len(bam_files)):
-            starmap_args.append((bam_files[i], genome_wide_output_dir, None, gc_files[i], args))
+            starmap_args.append((bam_files[i], genome_wide_output_dir, None, gc_files[i], per_bam_args[i]))
 
         print(f"Using {nr_of_processes} threads for processing.")
 
@@ -309,7 +436,7 @@ def run_analysis(args):
                 print("  -> Extracting EM...")
                 pool.starmap(calculate_em, starmap_args)
 
-    for bam_file in bam_files:
+    for i, bam_file in enumerate(bam_files):
         bam_path = Path(bam_file)
         if not bam_path.is_file():
             print(f"Warning: BAM file not found, skipping: {bam_file}", file=sys.stderr)
@@ -330,7 +457,7 @@ def run_analysis(args):
             print("  -> Extracting WPS...")
             bed_path = Path(args.bed_file)
             wps_window = 120
-            calculate_wps(bam_path, output_path, bed_path, gc_file_path, args, wps_window)
+            calculate_wps(bam_path, output_path, bed_path, gc_file_path, per_bam_args[i], wps_window)
 
     # print(f"Finished processing {sample_name}.")
 

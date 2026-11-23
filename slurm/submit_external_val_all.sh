@@ -6,9 +6,9 @@
 #   ./slurm/submit_external_val_all.sh                        # All 3 types on jiang
 #   ./slurm/submit_external_val_all.sh jiang                  # All 3 types on jiang
 #   ./slurm/submit_external_val_all.sh jiang atac             # Only ATAC on jiang
-#   ./slurm/submit_external_val_all.sh lucas dd               # Only DD on lucas
 # ============================================================================
 
+. slurm/_site.sh   # site settings: slurm/site.env (scheduler, storage paths, container, Apptainer cache)
 TEST_DATASET=${1:-jiang}
 FEATURE_ONLY=${2:-""}
 

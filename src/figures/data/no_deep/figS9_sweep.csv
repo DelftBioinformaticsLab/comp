@@ -1,0 +1,21 @@
+task,sample_fraction,n_samples,n_outer_folds,subsample_seed,mean_test_auc,std_test_auc,oof_auc_pooled,modal_feature,modal_classifier,n_distinct_configs,source_dir
+brca_crc,1.0,244,10,,0.9657169117647058,0.029093521831212766,0.9598323170731708,griffin_diff,Support Vector Machine,3,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_ksweep/ksweep_tuned
+brca_crc,0.9,220,10,42.0,0.9606547619047617,0.05346050023179747,0.9586148648648648,griffin_diff,Support Vector Machine,3,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f090
+brca_crc,0.8,195,10,42.0,0.947893772893773,0.062042310395353045,0.9455510496183206,griffin_diff,Support Vector Machine,3,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f080
+brca_crc,0.7,171,10,42.0,0.9396969696969697,0.06081328210246066,0.9468944099378882,griffin_diff,Support Vector Machine,5,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f070
+brca_crc,0.6,146,10,42.0,0.9315555555555555,0.07792874237974644,0.9243197278911565,griffin_diff,Support Vector Machine,7,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f060
+brca_crc,0.5,122,10,42.0,0.8979166666666668,0.09770712409423088,0.8478658536585365,griffin_diff,Multi-Layer Perceptron,5,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f050
+brca_crc,0.4,98,10,42.0,0.7496031746031746,0.15745969741941412,0.7708333333333331,griffin_diff,Multi-Layer Perceptron,10,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f040
+brca_crc,0.3,73,10,42.0,0.78,0.18330302779823363,0.7270408163265306,griffin_diff,Multi-Layer Perceptron,10,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f030
+brca_crc,0.2,49,10,42.0,0.6666666666666667,0.3872983346207417,0.6761363636363635,griffin_diff,Multi-Layer Perceptron,9,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f020
+brca_crc,0.1,24,8,42.0,0.75,0.3535533905932738,0.515625,griffin_diff,Multi-Layer Perceptron,8,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_sizesweep\sizesweep_f010
+pancan,1.0,367,10,,0.9694949229691876,0.015243861386097093,0.9669890664423886,griffin_diff,Logistic Regression,3,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_ksweep/ksweep_tuned
+pancan,0.9,331,10,42.0,0.9701308827624618,0.01956906579034257,0.9680623246197017,griffin_diff,Logistic Regression,5,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f090
+pancan,0.8,293,10,42.0,0.9596557853910795,0.030983102802570286,0.9621147865422676,griffin_diff,Logistic Regression,5,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f080
+pancan,0.7,258,10,42.0,0.9607142857142857,0.029151312329178187,0.9577987230161142,griffin_diff,Logistic Regression,5,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f070
+pancan,0.6,219,10,42.0,0.9546438746438746,0.05032422818229136,0.9272221285208297,griffin_diff,Logistic Regression,6,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f060
+pancan,0.5,184,10,42.0,0.9418939393939395,0.03519475527543942,0.9143950263032041,griffin_diff,Logistic Regression,8,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f050
+pancan,0.4,148,10,42.0,0.9237103174603176,0.03891004321964819,0.9116777531411676,griffin_diff,Logistic Regression,8,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f040
+pancan,0.3,109,10,42.0,0.9333333333333333,0.07149203529842407,0.9035714285714285,griffin_diff,Support Vector Machine,6,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f030
+pancan,0.2,74,10,42.0,0.8816666666666666,0.17814826846072782,0.8300073909830007,griffin_diff,Multi-Layer Perceptron,9,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f020
+pancan,0.1,36,10,42.0,0.875,0.20155644370746376,0.7406250000000001,griffin_diff,Multi-Layer Perceptron,10,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_sizesweep\sizesweep_f010

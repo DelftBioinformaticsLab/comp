@@ -1,8 +1,10 @@
-# Version: 0.1.1
+# Version: 0.1.2
+# pixi >= 0.74 is required to read lock-file format v7 (pixi.lock was
+# regenerated when xgboost was added); pinned to match the local pixi.
 
 # Header
 Bootstrap: docker
-From: ghcr.io/prefix-dev/pixi:0.48.2
+From: ghcr.io/prefix-dev/pixi:0.80.0
 
 # Files
 %files

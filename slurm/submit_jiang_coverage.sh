@@ -1,6 +1,7 @@
 #!/bin/bash
 # Submit the Jiang coverage array job, then submit the summary job with a dependency.
 # Usage: bash slurm/submit_jiang_coverage.sh
+. slurm/_site.sh   # site settings: slurm/site.env (scheduler, storage paths, container, Apptainer cache)
 
 set -e
 
@@ -10,20 +11,17 @@ echo "  Array job ID: $ARRAY_JOB_ID"
 
 echo "Submitting summary job (depends on array job completing)..."
 SUMMARY_JOB_ID=$(sbatch --parsable \
-    --account=ewi-insy-prb \
-    --partition=insy,general \
     --job-name=jiang_coverage_summary \
-    --qos=short \
     --time=00:10:00 \
     --cpus-per-task=1 \
-    --mem=2GB \
+    --mem=1638MB \
     --dependency=afterok:${ARRAY_JOB_ID} \
     --output=logs/jiang_coverage_summary_%j.out \
     --error=logs/jiang_coverage_summary_%j.out \
     --wrap="apptainer exec --writable-tmpfs --pwd /opt/app --containall \
         --bind src/:/opt/app/src/ \
         --bind results/:/opt/app/results/ \
-        ./comp.sif pixi run python -u src/comp/summarize_coverage.py \
+        ${CONTAINER} pixi run python -u src/comp/summarize_coverage.py \
             /opt/app/results/jiang_coverage \
             /opt/app/results/jiang_coverage/jiang_mean_coverage.csv")
 

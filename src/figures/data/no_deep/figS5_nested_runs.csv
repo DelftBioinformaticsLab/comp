@@ -1,0 +1,5 @@
+task,run,permutation_seed,n_samples,n_folds,auc_fold_mean,auc_fold_sd,auc_pooled_oof,k_grid,complete,source,true_selection_in_grid
+pancan,true_labels,,367,10,0.9694949229691876,0.015243861386097093,0.9669890664423886,10 25 50 100 250 500 1000 1500 2500 5000 10000 all,True,nested_cv_results_cris/nested_full_pancan_nested_full_nodeep_ksweep/ksweep_tuned,
+pancan,perm1,1.0,367,10,0.5061387383900929,0.11058882826358368,0.5201399735672234,10000 all,True,nested_cv_results_cris\nested_full_pancan_nested_full_perm1_nodeep,True
+brca_crc,true_labels,,244,10,0.9657169117647058,0.029093521831212766,0.9598323170731708,10 25 50 100 250 500 1000 1500 2500 5000 10000 all,True,nested_cv_results_cris/nested_full_brca_crc_nested_full_nodeep_ksweep/ksweep_tuned,
+brca_crc,perm1,1.0,244,10,0.4670496323529412,0.16150835747108302,0.492530487804878,10 25 50 100 250 500 1000 1500 2500 5000 10000 all,True,nested_cv_results_cris\nested_full_brca_crc_nested_full_perm1_nodeep,True

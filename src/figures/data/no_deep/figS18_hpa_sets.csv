@@ -1,0 +1,16 @@
+set,n_genes_hpa,n_mapped_to_14221
+blood_restricted,1094,744
+blood_granulocytes,210,174
+blood_monocytes,115,101
+blood_t_cells,215,85
+blood_b_cells,72,52
+blood_nk_cells,74,54
+blood_dendritic_cells,97,78
+not_detected_immune,7329,5325
+tissue_breast,128,109
+tissue_intestine,665,542
+tissue_stomach,218,182
+tissue_pancreas,299,229
+tissue_lung,123,105
+tissue_ovary,161,123
+tissue_liver,949,735

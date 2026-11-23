@@ -1,0 +1,10 @@
+GC/Output_Bam/EE87865.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE87934.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88002.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88060.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88065.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88137.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88160.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88165.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88192.hg38.frag.tsv__correction_factors.csv
+GC/Output_Bam/EE88258.hg38.frag.tsv__correction_factors.csv

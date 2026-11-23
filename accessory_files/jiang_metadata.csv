@@ -1,0 +1,250 @@
+ID,sample_name,assay,readlen,instrument,seq_layout,fragNum,publication_name,publication_doi,tissue,disease
+EE85754,GM886,WGS,75,HiSeq 2000,PAIRED,37093637,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85755,GM918,WGS,75,HiSeq 2000,PAIRED,24916731,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85756,C330,WGS,75,HiSeq 2000,PAIRED,40700723,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85757,C347,WGS,75,HiSeq 2000,PAIRED,29815778,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85758,GM1403,WGS,75,HiSeq 2000,PAIRED,38190966,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85759,H342,WGS,75,HiSeq 2000,PAIRED,37107927,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85760,GM1490,WGS,75,HiSeq 2000,PAIRED,26758099,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85761,H232,WGS,75,HiSeq 2000,PAIRED,32102404,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85762,GM920,WGS,75,HiSeq 2000,PAIRED,30038029,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85763,GM850,WGS,75,HiSeq 2000,PAIRED,27248950,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85764,GM790,WGS,75,HiSeq 2000,PAIRED,25822937,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85765,H200,WGS,75,HiSeq 2000,PAIRED,31571373,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85766,GM992,WGS,75,HiSeq 2000,PAIRED,29206595,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85767,GM998,WGS,75,HiSeq 2000,PAIRED,28587395,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85768,GM976,WGS,75,HiSeq 2000,PAIRED,31303598,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85769,HOT426,WGS,75,HiSeq 2000,PAIRED,38845837,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85770,C329,WGS,75,HiSeq 2000,PAIRED,40267033,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85771,GM1150,WGS,75,HiSeq 2000,PAIRED,28387889,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85772,H221,WGS,75,HiSeq 2000,PAIRED,32085881,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85773,H256,WGS,75,HiSeq 2000,PAIRED,43550640,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85774,HOT386,WGS,75,HiSeq 2000,PAIRED,28054073,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85775,C354,WGS,75,HiSeq 2000,PAIRED,30365180,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85776,GM939,WGS,75,HiSeq 2000,PAIRED,25375766,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85777,HOT414,WGS,75,HiSeq 2000,PAIRED,38296044,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85777,HOT414,WGS,75,HiSeq 2000,PAIRED,38296044,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85779,GM849,WGS,75,HiSeq 2000,PAIRED,27614374,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85780,GM1261,WGS,75,HiSeq 2000,PAIRED,27874318,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85781,H264,WGS,75,HiSeq 2000,PAIRED,33273067,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85781,H264,WGS,75,HiSeq 2000,PAIRED,33273067,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85783,GM1018,WGS,75,HiSeq 2000,PAIRED,29041992,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85784,C311,WGS,75,HiSeq 2000,PAIRED,36483213,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85785,H214,WGS,75,HiSeq 2000,PAIRED,33554824,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85786,H263,WGS,75,HiSeq 2000,PAIRED,43941015,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85787,C316,WGS,75,HiSeq 2000,PAIRED,47427642,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85788,H269,WGS,75,HiSeq 2000,PAIRED,24488147,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85789,H420,WGS,75,HiSeq 2000,PAIRED,37268010,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85790,HOT413,WGS,75,HiSeq 2000,PAIRED,33467196,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85791,C359,WGS,75,HiSeq 2000,PAIRED,28755298,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85792,GM1120,WGS,75,HiSeq 2000,PAIRED,38513197,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85793,H226,WGS,75,HiSeq 2000,PAIRED,26555394,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85794,H321,WGS,75,HiSeq 2000,PAIRED,45881111,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85795,C353,WGS,75,HiSeq 2000,PAIRED,28717267,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85796,GM1050,WGS,75,HiSeq 2000,PAIRED,36491965,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85797,GM906,WGS,75,HiSeq 2000,PAIRED,30722172,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85798,H377,WGS,75,HiSeq 2000,PAIRED,37899952,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85799,H300,WGS,75,HiSeq 2000,PAIRED,48646170,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85800,GM1006,WGS,75,HiSeq 2000,PAIRED,26719378,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85800,GM1006,WGS,75,HiSeq 2000,PAIRED,26719378,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85802,H270,WGS,75,HiSeq 2000,PAIRED,20833678,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85802,H270,WGS,75,HiSeq 2000,PAIRED,20833678,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85802,H270,WGS,75,HiSeq 2000,PAIRED,20833678,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85805,H433,WGS,75,HiSeq 2000,PAIRED,43942005,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85806,GM1404,WGS,75,HiSeq 2000,PAIRED,35145228,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85807,H235,WGS,75,HiSeq 2000,PAIRED,35243302,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85808,GM881,WGS,75,HiSeq 2000,PAIRED,42222399,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85809,GM915,WGS,75,HiSeq 2000,PAIRED,23485980,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85810,HOT432,WGS,75,HiSeq 2000,PAIRED,27503015,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85811,GM986,WGS,75,HiSeq 2000,PAIRED,38168564,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85812,GM1137,WGS,75,HiSeq 2000,PAIRED,32639253,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85813,H246,WGS,75,HiSeq 2000,PAIRED,78962472,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85814,H341,WGS,75,HiSeq 2000,PAIRED,43662127,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85815,GM1400,WGS,75,HiSeq 2000,PAIRED,43544826,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85816,C333,WGS,75,HiSeq 2000,PAIRED,43520570,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85817,GM1047,WGS,75,HiSeq 2000,PAIRED,25896201,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85818,GM988,WGS,75,HiSeq 2000,PAIRED,35955007,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85818,GM988,WGS,75,HiSeq 2000,PAIRED,35955007,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85818,GM988,WGS,75,HiSeq 2000,PAIRED,35955007,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85821,H203,WGS,75,HiSeq 2000,PAIRED,37331111,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85822,GM793,WGS,75,HiSeq 2000,PAIRED,27932796,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85823,H209,WGS,75,HiSeq 2000,PAIRED,29146324,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85823,H209,WGS,75,HiSeq 2000,PAIRED,29146324,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85825,GM929,WGS,75,HiSeq 2000,PAIRED,29388861,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85826,GM853,WGS,75,HiSeq 2000,PAIRED,19647386,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85827,H199,WGS,75,HiSeq 2000,PAIRED,35195644,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85828,GM1271,WGS,75,HiSeq 2000,PAIRED,22547704,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85829,GM1023,WGS,75,HiSeq 2000,PAIRED,28436587,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85830,C357,WGS,75,HiSeq 2000,PAIRED,30905159,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85831,H228,WGS,75,HiSeq 2000,PAIRED,26646356,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85832,H352,WGS,75,HiSeq 2000,PAIRED,37745089,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85833,GM1413,WGS,75,HiSeq 2000,PAIRED,62613915,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85834,GM1153,WGS,75,HiSeq 2000,PAIRED,29692623,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85835,HOT425,WGS,75,HiSeq 2000,PAIRED,31100271,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85836,GM975,WGS,75,HiSeq 2000,PAIRED,36105011,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85837,GM1320,WGS,75,HiSeq 2000,PAIRED,34302948,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85838,GM991,WGS,75,HiSeq 2000,PAIRED,32043226,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85839,H283,WGS,75,HiSeq 2000,PAIRED,41191438,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85840,GM780,WGS,75,HiSeq 2000,PAIRED,54865490,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85841,GM1011,WGS,75,HiSeq 2000,PAIRED,33853842,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85842,C312,WGS,75,HiSeq 2000,PAIRED,35653030,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85843,H210,WGS,75,HiSeq 2000,PAIRED,32442535,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85844,GM764,WGS,75,HiSeq 2000,PAIRED,63423058,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85845,H267,WGS,75,HiSeq 2000,PAIRED,26967673,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85846,HOT417,WGS,75,HiSeq 2000,PAIRED,29453092,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85847,H424,WGS,75,HiSeq 2000,PAIRED,30307994,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85848,GM937,WGS,75,HiSeq 2000,PAIRED,24021775,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85849,HOT410,WGS,75,HiSeq 2000,PAIRED,27303344,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85849,HOT410,WGS,75,HiSeq 2000,PAIRED,27303344,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85851,H423,WGS,75,HiSeq 2000,PAIRED,44778701,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85851,H423,WGS,75,HiSeq 2000,PAIRED,44778701,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85853,GM769,WGS,75,HiSeq 2000,PAIRED,43920438,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85854,C315,WGS,75,HiSeq 2000,PAIRED,37104414,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85855,GM763,WGS,75,HiSeq 2000,PAIRED,35888424,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85856,H217,WGS,75,HiSeq 2000,PAIRED,35265220,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85857,HOT422,WGS,75,HiSeq 2000,PAIRED,28514697,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85858,HOT428,WGS,75,HiSeq 2000,PAIRED,24975870,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85859,GM875,WGS,75,HiSeq 2000,PAIRED,31132102,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85860,C327,WGS,75,HiSeq 2000,PAIRED,48003907,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85861,C350,WGS,75,HiSeq 2000,PAIRED,38684167,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85862,H258,WGS,75,HiSeq 2000,PAIRED,39445349,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85863,H225,WGS,75,HiSeq 2000,PAIRED,20840997,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85864,H252,WGS,75,HiSeq 2000,PAIRED,31309600,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85865,GM854,WGS,75,HiSeq 2000,PAIRED,30834549,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85866,GM953,WGS,75,HiSeq 2000,PAIRED,29505928,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85867,HOT403,WGS,75,HiSeq 2000,PAIRED,36677920,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85868,GM1298,WGS,75,HiSeq 2000,PAIRED,28656973,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85869,H390,WGS,75,HiSeq 2000,PAIRED,31498672,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85870,H374,WGS,75,HiSeq 2000,PAIRED,41326739,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85871,GM888,WGS,75,HiSeq 2000,PAIRED,32286953,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85872,H402,WGS,75,HiSeq 2000,PAIRED,37191815,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85873,GM1244,WGS,75,HiSeq 2000,PAIRED,39874753,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85874,GM882,WGS,75,HiSeq 2000,PAIRED,29323977,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85875,GM1147,WGS,75,HiSeq 2000,PAIRED,28954811,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85876,GM1407,WGS,75,HiSeq 2000,PAIRED,35548233,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85877,GM1037,WGS,75,HiSeq 2000,PAIRED,40710458,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85878,C343,WGS,75,HiSeq 2000,PAIRED,27678830,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85879,GM772,WGS,75,HiSeq 2000,PAIRED,43980314,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85880,H206,WGS,75,HiSeq 2000,PAIRED,38379151,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85881,GM1100,WGS,75,HiSeq 2000,PAIRED,46071843,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85882,GM778,WGS,75,HiSeq 2000,PAIRED,43391953,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85883,H301,WGS,75,HiSeq 2000,PAIRED,52208335,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85884,GM856,WGS,75,HiSeq 2000,PAIRED,29543759,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85885,H196,WGS,75,HiSeq 2000,PAIRED,36554711,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85886,GM1397,WGS,75,HiSeq 2000,PAIRED,23046395,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85887,GM1502,WGS,75,HiSeq 2000,PAIRED,26962528,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85888,H234,WGS,75,HiSeq 2000,PAIRED,35167687,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85888,H234,WGS,75,HiSeq 2000,PAIRED,35167687,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85890,GM1405,WGS,75,HiSeq 2000,PAIRED,19856745,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85891,H249,WGS,75,HiSeq 2000,PAIRED,30236209,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85892,H344,WGS,75,HiSeq 2000,PAIRED,42579562,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85893,HOT393,WGS,75,HiSeq 2000,PAIRED,26641975,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85893,HOT393,WGS,75,HiSeq 2000,PAIRED,26641975,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85895,GM819,WGS,75,HiSeq 2000,PAIRED,28719725,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85896,GM880,WGS,75,HiSeq 2000,PAIRED,34786992,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85897,GM914,WGS,75,HiSeq 2000,PAIRED,39846241,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85898,C360,WGS,75,HiSeq 2000,PAIRED,27828349,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85899,H262,WGS,75,HiSeq 2000,PAIRED,40702281,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85900,H381,WGS,75,HiSeq 2000,PAIRED,29059411,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85901,HOT412,WGS,75,HiSeq 2000,PAIRED,31587004,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85902,GM935,WGS,75,HiSeq 2000,PAIRED,33292416,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85903,H421,WGS,75,HiSeq 2000,PAIRED,36886623,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85904,C325,WGS,75,HiSeq 2000,PAIRED,45254359,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85905,C352,WGS,75,HiSeq 2000,PAIRED,40736087,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85906,GM1051,WGS,75,HiSeq 2000,PAIRED,28331424,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85907,H250,WGS,75,HiSeq 2000,PAIRED,29302074,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85908,C358,WGS,75,HiSeq 2000,PAIRED,27051737,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85908,C358,WGS,75,HiSeq 2000,PAIRED,27051737,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85908,C358,WGS,75,HiSeq 2000,PAIRED,27051737,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85911,H419,WGS,75,HiSeq 2000,PAIRED,28475767,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85912,GM1255,WGS,75,HiSeq 2000,PAIRED,23175990,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85913,GM994,WGS,75,HiSeq 2000,PAIRED,24634363,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85913,GM994,WGS,75,HiSeq 2000,PAIRED,24634363,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85915,GM999,WGS,75,HiSeq 2000,PAIRED,25716960,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85916,HOT427,WGS,75,HiSeq 2000,PAIRED,28347214,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85917,GM1021,WGS,75,HiSeq 2000,PAIRED,30246926,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85918,C355,WGS,75,HiSeq 2000,PAIRED,30840967,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85919,GM1482,WGS,75,HiSeq 2000,PAIRED,21489771,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85920,GM754,WGS,75,HiSeq 2000,PAIRED,45355616,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85921,H220,WGS,75,HiSeq 2000,PAIRED,35116257,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85922,GM848,WGS,75,HiSeq 2000,PAIRED,28055199,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85923,GM932,WGS,75,HiSeq 2000,PAIRED,29683760,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85924,GM938,WGS,75,HiSeq 2000,PAIRED,34352918,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85925,H218,WGS,75,HiSeq 2000,PAIRED,35527234,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85926,GM782,WGS,75,HiSeq 2000,PAIRED,44302272,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85927,H315,WGS,75,HiSeq 2000,PAIRED,46597779,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85928,C310,WGS,75,HiSeq 2000,PAIRED,39411270,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85928,C310,WGS,75,HiSeq 2000,PAIRED,39411270,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85930,GM887,WGS,75,HiSeq 2000,PAIRED,30677358,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85931,GM1142,WGS,75,HiSeq 2000,PAIRED,34389358,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85932,GM1505,WGS,75,HiSeq 2000,PAIRED,48170574,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85933,GM747,WGS,75,HiSeq 2000,PAIRED,58157002,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85933,GM747,WGS,75,HiSeq 2000,PAIRED,58157002,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85935,H239,WGS,75,HiSeq 2000,PAIRED,26611306,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85936,C346,WGS,75,HiSeq 2000,PAIRED,33644883,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85937,C331,WGS,75,HiSeq 2000,PAIRED,37523792,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85938,HOT394,WGS,75,HiSeq 2000,PAIRED,23784605,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85939,H435,WGS,75,HiSeq 2000,PAIRED,42839799,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85940,GM921,WGS,75,HiSeq 2000,PAIRED,24278805,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85941,C309,WGS,75,HiSeq 2000,PAIRED,37561776,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85942,GM1000,WGS,75,HiSeq 2000,PAIRED,33125792,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85943,H292,WGS,75,HiSeq 2000,PAIRED,41039497,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85944,GM791,WGS,75,HiSeq 2000,PAIRED,28368822,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85945,GM855,WGS,75,HiSeq 2000,PAIRED,28004685,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85946,H195,WGS,75,HiSeq 2000,PAIRED,42096322,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85947,H278,WGS,75,HiSeq 2000,PAIRED,38716461,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85948,GM795,WGS,75,HiSeq 2000,PAIRED,25614268,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85949,H296,WGS,75,HiSeq 2000,PAIRED,45614980,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85950,GM1004,WGS,75,HiSeq 2000,PAIRED,28012120,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85951,GM1109,WGS,75,HiSeq 2000,PAIRED,29503558,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85952,GM1103,WGS,75,HiSeq 2000,PAIRED,33470437,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85953,H272,WGS,75,HiSeq 2000,PAIRED,53129165,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85953,H272,WGS,75,HiSeq 2000,PAIRED,53129165,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85955,GM917,WGS,75,HiSeq 2000,PAIRED,26321829,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85956,GM1245,WGS,75,HiSeq 2000,PAIRED,41256337,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85957,GM984,WGS,75,HiSeq 2000,PAIRED,34911195,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85957,GM984,WGS,75,HiSeq 2000,PAIRED,34911195,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85959,C348,WGS,75,HiSeq 2000,PAIRED,28171320,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85960,GM846,WGS,75,HiSeq 2000,PAIRED,30141168,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85961,H216,WGS,75,HiSeq 2000,PAIRED,39148006,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85962,H261,WGS,75,HiSeq 2000,PAIRED,45569011,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85963,C314,WGS,75,HiSeq 2000,PAIRED,43260497,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85964,H311,WGS,75,HiSeq 2000,PAIRED,43083353,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85965,H285,WGS,75,HiSeq 2000,PAIRED,43606429,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85966,GM904,WGS,75,HiSeq 2000,PAIRED,33257499,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85967,GM750,WGS,75,HiSeq 2000,PAIRED,48900886,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85968,H253,WGS,75,HiSeq 2000,PAIRED,31046484,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85969,H323,WGS,75,HiSeq 2000,PAIRED,37374278,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85970,C351,WGS,75,HiSeq 2000,PAIRED,29680800,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85971,C326,WGS,75,HiSeq 2000,PAIRED,44518177,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85972,GM1052,WGS,75,HiSeq 2000,PAIRED,33763475,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85973,H223,WGS,75,HiSeq 2000,PAIRED,31337406,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85974,H254,WGS,75,HiSeq 2000,PAIRED,35143450,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85975,GM757,WGS,75,HiSeq 2000,PAIRED,46235040,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85975,GM757,WGS,75,HiSeq 2000,PAIRED,46235040,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85975,GM757,WGS,75,HiSeq 2000,PAIRED,46235040,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85978,H324,WGS,75,HiSeq 2000,PAIRED,45332191,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85978,H324,WGS,75,HiSeq 2000,PAIRED,45332191,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85980,C356,WGS,75,HiSeq 2000,PAIRED,27342182,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85981,GM873,WGS,75,HiSeq 2000,PAIRED,33146231,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85982,H266,WGS,75,HiSeq 2000,PAIRED,27326603,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85983,H288,WGS,75,HiSeq 2000,PAIRED,39805123,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85984,GM1010,WGS,75,HiSeq 2000,PAIRED,29209367,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85985,C313,WGS,75,HiSeq 2000,PAIRED,46992989,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85986,GM1313,WGS,75,HiSeq 2000,PAIRED,27936978,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85987,C332,WGS,75,HiSeq 2000,PAIRED,45953162,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85988,C345,WGS,75,HiSeq 2000,PAIRED,35715260,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Healthy
+EE85989,GM1046,WGS,75,HiSeq 2000,PAIRED,29393811,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85990,HOT397,WGS,75,HiSeq 2000,PAIRED,30928443,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85991,H230,WGS,75,HiSeq 2000,PAIRED,29852002,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85992,H247,WGS,75,HiSeq 2000,PAIRED,27447636,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85992,H247,WGS,75,HiSeq 2000,PAIRED,27447636,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85994,GM884,WGS,75,HiSeq 2000,PAIRED,31423778,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85994,GM884,WGS,75,HiSeq 2000,PAIRED,31423778,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE85996,GM1242,WGS,75,HiSeq 2000,PAIRED,26362000,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85997,H291,WGS,75,HiSeq 2000,PAIRED,40521193,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE85998,GM1003,WGS,75,HiSeq 2000,PAIRED,36960570,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Cirrhosis
+EE85999,GM1009,WGS,75,HiSeq 2000,PAIRED,28123984,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE86000,H275,WGS,75,HiSeq 2000,PAIRED,46028425,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer
+EE86001,GM852,WGS,75,HiSeq 2000,PAIRED,39647949,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Hepatitis B
+EE86002,H436,WGS,75,HiSeq 2000,PAIRED,29649741,"Jiang et al., 2015",10.1073/pnas.1500076112,blood plasma,Liver cancer

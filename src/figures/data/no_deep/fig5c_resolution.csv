@@ -1,0 +1,53 @@
+task,level,n_units,feature,mode,auc_fold_mean,auc_fold_sd,auc_pooled_oof,protocol,source
+brca_crc,genome-wide,1,griffin_diff,pooled,0.6303768382352941,0.12487339670227207,0.630640243902439,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_griffin_diff.npy
+brca_crc,genome-wide,1,rcov,pooled,0.5295955882352941,0.1535437128861632,0.5266006097560976,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_rcov.npy
+brca_crc,genome-wide,1,mwh,pooled,0.5316176470588235,0.13777506082321272,0.5395579268292683,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_mwh.npy
+brca_crc,genome-wide,1,fslr,pooled,0.7141544117647058,0.11892970376535988,0.7009908536585366,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_fslr.npy
+brca_crc,genome-wide,1,fslr_coverage,pooled,0.7156709558823529,0.11699018314655908,0.7040396341463414,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_fslr_coverage.npy
+brca_crc,Hallmark gene sets,50,griffin_diff,averaged,0.6743566176470589,0.087938523208425,0.6485518292682926,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,rcov,averaged,0.5743106617647059,0.1171200876606327,0.5629573170731708,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,mwh,averaged,0.6267922794117646,0.0872250516181264,0.6221036585365853,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,fslr,averaged,0.4925551470588235,0.1062793345674436,0.50625,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,fslr_coverage,averaged,0.4831341911764705,0.1129948615591937,0.5004573170731708,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,griffin_diff,pooled,0.6436121323529412,0.1260046688364458,0.6008384146341463,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,rcov,pooled,0.6227481617647059,0.1244711404349346,0.5971798780487805,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,mwh,pooled,0.5766544117647059,0.1237135084342758,0.5823932926829268,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,fslr,pooled,0.3998161764705882,0.0864051251710075,0.4137957317073171,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,Hallmark gene sets,50,fslr_coverage,pooled,0.51875,0.1438486361423908,0.5497713414634147,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,griffin_diff,averaged,0.629296875,0.1159548078523701,0.6344512195121952,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,rcov,averaged,0.5241268382352942,0.0630488076364856,0.5053353658536586,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,mwh,averaged,0.6504136029411764,0.1187713842775709,0.6257240853658537,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,fslr,averaged,0.7087775735294117,0.1486578748502785,0.7048780487804877,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,fslr_coverage,averaged,0.6763786764705882,0.1202263852825211,0.6788871951219513,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,griffin_diff,pooled,0.6390165441176471,0.0965039061884497,0.6242378048780488,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,rcov,pooled,0.5904411764705882,0.1005673480581967,0.5917301829268292,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,mwh,pooled,0.6940716911764706,0.0891105889302688,0.673170731707317,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,fslr,pooled,0.6870863970588236,0.1481672738927027,0.6685975609756099,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,chromosome arms,39,fslr_coverage,pooled,0.6820772058823529,0.1390536912571094,0.6582317073170731,fully nested (classifier per fold),figS_tss_sets_runs.csv
+brca_crc,individual TSSs,14221,selected per fold,,0.9657169117647058,0.0290935218312127,0.9598323170731708,fully nested data-driven model,figS_tss_sets_reference.csv
+pancan,genome-wide,1,griffin_diff,pooled,0.6042935924369749,0.06419691782533768,0.6012855941367294,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_griffin_diff_pancan.npy
+pancan,genome-wide,1,rcov,pooled,0.539311974789916,0.06468851938594322,0.5332211942809084,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_rcov_pancan.npy
+pancan,genome-wide,1,mwh,pooled,0.5177696078431373,0.07501726022924023,0.522047338699988,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_mwh_pancan.npy
+pancan,genome-wide,1,fslr,pooled,0.6298520658263305,0.05394984469315775,0.6403039769313948,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_fslr_pancan.npy
+pancan,genome-wide,1,fslr_coverage,pooled,0.6427757352941177,0.054116871047941426,0.6521686891745764,scalar oriented on the training folds,extracted_features\tss_sets\genome_pooled_fslr_coverage_pancan.npy
+pancan,Hallmark gene sets,50,griffin_diff,averaged,0.6518942577030813,0.0527891062647808,0.6508019944731467,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,rcov,averaged,0.6083932948179273,0.0814242825207945,0.5962393367776042,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,mwh,averaged,0.5869262079831933,0.0880160302771591,0.5823621290400096,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,fslr,averaged,0.6033989845938377,0.0621478596812388,0.5824822780247507,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,fslr_coverage,averaged,0.6375,0.0698583642975685,0.6184068244623333,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,griffin_diff,pooled,0.6959208683473389,0.0593429718459092,0.6886639432896792,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,rcov,pooled,0.6032860644257704,0.0700738689355243,0.594767511714526,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,mwh,pooled,0.5836939775910364,0.0943882378757258,0.5837138051183468,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,fslr,pooled,0.6203869047619047,0.0319905491406324,0.6086146822059354,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,Hallmark gene sets,50,fslr_coverage,pooled,0.6139259453781511,0.0717387651290001,0.598311906764388,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,griffin_diff,averaged,0.6927004551820728,0.0921255608721021,0.6737053946894149,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,rcov,averaged,0.5623660714285714,0.0982666955338205,0.5414513997356722,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,mwh,averaged,0.6110101540616246,0.0685655790216788,0.5849603508350354,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,fslr,averaged,0.7773704481792716,0.0457463851988047,0.7732488285473988,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,fslr_coverage,averaged,0.7796130952380951,0.0441506684004457,0.7758019944731467,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,griffin_diff,pooled,0.670484068627451,0.0773239211614325,0.6594377027514118,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,rcov,pooled,0.5593981967787114,0.0733556213257916,0.5439745284152349,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,mwh,pooled,0.6575919117647059,0.0712603212830729,0.6517631863510753,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,fslr,pooled,0.7644502801120449,0.0332402868903289,0.7588609876246546,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,chromosome arms,39,fslr_coverage,pooled,0.7861904761904762,0.052922331117814,0.7802625255316594,fully nested (classifier per fold),figS_tss_sets_runs.csv
+pancan,individual TSSs,14221,selected per fold,,0.9694949229691876,0.015243861386097,0.9669890664423886,fully nested data-driven model,figS_tss_sets_reference.csv
