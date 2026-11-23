@@ -12,7 +12,9 @@ Amsterdam; Department of Medical Oncology, Erasmus MC Cancer Institute. Contact:
 The code extracts five fragmentomic features at 14,221 transcription start sites (TSSs) from shallow whole-genome
 sequencing of plasma cell-free DNA, selects the TSSs, feature, ranking function, number of TSSs and classifier in a
 fully nested cross-validation, and compares the resulting model with hypothesis-driven region sets (ATAC-seq,
-RNA-seq) and ichorCNA. Every release is archived on Zenodo; its DOI is linked from the release page.
+RNA-seq) and ichorCNA. Release v1.0.0, the version of the article, is archived on Zenodo:
+[doi:10.5281/zenodo.24462137](https://doi.org/10.5281/zenodo.24462137) (all versions:
+[doi:10.5281/zenodo.24462136](https://doi.org/10.5281/zenodo.24462136)).
 
 ## Contents
 - [Reproducing the figures](#reproducing-the-figures)
@@ -266,7 +268,8 @@ pixi.lock            locked environment
   `accessory_files/jiang_manifest.csv`; Section 2 describes the download and preprocessing.
 - **Download and BAM conversion:** [finaleDB_extract](https://github.com/DelftBioinformaticsLab/finaleDB_extract)
   (release v1.0.0).
-- **Code and source data:** this repository, release v1.0.0, archived on Zenodo (DOI on the release page). Supplementary Table S1 lists
+- **Code and source data:** this repository, release v1.0.0, archived on Zenodo
+  ([doi:10.5281/zenodo.24462137](https://doi.org/10.5281/zenodo.24462137)). Supplementary Table S1 lists
   every participant with their outer fold and out-of-fold prediction.
 
 ## Citation
